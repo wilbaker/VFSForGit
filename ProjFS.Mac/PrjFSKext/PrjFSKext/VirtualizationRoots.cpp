@@ -84,22 +84,6 @@ VirtualizationRoot* VirtualizationRoots_FindForVnode(vnode_t vnode)
     return root;
 }
 
-VirtualizationRoot* VirtualizationRoots_FindForPath(const char* path)
-{
-    for (int i=0; i < MaxVirtualizationRoots; ++i)
-    {
-        if (s_virtualizationRoots[i].inUse)
-        {
-            if (strprefix(path, s_virtualizationRoots[i].path))
-            {
-                return &s_virtualizationRoots[i];
-            }
-        }
-    }
-    
-    return nullptr;
-}
-
 int16_t VirtualizationRoots_LookupVnode(vnode_t vnode, vfs_context_t context)
 {
     VnodeFsidInode fsidInode = Vnode_GetFsidAndInode(vnode, context);

@@ -48,19 +48,12 @@ static bool TrySendRequestAndWaitForResponse(
     const VirtualizationRoot* root,
     MessageType messageType,
     const vnode_t vnode,
+    const vnode_t toVnode,
     int pid,
     const char* procname,
     int* kauthResult,
     int* kauthError);
-static bool TrySendRequestAndWaitForResponse(
-    const VirtualizationRoot* root,
-    MessageType messageType,
-    const char* path,
-    const char* toPath,
-    int pid,
-    const char* procname,
-    int* kauthResult,
-    int* kauthError);
+
 static void AbortAllOutstandingEvents();
 static bool ShouldIgnoreVnodeType(vtype vnodeType, vnode_t vnode);
 
@@ -286,6 +279,7 @@ static int HandleVnodeOperation(
                         root,
                         MessageType_KtoU_EnumerateDirectory,
                         currentVnode,
+                        NULLVP,
                         pid,
                         procname,
                         &kauthResult,
@@ -314,6 +308,7 @@ static int HandleVnodeOperation(
                         root,
                         MessageType_KtoU_HydrateFile,
                         currentVnode,
+                        NULLVP,
                         pid,
                         procname,
                         &kauthResult,
@@ -341,6 +336,9 @@ static int HandleFileOpOperation(
 {
     atomic_fetch_add(&s_numActiveKauthEvents, 1);
     
+    vnode_t fromVNode = NULLVP;
+    vnode_t toVNode = NULLVP;
+    
     // Note: a fileop listener MUST NOT return an error, or it will result in a kernel panic.
     // Fileop events are informational only.
     int kauthError;
@@ -353,45 +351,82 @@ static int HandleFileOpOperation(
         const char* fromPath = (const char*)arg0;
         const char* toPath = (const char*)arg1;
         
-        // TODO(Mac): Handles renames between roots
-        // TODO(Mac): We need proper unregistering of repos, otherwise VirtualizationRoots_FindForPath might find an old
-        // entry that the kext still thinks is in use (but is not).  Alternatively, we could make sure to re-use the same slot
-        // when re-mounting a previously mounted repo
-        VirtualizationRoot* root = VirtualizationRoots_FindForPath(toPath);
-        if (nullptr == root)
+        errno_t fromErr = vnode_lookup(fromPath, 0 /* flags */, &fromVNode, context);
+        errno_t toErr = vnode_lookup(toPath, 0 /* flags */, &toVNode, context);
+        
+        // TODO(Mac): Test renames between roots
+        // TODO(Mac): Improve error handling
+        if (0 == fromErr && 0 == toErr)
         {
-            root = VirtualizationRoots_FindForPath(fromPath);
+            VirtualizationRoot* fromRoot = nullptr;
+            vtype fromVnodeType;
+            uint32_t currentFromVnodeFileFlags;
+            int pid;
+            char procname[MAXCOMLEN + 1];
+            bool handleFromEvent = ShouldHandleEvent(
+                    context,
+                    fromVNode,
+                    action,
+                    &fromRoot,
+                    &fromVnodeType,
+                    &currentFromVnodeFileFlags,
+                    &pid,
+                    procname,
+                    &kauthResult);
+            
+            VirtualizationRoot* toRoot = nullptr;
+            vtype toVnodeType;
+            uint32_t currentToVnodeFileFlags;
+            bool handleToEvent = ShouldHandleEvent(
+                    context,
+                    toVNode,
+                    action,
+                    &toRoot,
+                    &toVnodeType,
+                    &currentToVnodeFileFlags,
+                    &pid,
+                    procname,
+                    &kauthResult);
+            
+            if (handleFromEvent || handleToEvent)
+            {
+                if (nullptr != fromRoot)
+                {
+                    if (!TrySendRequestAndWaitForResponse(
+                        fromRoot,
+                        MessageType_KtoU_NotifyFileRenamed,
+                        fromVNode,
+                        toVNode,
+                        pid,
+                        procname,
+                        &kauthResult,
+                        &kauthError))
+                    {
+                        goto CleanupAndReturn;
+                    }
+                }
+                
+                if (fromRoot != toRoot && nullptr != toRoot)
+                {
+                    if (!TrySendRequestAndWaitForResponse(
+                        toRoot,
+                        MessageType_KtoU_NotifyFileRenamed,
+                        fromVNode,
+                        toVNode,
+                        pid,
+                        procname,
+                        &kauthResult,
+                        &kauthError))
+                    {
+                        goto CleanupAndReturn;
+                    }
+                }
+            }
+            else
+            {
+                goto CleanupAndReturn;
+            }
         }
-        
-        if (nullptr == root ||
-            nullptr == root->providerUserClient)
-        {
-            goto CleanupAndReturn;
-        }
-        
-        // If the calling process is the provider, we must exit right away to avoid deadlocks
-        int pid = GetPid(context);
-        if (pid == root->providerPid)
-        {
-            goto CleanupAndReturn;
-        }
-        
-        char procname[MAXCOMLEN + 1];
-        proc_name(pid, procname, MAXCOMLEN + 1);
-        
-        if (!TrySendRequestAndWaitForResponse(
-                root,
-                MessageType_KtoU_NotifyFileRenamed,
-                fromPath,
-                toPath,
-                pid,
-                procname,
-                &kauthResult,
-                &kauthError))
-        {
-            goto CleanupAndReturn;
-        }
-        
     }
     else if (KAUTH_FILEOP_CLOSE == action)
     {
@@ -425,6 +460,7 @@ static int HandleFileOpOperation(
                     root,
                     MessageType_KtoU_NotifyFileModified,
                     currentVnode,
+                    NULLVP,
                     pid,
                     procname,
                     &kauthResult,
@@ -436,6 +472,16 @@ static int HandleFileOpOperation(
     }
     
 CleanupAndReturn:
+    if (NULLVP != fromVNode)
+    {
+        vnode_put(fromVNode);
+    }
+    
+    if (NULLVP != toVNode)
+    {
+        vnode_put(toVNode);
+    }
+    
     vfs_context_rele(context);
     atomic_fetch_sub(&s_numActiveKauthEvents, 1);
     
@@ -458,6 +504,7 @@ static bool ShouldHandleEvent(
     char procname[MAXCOMLEN + 1],
     int* kauthResult)
 {
+    *root = nullptr;
     *kauthResult = KAUTH_RESULT_DEFER;
     
     if (!VirtualizationRoot_VnodeIsOnAllowedFilesystem(vnode))
@@ -608,36 +655,7 @@ static bool TrySendRequestAndWaitForResponse(
     const VirtualizationRoot* root,
     MessageType messageType,
     const vnode_t vnode,
-    int pid,
-    const char* procname,
-    int* kauthResult,
-    int* kauthError)
-{
-    char vnodePath[PrjFSMaxPath];
-    int vnodePathLength = PrjFSMaxPath;
-    if (vn_getpath(vnode, vnodePath, &vnodePathLength))
-    {
-        KextLog_Error("Unable to resolve a vnode to its path");
-        *kauthResult = KAUTH_RESULT_DENY;
-        return false;
-    }
-    
-    return TrySendRequestAndWaitForResponse(
-        root,
-        messageType,
-        vnodePath,
-        nullptr,
-        pid,
-        procname,
-        kauthResult,
-        kauthError);
-}
-
-static bool TrySendRequestAndWaitForResponse(
-    const VirtualizationRoot* root,
-    MessageType messageType,
-    const char* path,
-    const char* toPath,
+    const vnode_t toVnode,
     int pid,
     const char* procname,
     int* kauthResult,
@@ -648,14 +666,31 @@ static bool TrySendRequestAndWaitForResponse(
     OutstandingMessage message;
     message.receivedResponse = false;
     
-    const char* relativePath = GetRelativePath(path, root->path);
-    const char* relativeToPath = nullptr;
-    if (nullptr != toPath)
+    char vnodePath[PrjFSMaxPath];
+    int vnodePathLength = PrjFSMaxPath;
+    if (vn_getpath(vnode, vnodePath, &vnodePathLength))
     {
-        // TODO(Mac): Check toPath is inside root before trying to get relative path
-        relativeToPath = GetRelativePath(toPath, root->path);
+        KextLog_Error("Unable to resolve a vnode to its path");
+        *kauthResult = KAUTH_RESULT_DENY;
+        return false;
     }
     
+    const char* relativePath = GetRelativePath(vnodePath, root->path);
+    const char* relativeToPath = nullptr;
+    if (NULLVP != toVnode)
+    {
+        char toVnodePath[PrjFSMaxPath];
+        int toVnodePathLength = PrjFSMaxPath;
+        if (vn_getpath(toVnode, toVnodePath, &toVnodePathLength))
+        {
+            KextLog_Error("Unable to resolve a vnode to its path");
+            *kauthResult = KAUTH_RESULT_DENY;
+            return false;
+        }
+        
+         relativeToPath = GetRelativePath(toVnodePath, root->path);
+    }
+
     int nextMessageId = OSIncrementAtomic(&s_nextMessageId);
     
     Message messageSpec = {};
