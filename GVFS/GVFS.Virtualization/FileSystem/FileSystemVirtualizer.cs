@@ -199,7 +199,7 @@ namespace GVFS.Virtualization.FileSystem
 
                 if (dstPathInDotGit)
                 {
-                    this.OnDotGitFileChanged(relativeDestinationPath);
+                    this.OnDotGitFileOrFolderChanged(relativeDestinationPath);
                 }
 
                 if (!(srcPathInDotGit && dstPathInDotGit))
