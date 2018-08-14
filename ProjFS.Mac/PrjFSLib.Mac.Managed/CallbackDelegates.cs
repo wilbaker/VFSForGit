@@ -52,8 +52,7 @@ namespace PrjFSLib.Mac
 
     public delegate void NotifyFileRenamedEvent(
         string relativeSourcePath,
-        string relativeDestinationPath,
-        bool isDirectory);
+        string relativeDestinationPath);
 
     public delegate void NotifyFileModified(
         string relativePath);

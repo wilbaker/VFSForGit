@@ -100,6 +100,7 @@ namespace GVFS.Platform.Mac
             this.virtualizationInstance.OnEnumerateDirectory = this.OnEnumerateDirectory;
             this.virtualizationInstance.OnGetFileStream = this.OnGetFileStream;
             this.virtualizationInstance.OnFileModified = this.OnFileModified;
+            this.virtualizationInstance.OnFileRenamed = this.OnFileRenamed;
 
             uint threadCount = (uint)Environment.ProcessorCount * 2;
 
@@ -274,6 +275,11 @@ namespace GVFS.Platform.Mac
             {
                 this.LogUnhandledExceptionAndExit(nameof(this.OnFileModified), this.CreateEventMetadata(relativePath, e));
             }
+        }
+
+        private void OnFileRenamed(string relativeSourcePath, string relativeDestinationPath)
+        {
+            this.OnFileRenamed(relativeSourcePath, relativeDestinationPath, isDirectory: false);
         }
 
         private Result OnEnumerateDirectory(

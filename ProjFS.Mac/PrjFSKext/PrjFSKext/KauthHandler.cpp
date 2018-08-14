@@ -52,6 +52,15 @@ static bool TrySendRequestAndWaitForResponse(
     const char* procname,
     int* kauthResult,
     int* kauthError);
+static bool TrySendRequestAndWaitForResponse(
+    const VirtualizationRoot* root,
+    MessageType messageType,
+    const char* path,
+    const char* toPath,
+    int pid,
+    const char* procname,
+    int* kauthResult,
+    int* kauthError);
 static void AbortAllOutstandingEvents();
 static bool ShouldIgnoreVnodeType(vtype vnodeType, vnode_t vnode);
 
@@ -206,6 +215,17 @@ void KauthHandler_HandleKernelMessageResponse(uint64_t messageId, MessageType re
             }
             Mutex_Release(s_outstandingMessagesMutex);
         }
+            
+        case MessageType_Invalid:
+        case MessageType_UtoK_StartVirtualizationInstance:
+        case MessageType_UtoK_StopVirtualizationInstance:
+        case MessageType_KtoU_EnumerateDirectory:
+        case MessageType_KtoU_HydrateFile:
+        case MessageType_KtoU_NotifyFileModified:
+        case MessageType_KtoU_NotifyFileRenamed:
+        {
+            // None of these messages should ever be received as a response
+        }
     }
     
     return;
@@ -328,7 +348,52 @@ static int HandleFileOpOperation(
     
     vfs_context_t context = vfs_context_create(NULL);
 
-    if (KAUTH_FILEOP_CLOSE == action)
+    if (KAUTH_FILEOP_RENAME == action)
+    {
+        const char* fromPath = (const char*)arg0;
+        const char* toPath = (const char*)arg1;
+        
+        // TODO(Mac): Handles renames between roots
+        // TODO(Mac): We need proper unregistering of repos, otherwise VirtualizationRoots_FindForPath might find an old
+        // entry that the kext still thinks is in use (but is not).  Alternatively, we could make sure to re-use the same slot
+        // when re-mounting a previously mounted repo
+        VirtualizationRoot* root = VirtualizationRoots_FindForPath(toPath);
+        if (nullptr == root)
+        {
+            root = VirtualizationRoots_FindForPath(fromPath);
+        }
+        
+        if (nullptr == root ||
+            nullptr == root->providerUserClient)
+        {
+            goto CleanupAndReturn;
+        }
+        
+        // If the calling process is the provider, we must exit right away to avoid deadlocks
+        int pid = GetPid(context);
+        if (pid == root->providerPid)
+        {
+            goto CleanupAndReturn;
+        }
+        
+        char procname[MAXCOMLEN + 1];
+        proc_name(pid, procname, MAXCOMLEN + 1);
+        
+        if (!TrySendRequestAndWaitForResponse(
+                root,
+                MessageType_KtoU_NotifyFileRenamed,
+                fromPath,
+                toPath,
+                pid,
+                procname,
+                &kauthResult,
+                &kauthError))
+        {
+            goto CleanupAndReturn;
+        }
+        
+    }
+    else if (KAUTH_FILEOP_CLOSE == action)
     {
         vnode_t currentVnode = reinterpret_cast<vnode_t>(arg0);
         // arg1 is the (const char *) path
@@ -548,11 +613,6 @@ static bool TrySendRequestAndWaitForResponse(
     int* kauthResult,
     int* kauthError)
 {
-    bool result = false;
-    
-    OutstandingMessage message;
-    message.receivedResponse = false;
-    
     char vnodePath[PrjFSMaxPath];
     int vnodePathLength = PrjFSMaxPath;
     if (vn_getpath(vnode, vnodePath, &vnodePathLength))
@@ -562,13 +622,53 @@ static bool TrySendRequestAndWaitForResponse(
         return false;
     }
     
-    const char* relativePath = GetRelativePath(vnodePath, root->path);
+    return TrySendRequestAndWaitForResponse(
+        root,
+        messageType,
+        vnodePath,
+        nullptr,
+        pid,
+        procname,
+        kauthResult,
+        kauthError);
+}
+
+static bool TrySendRequestAndWaitForResponse(
+    const VirtualizationRoot* root,
+    MessageType messageType,
+    const char* path,
+    const char* toPath,
+    int pid,
+    const char* procname,
+    int* kauthResult,
+    int* kauthError)
+{
+    bool result = false;
+    
+    OutstandingMessage message;
+    message.receivedResponse = false;
+    
+    const char* relativePath = GetRelativePath(path, root->path);
+    const char* relativeToPath = nullptr;
+    if (nullptr != toPath)
+    {
+        // TODO(Mac): Check toPath is inside root before trying to get relative path
+        relativeToPath = GetRelativePath(toPath, root->path);
+    }
     
     int nextMessageId = OSIncrementAtomic(&s_nextMessageId);
     
     Message messageSpec = {};
-    Message_Init(&messageSpec, &(message.request), nextMessageId, messageType, pid, procname, relativePath);
-
+    Message_Init(
+        &messageSpec,
+        &(message.request),
+        nextMessageId,
+        messageType,
+        pid,
+        procname,
+        relativePath,
+        relativeToPath);
+    
     bool isShuttingDown = false;
     Mutex_Acquire(s_outstandingMessagesMutex);
     {

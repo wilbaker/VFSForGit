@@ -84,6 +84,22 @@ VirtualizationRoot* VirtualizationRoots_FindForVnode(vnode_t vnode)
     return root;
 }
 
+VirtualizationRoot* VirtualizationRoots_FindForPath(const char* path)
+{
+    for (int i=0; i < MaxVirtualizationRoots; ++i)
+    {
+        if (s_virtualizationRoots[i].inUse)
+        {
+            if (strprefix(path, s_virtualizationRoots[i].path))
+            {
+                return &s_virtualizationRoots[i];
+            }
+        }
+    }
+    
+    return nullptr;
+}
+
 int16_t VirtualizationRoots_LookupVnode(vnode_t vnode, vfs_context_t context)
 {
     VnodeFsidInode fsidInode = Vnode_GetFsidAndInode(vnode, context);
@@ -326,12 +342,19 @@ errno_t ActiveProvider_SendMessage(int32_t rootIndex, const Message message)
     
     if (nullptr != userClient)
     {
-        uint32_t messageSize = sizeof(*message.messageHeader) + message.messageHeader->pathSizeBytes;
+        uint32_t messageSize = sizeof(*message.messageHeader) + message.messageHeader->pathSizeBytes + message.messageHeader->toPathSizeBytes;
         uint8_t messageMemory[messageSize];
         memcpy(messageMemory, message.messageHeader, sizeof(*message.messageHeader));
         if (message.messageHeader->pathSizeBytes > 0)
         {
             memcpy(messageMemory + sizeof(*message.messageHeader), message.path, message.messageHeader->pathSizeBytes);
+        }
+        
+        if (message.messageHeader->toPathSizeBytes > 0)
+        {
+            memcpy(messageMemory + sizeof(*message.messageHeader) + message.messageHeader->pathSizeBytes,
+                   message.toPath,
+                   message.messageHeader->toPathSizeBytes);
         }
         
         userClient->sendMessage(messageMemory, messageSize);
