@@ -157,7 +157,8 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(7)]
-        public void ModifiedFileWillGetSkipworktreeBitCleared()
+        [Category(Categories.Mac.M2)]
+        public void ModifiedFileWillGetAddedToModifiedPathsFile()
         {
             string gitFileToTest = "GVFS/GVFS.Common/RetryWrapper.cs";
             string fileToCreate = this.Enlistment.GetVirtualPathTo(gitFileToTest);
@@ -171,52 +172,50 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 
             this.Enlistment.WaitForBackgroundOperations().ShouldEqual(true, "Background operations did not complete.");
 
-            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, gitFileToTest + Environment.NewLine);
+            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, gitFileToTest + GVFSHelpers.ModifiedPathsNewLine);
             this.VerifyWorktreeBit(gitFileToTest, LsFilesStatus.Cached);
         }
 
         [TestCase, Order(8)]
-        public void RenamedFileAddedToSparseCheckoutAndSkipWorktreeBitCleared()
+        [Category(Categories.Mac.M2)]
+        public void RenamedFileAddedToModifiedPathsFile()
         {
-            string fileToRenameEntry = "Test_EPF_MoveRenameFileTests/ChangeUnhydratedFileName/Program.cs";
-            string fileToRenameTargetEntry = "Test_EPF_MoveRenameFileTests/ChangeUnhydratedFileName/Program2.cs";
-            string fileToRenameRelativePath = "Test_EPF_MoveRenameFileTests\\ChangeUnhydratedFileName\\Program.cs";
-            string fileToRenameTargetRelativePath = "Test_EPF_MoveRenameFileTests\\ChangeUnhydratedFileName\\Program2.cs";
-            this.VerifyWorktreeBit(fileToRenameEntry, LsFilesStatus.SkipWorktree);
+            string fileToRename = "Test_EPF_MoveRenameFileTests/ChangeUnhydratedFileName/Program.cs";
+            string fileToRenameTarget = "Test_EPF_MoveRenameFileTests/ChangeUnhydratedFileName/Program2.cs";
+            this.VerifyWorktreeBit(fileToRename, LsFilesStatus.SkipWorktree);
 
             this.fileSystem.MoveFile(
-                this.Enlistment.GetVirtualPathTo(fileToRenameRelativePath), 
-                this.Enlistment.GetVirtualPathTo(fileToRenameTargetRelativePath));
+                this.Enlistment.GetVirtualPathTo(fileToRename), 
+                this.Enlistment.GetVirtualPathTo(fileToRenameTarget));
             this.Enlistment.WaitForBackgroundOperations().ShouldEqual(true, "Background operations failed to complete.");
 
-            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRenameEntry + Environment.NewLine);
-            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRenameTargetEntry + Environment.NewLine);
+            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRename + GVFSHelpers.ModifiedPathsNewLine);
+            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRenameTarget + GVFSHelpers.ModifiedPathsNewLine);
 
             // Verify skip-worktree cleared
-            this.VerifyWorktreeBit(fileToRenameEntry, LsFilesStatus.Cached);
+            this.VerifyWorktreeBit(fileToRename, LsFilesStatus.Cached);
         }
 
         [TestCase, Order(9)]
-        public void RenamedFileAndOverwrittenTargetAddedToSparseCheckoutAndSkipWorktreeBitCleared()
+        [Category(Categories.Mac.M2)]
+        public void RenamedFileAndOverwrittenTargetAddedToModifiedPathsFile()
         {
-            string fileToRenameEntry = "Test_EPF_MoveRenameFileTests_2/MoveUnhydratedFileToOverwriteUnhydratedFileAndWrite/RunUnitTests.bat";
-            string fileToRenameTargetEntry = "Test_EPF_MoveRenameFileTests_2/MoveUnhydratedFileToOverwriteUnhydratedFileAndWrite/RunFunctionalTests.bat";
-            string fileToRenameRelativePath = "Test_EPF_MoveRenameFileTests_2\\MoveUnhydratedFileToOverwriteUnhydratedFileAndWrite\\RunUnitTests.bat";
-            string fileToRenameTargetRelativePath = "Test_EPF_MoveRenameFileTests_2\\MoveUnhydratedFileToOverwriteUnhydratedFileAndWrite\\RunFunctionalTests.bat";
-            this.VerifyWorktreeBit(fileToRenameEntry, LsFilesStatus.SkipWorktree);
-            this.VerifyWorktreeBit(fileToRenameTargetEntry, LsFilesStatus.SkipWorktree);
+            string fileToRename = "Test_EPF_MoveRenameFileTests_2/MoveUnhydratedFileToOverwriteUnhydratedFileAndWrite/RunUnitTests.bat";
+            string fileToRenameTarget = "Test_EPF_MoveRenameFileTests_2/MoveUnhydratedFileToOverwriteUnhydratedFileAndWrite/RunFunctionalTests.bat";
+            this.VerifyWorktreeBit(fileToRename, LsFilesStatus.SkipWorktree);
+            this.VerifyWorktreeBit(fileToRenameTarget, LsFilesStatus.SkipWorktree);
 
             this.fileSystem.ReplaceFile(
-                this.Enlistment.GetVirtualPathTo(fileToRenameRelativePath),
-                this.Enlistment.GetVirtualPathTo(fileToRenameTargetRelativePath));
+                this.Enlistment.GetVirtualPathTo(fileToRename),
+                this.Enlistment.GetVirtualPathTo(fileToRenameTarget));
             this.Enlistment.WaitForBackgroundOperations().ShouldEqual(true, "Background operations failed to complete.");
 
-            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRenameEntry + Environment.NewLine);
-            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRenameTargetEntry + Environment.NewLine);
+            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRename + GVFSHelpers.ModifiedPathsNewLine);
+            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRenameTarget + GVFSHelpers.ModifiedPathsNewLine);
 
             // Verify skip-worktree cleared
-            this.VerifyWorktreeBit(fileToRenameEntry, LsFilesStatus.Cached);
-            this.VerifyWorktreeBit(fileToRenameTargetEntry, LsFilesStatus.Cached);
+            this.VerifyWorktreeBit(fileToRename, LsFilesStatus.Cached);
+            this.VerifyWorktreeBit(fileToRenameTarget, LsFilesStatus.Cached);
         }
 
         [TestCase, Order(10)]
@@ -268,21 +267,21 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(12)]
-        public void FileRenamedOutOfRepoAddedToSparseCheckoutAndSkipWorktreeBitCleared()
+        [Category(Categories.Mac.M2)]
+        public void FileRenamedOutOfRepoAddedToModifiedPathsFile()
         {
-            string fileToRenameEntry = "GVFlt_MoveFileTest/PartialToOutside/from/lessInFrom.txt";
-            string fileToRenameVirtualPath = this.Enlistment.GetVirtualPathTo("GVFlt_MoveFileTest\\PartialToOutside\\from\\lessInFrom.txt");
-            this.VerifyWorktreeBit(fileToRenameEntry, LsFilesStatus.SkipWorktree);
+            string fileToRename = "GVFlt_MoveFileTest/PartialToOutside/from/lessInFrom.txt";
+            this.VerifyWorktreeBit(fileToRename, LsFilesStatus.SkipWorktree);
 
             string fileOutsideRepoPath = Path.Combine(this.Enlistment.EnlistmentRoot, "FileRenamedOutOfRepoAddedToSparseCheckoutAndSkipWorktreeBitCleared.txt");
-            this.fileSystem.MoveFile(fileToRenameVirtualPath, fileOutsideRepoPath);
+            this.fileSystem.MoveFile(this.Enlistment.GetVirtualPathTo(fileToRename), fileOutsideRepoPath);
 
             this.Enlistment.WaitForBackgroundOperations().ShouldEqual(true, "Background operations failed to complete.");
 
-            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRenameEntry + Environment.NewLine);
+            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToRename + GVFSHelpers.ModifiedPathsNewLine);
 
             // Verify skip-worktree cleared
-            this.VerifyWorktreeBit(fileToRenameEntry, LsFilesStatus.Cached);
+            this.VerifyWorktreeBit(fileToRename, LsFilesStatus.Cached);
         }
 
         [TestCase, Order(13)]
@@ -300,7 +299,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 
             fileToOverwriteVirtualPath.ShouldBeAFile(this.fileSystem).WithContents(testContents);
 
-            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToOverwriteEntry + "\r\n");
+            GVFSHelpers.ModifiedPathsShouldContain(this.fileSystem, this.Enlistment.DotGVFSRoot, fileToOverwriteEntry + GVFSHelpers.ModifiedPathsNewLine);
 
             // Verify skip-worktree cleared
             this.VerifyWorktreeBit(fileToOverwriteEntry, LsFilesStatus.Cached);

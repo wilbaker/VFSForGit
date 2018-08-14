@@ -11,6 +11,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 {
     [TestFixtureSource(typeof(FileSystemRunner), FileSystemRunner.TestRunners)]
     [Category(Categories.GitCommands)]
+    [Category(Categories.Mac.M2)]
     public class GitMoveRenameTests : TestsWithEnlistmentPerFixture
     {
         private string testFileContents = "0123456789";
@@ -31,11 +32,14 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(2)]
+        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterNewFile()
         {
             string filename = "new.cs";
+            string filePath = this.Enlistment.GetVirtualPathTo(filename);
 
-            this.fileSystem.WriteAllText(this.Enlistment.GetVirtualPathTo(filename), this.testFileContents);
+            filePath.ShouldNotExistOnDisk(this.fileSystem);
+            this.fileSystem.WriteAllText(filePath, this.testFileContents);
 
             this.Enlistment.GetVirtualPathTo(filename).ShouldBeAFile(this.fileSystem).WithContents(this.testFileContents);
 
@@ -51,7 +55,11 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         public void GitStatusAfterFileNameCaseChange()
         {
             string oldFilename = "new.cs";
-            this.Enlistment.GetVirtualPathTo(oldFilename).ShouldBeAFile(this.fileSystem);
+            string oldFilenamePath = this.Enlistment.GetVirtualPathTo(oldFilename);
+            if (!this.fileSystem.FileExists(oldFilenamePath))
+            {
+                this.fileSystem.WriteAllText(oldFilenamePath, this.testFileContents);
+            }
 
             string newFilename = "New.cs";
             this.fileSystem.MoveFile(this.Enlistment.GetVirtualPathTo(oldFilename), this.Enlistment.GetVirtualPathTo(newFilename));
@@ -82,6 +90,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(5)]
+        [Category(Categories.Mac.M3)]
         public void GitStatusAndObjectAfterGitAdd()
         {
             string existingFilename = "test.cs";
@@ -117,6 +126,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(6)]
+        [Category(Categories.Mac.M3)]
         public void GitStatusAfterUnstage()
         {
             string existingFilename = "test.cs";
@@ -136,6 +146,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(7)]
+        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterFileDelete()
         {
             string existingFilename = "test.cs";
@@ -210,6 +221,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(11)]
+        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterRenameFolderIntoRepo()
         {
             string folderName = "GitStatusAfterRenameFolderIntoRepo";
