@@ -7,19 +7,19 @@ namespace PrjFSLib.Mac
     {
         public const int PlaceholderIdLength = Interop.PrjFSLib.PlaceholderIdLength;
 
-        // We must hold a reference to the delegate to prevent garbage collection
-        private NotifyOperationCallback preventGCOnNotifyOperationDelegate;
+        // PrjFSLib delegate - We must hold a reference to prevent garbage collection
+        private readonly NotifyOperationCallback notifyOperationCallback;
 
-        // References held to these delegates via class properties
+        public VirtualizationInstance()
+        {
+            this.notifyOperationCallback = this.OnNotifyOperation;
+        }
+
         public virtual EnumerateDirectoryCallback OnEnumerateDirectory { get; set; }
         public virtual GetFileStreamCallback OnGetFileStream { get; set; }
 
         public virtual NotifyFileModified OnFileModified { get; set; }
-
-        public static Result ConvertDirectoryToVirtualizationRoot(string fullPath)
-        {
-            return Interop.PrjFSLib.ConvertDirectoryToVirtualizationRoot(fullPath);
-        }
+        public virtual NotifyFileRenamedEvent OnFileRenamed { get; set; }
 
         public virtual Result StartVirtualizationInstance(
             string virtualizationRootFullPath,
@@ -29,7 +29,10 @@ namespace PrjFSLib.Mac
             {
                 OnEnumerateDirectory = this.OnEnumerateDirectory,
                 OnGetFileStream = this.OnGetFileStream,
-                OnNotifyOperation = this.preventGCOnNotifyOperationDelegate = new NotifyOperationCallback(this.OnNotifyOperation),
+
+                // Note: We must use this.notifyOperationCallback and not this.OnNotifyOperation
+                // to ensure we don't create a temporary delegate that will be garbage collected
+                OnNotifyOperation = this.notifyOperationCallback,
             };
 
             return Interop.PrjFSLib.StartVirtualizationInstance(
@@ -67,7 +70,12 @@ namespace PrjFSLib.Mac
             UpdateType updateFlags,
             out UpdateFailureCause failureCause)
         {
-            throw new NotImplementedException();
+            // TODO(Mac): Get the real failure cause
+            // TODO(Mac): Pass through he updateFlags
+            failureCause = UpdateFailureCause.NoFailure;
+
+            return Interop.PrjFSLib.DeleteFile(
+                relativePath);
         }
 
         public virtual Result WritePlaceholderDirectory(
@@ -102,10 +110,25 @@ namespace PrjFSLib.Mac
             byte[] providerId,
             byte[] contentId,
             ulong fileSize,
+            UInt16 fileMode,
             UpdateType updateFlags,
             out UpdateFailureCause failureCause)
         {
-            throw new NotImplementedException();
+            // TODO(Mac): Get the real failure cause
+            failureCause = UpdateFailureCause.NoFailure;
+
+            if (providerId.Length != Interop.PrjFSLib.PlaceholderIdLength ||
+                contentId.Length != Interop.PrjFSLib.PlaceholderIdLength)
+            {
+                throw new ArgumentException();
+            }
+
+            return Interop.PrjFSLib.UpdatePlaceholderFileIfNeeded(
+                relativePath,
+                providerId,
+                contentId,
+                fileSize,
+                fileMode);
         }
 
         public virtual Result CompleteCommand(
@@ -136,6 +159,11 @@ namespace PrjFSLib.Mac
             {
                 case NotificationType.FileModified:
                     this.OnFileModified(relativePath);
+                    return Result.Success;
+
+                case NotificationType.FileRenamed:
+                    // TODO(Mac): Support folder rename notifications
+                    this.OnFileRenamed(relativePath, destinationRelativePath, isDirectory: false);
                     return Result.Success;
             }
 

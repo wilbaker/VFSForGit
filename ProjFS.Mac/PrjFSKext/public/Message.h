@@ -17,6 +17,7 @@ typedef enum
     MessageType_KtoU_HydrateFile,
     
     MessageType_KtoU_NotifyFileModified,
+    MessageType_KtoU_NotifyFileRenamed,
     
     // Responses
     MessageType_Response_Success,
@@ -36,15 +37,17 @@ struct MessageHeader
     int32_t             pid;
     char                procname[MAXCOMLEN + 1];
 
-    // Size of the flexible-length, nul-terminated path following the message body, including the nul character.
+    // Size of the flexible-length, nul-terminated paths following the message body, including the nul character.
     uint16_t            pathSizeBytes;
+    uint16_t            toPathSizeBytes;
 };
 
-// Description of a decomposed, in-memory message header plus variable length string field
+// Description of a decomposed, in-memory message header plus two variable length string fields
 struct Message
 {
     const MessageHeader* messageHeader;
     const char*    path;
+    const char*    toPath;
 };
 
 void Message_Init(
@@ -54,6 +57,7 @@ void Message_Init(
     MessageType messageType,
     int32_t pid,
     const char* procname,
-    const char* path);
+    const char* path,
+    const char* toPath);
 
 #endif /* Message_h */

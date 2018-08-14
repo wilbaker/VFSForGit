@@ -52,6 +52,7 @@ static void HandleKernelRequest(Message requestSpec, void* messageMemory);
 static PrjFS_Result HandleEnumerateDirectoryRequest(const MessageHeader* request, const char* path);
 static PrjFS_Result HandleHydrateFileRequest(const MessageHeader* request, const char* path);
 static PrjFS_Result HandleFileModifiedNotification(const MessageHeader* request, const char* path);
+static PrjFS_Result HandleFileRenamedNotification(const MessageHeader* request, const char* path, const char* toPath);
 
 static Message ParseMessageMemory(const void* messageMemory, uint32_t size);
 
@@ -341,6 +342,70 @@ CleanupAndFail:
     return PrjFS_Result_EIOError;
 }
 
+PrjFS_Result PrjFS_UpdatePlaceholderFileIfNeeded(
+    _In_    const char*                             relativePath,
+    _In_    unsigned char                           providerId[PrjFS_PlaceholderIdLength],
+    _In_    unsigned char                           contentId[PrjFS_PlaceholderIdLength],
+    _In_    unsigned long                           fileSize,
+    _In_    uint16_t                                fileMode)
+{
+#ifdef DEBUG
+    std::cout
+        << "PrjFS_UpdatePlaceholderFileIfNeeded("
+        << relativePath << ", " 
+        << (int)providerId[0] << ", "
+        << (int)contentId[0] << ", "
+        << fileSize << ")" << std::endl;
+#endif
+    
+    if (nullptr == relativePath)
+    {
+        return PrjFS_Result_EInvalidArgs;
+    }
+
+    // TODO(Mac): Check if this is needed, ensure file is not full, etc.
+    char fullPath[PrjFSMaxPath];
+    CombinePaths(s_virtualizationRootFullPath.c_str(), relativePath, fullPath);
+    if (0 != unlink(fullPath))
+    {
+        return PrjFS_Result_EIOError;
+    }
+
+    return PrjFS_WritePlaceholderFile(relativePath, providerId, contentId, fileSize, fileMode);
+}
+
+PrjFS_Result PrjFS_DeleteFile(
+    _In_    const char*                             relativePath)
+{
+#ifdef DEBUG
+    std::cout
+        << "PrjFS_DeleteFile("
+        << relativePath << std::endl;
+#endif
+    
+    if (nullptr == relativePath)
+    {
+        return PrjFS_Result_EInvalidArgs;
+    }
+
+    // TODO(Mac): Check if this is needed, ensure file is not full, etc.
+    char fullPath[PrjFSMaxPath];
+    CombinePaths(s_virtualizationRootFullPath.c_str(), relativePath, fullPath);
+    if (0 != unlink(fullPath))
+    {
+        switch(errno)
+        {
+            case ENOENT:
+            case ENOTDIR: // TODO(Mac): Is this the correct behavior for ENOTDIR?
+                return PrjFS_Result_Success;
+            default:
+                return PrjFS_Result_EIOError;
+        }
+    }
+
+    return PrjFS_Result_Success;
+}
+
 PrjFS_Result PrjFS_WriteFileContents(
     _In_    const PrjFS_FileHandle*                 fileHandle,
     _In_    const void*                             bytes,
@@ -376,13 +441,13 @@ PrjFS_Result PrjFS_WriteFileContents(
 static Message ParseMessageMemory(const void* messageMemory, uint32_t size)
 {
     const MessageHeader* header = static_cast<const MessageHeader*>(messageMemory);
-    if (header->pathSizeBytes + sizeof(*header) != size)
+    if (header->pathSizeBytes + header->toPathSizeBytes + sizeof(*header) != size)
     {
-        fprintf(stderr, "ParseMessageMemory: invariant failed, bad message? PathSizeBytes = %u, message size = %u, expecting %zu\n",
-            header->pathSizeBytes, size, header->pathSizeBytes + sizeof(*header));
+        fprintf(stderr, "ParseMessageMemory: invariant failed, bad message? PathSizeBytes = %u, ToPathSizeBytes = %u, message size = %u, expecting %zu\n",
+            header->pathSizeBytes, header->toPathSizeBytes, size, header->pathSizeBytes + header->toPathSizeBytes + sizeof(*header));
         abort();
     }
-            
+                            
     const char* path = nullptr;
     if (header->pathSizeBytes > 0)
     {
@@ -391,7 +456,17 @@ static Message ParseMessageMemory(const void* messageMemory, uint32_t size)
         // Path string should fit exactly in reserved memory, with nul terminator in end position
         assert(strnlen(path, header->pathSizeBytes) == header->pathSizeBytes - 1);
     }
-    return Message { header, path };
+    
+    const char* toPath = nullptr;
+    if (header->toPathSizeBytes > 0)
+    {
+        toPath = static_cast<const char*>(messageMemory) + sizeof(*header) + header->pathSizeBytes;
+        
+        // Path string should fit exactly in reserved memory, with nul terminator in end position
+        assert(strnlen(toPath, header->toPathSizeBytes) == header->toPathSizeBytes - 1);
+    }
+    
+    return Message { header, path, toPath };
 }
 
 static void HandleKernelRequest(Message request, void* messageMemory)
@@ -416,6 +491,12 @@ static void HandleKernelRequest(Message request, void* messageMemory)
         case MessageType_KtoU_NotifyFileModified:
         {
             result = HandleFileModifiedNotification(requestHeader, request.path);
+            break;
+        }
+        
+        case MessageType_KtoU_NotifyFileRenamed:
+        {
+            result = HandleFileRenamedNotification(requestHeader, request.path, request.toPath);
             break;
         }
     }
@@ -572,6 +653,43 @@ static PrjFS_Result HandleFileModifiedNotification(const MessageHeader* request,
         false /* isDirectory */,
         PrjFS_NotificationType_FileModified,
         nullptr /* destinationRelativePath */);
+    
+    return PrjFS_Result_Success;
+}
+
+static PrjFS_Result HandleFileRenamedNotification(const MessageHeader* request, const char* path, const char* toPath)
+{
+#ifdef DEBUG
+    std::cout << "PrjFSLib.HandleFileRenamedNotification: fromPath: " << path << ", toPath: "<< toPath << std::endl;
+#endif
+    
+    // TODO (Mac): Do we need\want this xattr check for renames?
+    // We never make it pass this check if we uncomment it
+    
+    /* char fullPath[PrjFSMaxPath];
+    CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
+    
+    PrjFSFileXAttrData xattrData = {};
+    if (!GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData))
+    {
+        return PrjFS_Result_EIOError;
+    }*/
+
+    unsigned char providerId[PrjFS_PlaceholderIdLength];
+    unsigned char contentId[PrjFS_PlaceholderIdLength];
+    memset(providerId, 0, sizeof(providerId));
+    memset(contentId, 0, sizeof(providerId));
+    
+    s_callbacks.NotifyOperation(
+        0 /* commandId */,
+        path,
+        providerId,
+        contentId,
+        request->pid,
+        request->procname,
+        false /* isDirectory */,
+        PrjFS_NotificationType_FileRenamed,
+        toPath /* destinationRelativePath */);
     
     return PrjFS_Result_Success;
 }

@@ -84,6 +84,7 @@ namespace GVFS.UnitTests.Mock.Mac
             byte[] providerId,
             byte[] contentId,
             ulong fileSize,
+            UInt16 fileMode,
             UpdateType updateFlags,
             out UpdateFailureCause failureCause)
         {

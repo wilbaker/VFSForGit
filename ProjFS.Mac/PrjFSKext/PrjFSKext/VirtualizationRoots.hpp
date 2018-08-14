@@ -18,7 +18,7 @@ struct VirtualizationRoot
     fsid_t                      rootFsid;
     uint64_t                    rootInode;
     
-    // TODO: this should eventually be entirely diagnostic and not used for decisions
+    // Root path. Used to identify the VirtualizationRoot of fileops that do no include a vnode
     char                        path[PrjFSMaxPath];
 
     int32_t                     index;
@@ -28,6 +28,7 @@ kern_return_t VirtualizationRoots_Init(void);
 kern_return_t VirtualizationRoots_Cleanup(void);
 
 VirtualizationRoot* VirtualizationRoots_FindForVnode(vnode_t vnode);
+VirtualizationRoot* VirtualizationRoots_FindForPath(const char* path);
 
 struct VirtualizationRootResult
 {

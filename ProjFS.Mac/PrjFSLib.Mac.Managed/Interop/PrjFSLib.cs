@@ -32,6 +32,23 @@ namespace PrjFSLib.Mac.Interop
             ulong fileSize,
             ushort fileMode);
 
+        [DllImport(PrjFSLibPath, EntryPoint = "PrjFS_UpdatePlaceholderFileIfNeeded")]
+        public static extern Result UpdatePlaceholderFileIfNeeded(
+            string relativePath,
+
+            [MarshalAs(UnmanagedType.LPArray, SizeConst = PlaceholderIdLength)]
+            byte[] providerId,
+
+            [MarshalAs(UnmanagedType.LPArray, SizeConst = PlaceholderIdLength)]
+            byte[] contentId,
+
+            ulong fileSize,
+            UInt16 fileMode);
+
+        [DllImport(PrjFSLibPath, EntryPoint = "PrjFS_DeleteFile")]
+        public static extern Result DeleteFile(
+            string relativePath);
+
         [DllImport(PrjFSLibPath, EntryPoint = "PrjFS_WriteFileContents")]
         public static extern Result WriteFileContents(
             IntPtr fileHandle,
