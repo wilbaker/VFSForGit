@@ -21,6 +21,11 @@ namespace PrjFSLib.Mac
         public virtual NotifyFileModified OnFileModified { get; set; }
         public virtual NotifyFileRenamedEvent OnFileRenamed { get; set; }
 
+        public static Result ConvertDirectoryToVirtualizationRoot(string fullPath)
+        {
+            return Interop.PrjFSLib.ConvertDirectoryToVirtualizationRoot(fullPath);
+        }
+
         public virtual Result StartVirtualizationInstance(
             string virtualizationRootFullPath,
             uint poolThreadCount)
