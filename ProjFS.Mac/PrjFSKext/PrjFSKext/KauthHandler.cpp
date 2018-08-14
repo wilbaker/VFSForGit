@@ -396,7 +396,7 @@ static int HandleFileOpOperation(
                         fromRoot,
                         MessageType_KtoU_NotifyFileRenamed,
                         fromVNode,
-                        toVNode,
+                        fromRoot == toRoot ? toVNode : NULLVP,
                         pid,
                         procname,
                         &kauthResult,
@@ -411,7 +411,7 @@ static int HandleFileOpOperation(
                     if (!TrySendRequestAndWaitForResponse(
                         toRoot,
                         MessageType_KtoU_NotifyFileRenamed,
-                        fromVNode,
+                        NULLVP,
                         toVNode,
                         pid,
                         procname,
