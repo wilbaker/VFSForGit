@@ -17,6 +17,7 @@ typedef enum
     MessageType_KtoU_HydrateFile,
     
     MessageType_KtoU_NotifyFileModified,
+    MessageType_KtoU_NotifyPreDelete,
     
     // Responses
     MessageType_Response_Success,

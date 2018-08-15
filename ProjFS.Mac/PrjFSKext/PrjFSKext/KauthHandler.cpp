@@ -215,6 +215,16 @@ void KauthHandler_HandleKernelMessageResponse(uint64_t messageId, MessageType re
             }
             Mutex_Release(s_outstandingMessagesMutex);
         }
+        
+        // The follow are not valid responses to kernel messages
+        case MessageType_Invalid:
+        case MessageType_UtoK_StartVirtualizationInstance:
+        case MessageType_UtoK_StopVirtualizationInstance:
+        case MessageType_KtoU_EnumerateDirectory:
+        case MessageType_KtoU_HydrateFile:
+        case MessageType_KtoU_NotifyFileModified:
+        case MessageType_KtoU_NotifyPreDelete:
+            break;
     }
     
     return;
@@ -287,7 +297,39 @@ static int HandleVnodeOperation(
     }
     else
     {
-        if (ActionBitIsSet(
+        if (ActionBitIsSet(action, KAUTH_VNODE_DELETE))
+        {
+            if (!TrySendRequestAndWaitForResponse(
+                    root,
+                    MessageType_KtoU_NotifyPreDelete,
+                    currentVnode,
+                    pid,
+                    procname,
+                    &kauthResult,
+                    kauthError))
+            {
+                goto CleanupAndReturn;
+            }
+            
+            // This delete could be part of a rename, and so we must hydrate the file now to
+            // ensure it's hydrated post-rename
+            if (kauthResult == KAUTH_RESULT_DEFER &&
+                FileFlagsBitIsSet(currentVnodeFileFlags, FileFlags_IsEmpty))
+            {
+                if (!TrySendRequestAndWaitForResponse(
+                        root,
+                        MessageType_KtoU_HydrateFile,
+                        currentVnode,
+                        pid,
+                        procname,
+                        &kauthResult,
+                        kauthError))
+                {
+                    goto CleanupAndReturn;
+                }
+            }
+        }
+        else if (ActionBitIsSet(
                 action,
                 KAUTH_VNODE_READ_ATTRIBUTES |
                 KAUTH_VNODE_WRITE_ATTRIBUTES |
@@ -311,7 +353,7 @@ static int HandleVnodeOperation(
                     goto CleanupAndReturn;
                 }
             }
-        }
+        } 
     }
     
 CleanupAndReturn:
