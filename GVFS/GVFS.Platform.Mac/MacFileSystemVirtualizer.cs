@@ -281,6 +281,7 @@ namespace GVFS.Platform.Mac
         {
             try
             {
+                this.Context.Tracer.RelatedInfo($"OnPreDelete: {relativePath}");
                 if (!this.FileSystemCallbacks.IsMounted)
                 {
                     EventMetadata metadata = this.CreateEventMetadata(relativePath);

@@ -568,11 +568,8 @@ static PrjFS_Result HandleFileNotification(const MessageHeader* request, const c
     CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
     
     PrjFSFileXAttrData xattrData = {};
-    if (!GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData))
-    {
-        return PrjFS_Result_EIOError;
-    }
-    
+    GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData);
+
     return s_callbacks.NotifyOperation(
         0 /* commandId */,
         path,
