@@ -161,7 +161,9 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
             GVFSHelpers.ModifiedPathsShouldNotContain(this.fileSystem, this.Enlistment.DotGVFSRoot, gitFileToCheck + GVFSHelpers.ModifiedPathsNewLine);
         }
 
+        // TODO(Mac): Enable this test once the LockHolder is converted to .NET Core
         [TestCase, Order(7)]
+        [Category(Categories.Mac.M2TODO)]
         public void ModifiedFileWillGetAddedToModifiedPathsFile()
         {
             string gitFileToTest = "GVFS/GVFS.Common/RetryWrapper.cs";

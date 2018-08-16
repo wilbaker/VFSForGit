@@ -145,7 +145,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         public void GitStatusAfterFileDelete()
         {
             string existingFilename = "test.cs";
-            this.Enlistment.GetVirtualPathTo(existingFilename).ShouldBeAFile(this.fileSystem);
+            this.EnsureTestFileExists(existingFilename);
             this.fileSystem.DeleteFile(this.Enlistment.GetVirtualPathTo(existingFilename));
             this.Enlistment.GetVirtualPathTo(existingFilename).ShouldNotExistOnDisk(this.fileSystem);
 
@@ -242,6 +242,17 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
                 "Untracked files:",
                 folderName + "/",
                 folderName + "/" + fileName);
+        }
+
+        private void EnsureTestFileExists(string relativePath)
+        {
+            string filePath = this.Enlistment.GetVirtualPathTo(relativePath);
+            if (!this.fileSystem.FileExists(filePath))
+            {
+                this.fileSystem.WriteAllText(filePath, this.testFileContents);
+            }
+
+            this.Enlistment.GetVirtualPathTo(relativePath).ShouldBeAFile(this.fileSystem);
         }
     }
 }
