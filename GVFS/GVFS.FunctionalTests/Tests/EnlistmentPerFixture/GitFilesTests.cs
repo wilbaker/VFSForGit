@@ -285,6 +285,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 
             string fileOutsideRepoPath = Path.Combine(this.Enlistment.EnlistmentRoot, "FileRenamedOutOfRepoAddedToSparseCheckoutAndSkipWorktreeBitCleared.txt");
             this.fileSystem.MoveFile(fileToRenameVirtualPath, fileOutsideRepoPath);
+            fileOutsideRepoPath.ShouldBeAFile(this.fileSystem).WithContents("lessData");
 
             this.Enlistment.WaitForBackgroundOperations().ShouldEqual(true, "Background operations failed to complete.");
 
