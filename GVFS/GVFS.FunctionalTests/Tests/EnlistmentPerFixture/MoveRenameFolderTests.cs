@@ -6,6 +6,7 @@ using System.IO;
 namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 {
     [TestFixtureSource(typeof(FileSystemRunner), FileSystemRunner.TestRunners)]
+    [Category(Categories.Mac.M2TODO)]
     public class MoveRenameFolderTests : TestsWithEnlistmentPerFixture
     {       
         private const string TestFileContents =

@@ -11,6 +11,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 {
     [TestFixtureSource(typeof(FileSystemRunner), FileSystemRunner.TestRunners)]
     [Category(Categories.GitCommands)]
+    [Category(Categories.Mac.M2)]
     public class GitMoveRenameTests : TestsWithEnlistmentPerFixture
     {
         private string testFileContents = "0123456789";
@@ -31,6 +32,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(2)]
+        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterNewFile()
         {
             string filename = "new.cs";
@@ -48,6 +50,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(3)]
+        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterFileNameCaseChange()
         {
             string oldFilename = "new.cs";
@@ -65,6 +68,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(4)]
+        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterFileRename()
         {
             string oldFilename = "New.cs";
@@ -82,6 +86,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(5)]
+        [Category(Categories.Mac.M3)]
         public void GitStatusAndObjectAfterGitAdd()
         {
             string existingFilename = "test.cs";
@@ -117,6 +122,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(6)]
+        [Category(Categories.Mac.M3)]
         public void GitStatusAfterUnstage()
         {
             string existingFilename = "test.cs";
@@ -170,6 +176,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(9)]
+        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterRenameFileIntoRepo()
         {
             string filename = "GitStatusAfterRenameFileIntoRepo.cs";
@@ -210,6 +217,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(11)]
+        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterRenameFolderIntoRepo()
         {
             string folderName = "GitStatusAfterRenameFolderIntoRepo";
