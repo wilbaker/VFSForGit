@@ -203,7 +203,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         [TestCase, Order(10)]
         public void GitStatusAfterRenameFileOutOfRepo()
         {
-            string existingFilename = "Test_EPF_MoveRenameFileTests\\ChangeUnhydratedFileName\\Program.cs";
+            string existingFilename = Path.Combine("Test_EPF_MoveRenameFileTests", "ChangeUnhydratedFileName", "Program.cs");
 
             // Move the test file to this.Enlistment.EnlistmentRoot as it's outside of src 
             // and is cleaned up when the functional tests run
