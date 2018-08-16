@@ -286,7 +286,7 @@ namespace GVFS.Platform.Mac
                     EventMetadata metadata = this.CreateEventMetadata(relativePath);
                     metadata.Add(nameof(isDirectory), isDirectory);
                     metadata.Add(TracingConstants.MessageKey.InfoMessage, $"{nameof(this.OnPreDelete)} failed, mount has not yet completed");
-                    this.Context.Tracer.RelatedEvent(EventLevel.Informational, $"{nameof(this.OnGetFileStream)}_MountNotComplete", metadata);
+                    this.Context.Tracer.RelatedEvent(EventLevel.Informational, $"{nameof(this.OnPreDelete)}_MountNotComplete", metadata);
 
                     // TODO(Mac): Is this the correct Result to return?
                     return Result.EIOError;
@@ -299,7 +299,7 @@ namespace GVFS.Platform.Mac
                     {
                         EventMetadata metadata = this.CreateEventMetadata(relativePath);
                         metadata.Add(TracingConstants.MessageKey.WarningMessage, "Blocked index delete outside the lock");
-                        this.Context.Tracer.RelatedEvent(EventLevel.Warning, $"{nameof(this.OnPreDelete)}_BlockedIndexRename", metadata);
+                        this.Context.Tracer.RelatedEvent(EventLevel.Warning, $"{nameof(this.OnPreDelete)}_BlockedIndexDelete", metadata);
 
                         return Result.EAccessDenied;
                     }
@@ -312,21 +312,7 @@ namespace GVFS.Platform.Mac
                 }
                 else
                 {
-                    if (isDirectory)
-                    {
-                        // Don't want to add folders to the modified list if git is the one deleting the directory
-                        GitCommandLineParser gitCommand = new GitCommandLineParser(this.Context.Repository.GVFSLock.GetLockedGitCommand());
-                        if (!gitCommand.IsValidGitCommand)
-                        {
-                            this.FileSystemCallbacks.OnFolderDeleted(relativePath);
-                        }
-                    }
-                    else
-                    {
-                        this.FileSystemCallbacks.OnFileDeleted(relativePath);
-                    }
-
-                    this.FileSystemCallbacks.InvalidateGitStatusCache();
+                    this.OnWorkingDirectoryFileOrFolderDeleted(relativePath, isDirectory);
                 }
             }
             catch (Exception e)
