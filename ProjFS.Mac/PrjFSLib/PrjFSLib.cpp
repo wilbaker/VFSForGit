@@ -573,7 +573,7 @@ static PrjFS_Result HandleFileNotification(const MessageHeader* request, const c
         return PrjFS_Result_EIOError;
     }
     
-    s_callbacks.NotifyOperation(
+    return s_callbacks.NotifyOperation(
         0 /* commandId */,
         path,
         xattrData.providerId,
@@ -583,8 +583,6 @@ static PrjFS_Result HandleFileNotification(const MessageHeader* request, const c
         false /* isDirectory */,
         notificationType,
         nullptr /* destinationRelativePath */);
-    
-    return PrjFS_Result_Success;
 }
 
 static bool InitializeEmptyPlaceholder(const char* fullPath)
