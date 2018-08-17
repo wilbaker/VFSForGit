@@ -35,9 +35,11 @@ static int HandleFileOpOperation(
 static int GetPid(vfs_context_t context);
 
 static uint32_t ReadVNodeFileFlags(vnode_t vn, vfs_context_t context);
-static bool FileFlagsBitIsSet(uint32_t fileFlags, uint32_t bit);
-static bool ActionBitIsSet(kauth_action_t action, kauth_action_t mask);
-static bool ActionBitsNotSet(kauth_action_t action, kauth_action_t mask);
+static inline bool HasParentInVirtualizationRoot(vnode_t vnode, vfs_context_t context);
+static inline bool FileFlagsBitIsSet(uint32_t fileFlags, uint32_t bit);
+static inline bool FileIsFlaggedAsInRoot(vnode_t vnode, vfs_context_t context);
+static inline bool ActionBitIsSet(kauth_action_t action, kauth_action_t mask);
+static inline bool ActionBitsNotSet(kauth_action_t action, kauth_action_t mask);
 
 static bool IsFileSystemCrawler(char* procname);
 
@@ -386,6 +388,18 @@ static int HandleFileOpOperation(
         
         if (KAUTH_FILEOP_CLOSE_MODIFIED == closeFlags)
         {
+            vtype vnodeType = vnode_vtype(currentVnode);
+            if (ShouldIgnoreVnodeType(vnodeType, currentVnode))
+            {
+                goto CleanupAndReturn;
+            }
+    
+            bool fileFlaggedInRoot = FileIsFlaggedAsInRoot(currentVnode, context);
+            if (!fileFlaggedInRoot && !HasParentInVirtualizationRoot(currentVnode, context))
+            {
+                goto CleanupAndReturn;
+            }
+            
             VirtualizationRoot* root = nullptr;
             int pid;
             if (!ShouldHandleFileOpEvent(
@@ -401,19 +415,86 @@ static int HandleFileOpOperation(
             char procname[MAXCOMLEN + 1];
             proc_name(pid, procname, MAXCOMLEN + 1);
         
-            int kauthResult;
-            int kauthError;
-            if (!TrySendRequestAndWaitForResponse(
-                    root,
-                    MessageType_KtoU_NotifyFileModified,
-                    currentVnode,
-                    pid,
-                    procname,
-                    &kauthResult,
-                    &kauthError))
+            if (fileFlaggedInRoot)
             {
-                goto CleanupAndReturn;
+                int kauthResult;
+                int kauthError;
+                if (!TrySendRequestAndWaitForResponse(
+                        root,
+                        MessageType_KtoU_NotifyFileModified,
+                        currentVnode,
+                        pid,
+                        procname,
+                        &kauthResult,
+                        &kauthError))
+                {
+                    goto CleanupAndReturn;
+                }
             }
+            else
+            {
+                int kauthResult;
+                int kauthError;
+                if (!TrySendRequestAndWaitForResponse(
+                        root,
+                        MessageType_KtoU_NotifyFileCreated,
+                        currentVnode,
+                        pid,
+                        procname,
+                        &kauthResult,
+                        &kauthError))
+                {
+                    goto CleanupAndReturn;
+                }
+            }
+        }
+    }
+    else if (KAUTH_FILEOP_OPEN == action)
+    {
+        vnode_t currentVnode = reinterpret_cast<vnode_t>(arg0);
+        // arg1 is the (const char *) path
+        
+        vtype vnodeType = vnode_vtype(currentVnode);
+        if (ShouldIgnoreVnodeType(vnodeType, currentVnode))
+        {
+            goto CleanupAndReturn;
+        }
+        
+        // We only care about new directories that are inside of a virtualization root
+        if (FileIsFlaggedAsInRoot(currentVnode, context) ||
+            !vnode_isdir(currentVnode) ||
+            !HasParentInVirtualizationRoot(currentVnode, context))
+        {
+            goto CleanupAndReturn;
+        }
+        
+        VirtualizationRoot* root = nullptr;
+        int pid;
+        if (!ShouldHandleFileOpEvent(
+                context,
+                currentVnode,
+                action,
+                &root,
+                &pid))
+        {
+            goto CleanupAndReturn;
+        }
+    
+        char procname[MAXCOMLEN + 1];
+        proc_name(pid, procname, MAXCOMLEN + 1);
+
+        int kauthResult;
+        int kauthError;
+        if (!TrySendRequestAndWaitForResponse(
+                root,
+                MessageType_KtoU_NotifyDirectoryCreated,
+                currentVnode,
+                pid,
+                procname,
+                &kauthResult,
+                &kauthError))
+        {
+            goto CleanupAndReturn;
         }
     }
     
@@ -596,22 +677,6 @@ static bool ShouldHandleFileOpEvent(
     VirtualizationRoot** root,
     int* pid)
 {
-    vtype vnodeType = vnode_vtype(vnode);
-    if (ShouldIgnoreVnodeType(vnodeType, vnode))
-    {
-        return false;
-    }
-    
-    // TODO(Mac): We will still want to handle renames into a root, and those vnodes would
-    // not yet have the FileFlags_IsInVirtualizationRoot set
-    uint32_t vnodeFileFlags = ReadVNodeFileFlags(vnode, context);
-    if (!FileFlagsBitIsSet(vnodeFileFlags, FileFlags_IsInVirtualizationRoot))
-    {
-        // This vnode is not part of ANY virtualization root, so exit now before doing any more work.
-        // This gives us a cheap way to avoid adding overhead to IO outside of a virtualization root.      
-        return false;
-    }
-    
     *root = VirtualizationRoots_FindForVnode(vnode);
     if (nullptr == *root)
     {
@@ -784,18 +849,51 @@ static uint32_t ReadVNodeFileFlags(vnode_t vn, vfs_context_t context)
     return attributes.va_flags;
 }
 
-static bool FileFlagsBitIsSet(uint32_t fileFlags, uint32_t bit)
+static bool HasParentInVirtualizationRoot(vnode_t vnode, vfs_context_t context)
+{
+    vnode_get(vnode);
+    
+    bool inRoot = false;
+    // Search up the tree until we hit a folder know to be inside a virtualization root
+    // or THE root of the file system
+    while (NULLVP != vnode && !vnode_isvroot(vnode))
+    {
+        uint32_t vnodeFileFlags = ReadVNodeFileFlags(vnode, context);
+        if (FileFlagsBitIsSet(vnodeFileFlags, FileFlags_IsInVirtualizationRoot))
+        {
+            inRoot = true;
+            break;
+        }
+        vnode_t parent = vnode_getparent(vnode);
+        vnode_put(vnode);
+        vnode = parent;
+    }
+    
+    if (NULLVP != vnode)
+    {
+        vnode_put(vnode);
+    }
+    
+    return inRoot;
+}
+
+static inline bool FileFlagsBitIsSet(uint32_t fileFlags, uint32_t bit)
 {
     // Note: if multiple bits are set in 'bit', this will return true if ANY are set in fileFlags
     return 0 != (fileFlags & bit);
 }
 
-static bool ActionBitIsSet(kauth_action_t action, kauth_action_t mask)
+static inline bool FileIsFlaggedAsInRoot(vnode_t vnode, vfs_context_t context)
+{
+    uint32_t vnodeFileFlags = ReadVNodeFileFlags(vnode, context);
+    return FileFlagsBitIsSet(vnodeFileFlags, FileFlags_IsInVirtualizationRoot);
+}
+static inline bool ActionBitIsSet(kauth_action_t action, kauth_action_t mask)
 {
     return action & mask;
 }
 
-static bool ActionBitsNotSet(kauth_action_t action, kauth_action_t mask)
+static inline bool ActionBitsNotSet(kauth_action_t action, kauth_action_t mask)
 {
     return 0 == (action & mask);
 }
