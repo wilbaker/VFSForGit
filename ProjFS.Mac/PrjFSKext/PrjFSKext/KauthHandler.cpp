@@ -390,6 +390,11 @@ static int HandleFileOpOperation(
         {
             goto CleanupAndReturn;
         }
+        
+        if (vnode_isdir(currentVnode))
+        {
+            goto CleanupAndReturn;
+        }
 
         bool fileFlaggedInRoot = FileIsFlaggedAsInRoot(currentVnode, context);
         if (!fileFlaggedInRoot && !HasParentInVirtualizationRoot(currentVnode, context))
