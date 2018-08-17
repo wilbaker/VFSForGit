@@ -24,7 +24,6 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(1)]
-        [Category(Categories.Mac.M2TODO)]
         public void CreateFileTest()
         {
             string fileName = "file1.txt";
@@ -38,7 +37,6 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(2)]
-        [Category(Categories.Mac.M2TODO)]
         public void CreateFileInFolderTest()
         {
             string folderName = "folder2";

@@ -32,7 +32,6 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(2)]
-        [Category(Categories.Mac.M2TODO)]
         public void GitStatusAfterNewFile()
         {
             string filename = "new.cs";

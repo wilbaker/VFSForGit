@@ -88,48 +88,56 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void UntrackedFileTest()
         {
             this.BasicCommit(this.CreateFile, addCommand: "add .");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void UntrackedEmptyFileTest()
         {
             this.BasicCommit(this.CreateEmptyFile, addCommand: "add .");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void UntrackedFileAddAllTest()
         {
             this.BasicCommit(this.CreateFile, addCommand: "add --all");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void UntrackedEmptyFileAddAllTest()
         {
             this.BasicCommit(this.CreateEmptyFile, addCommand: "add --all");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void StageUntrackedFileTest()
         {
             this.BasicCommit(this.CreateFile, addCommand: "stage .");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void StageUntrackedEmptyFileTest()
         {
             this.BasicCommit(this.CreateEmptyFile, addCommand: "stage .");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void StageUntrackedFileAddAllTest()
         {
             this.BasicCommit(this.CreateFile, addCommand: "stage --all");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void StageUntrackedEmptyFileAddAllTest()
         {
             this.BasicCommit(this.CreateEmptyFile, addCommand: "stage --all");
@@ -234,6 +242,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFilesWithNameAheadOfDot()
         {
             this.FolderShouldExistAndHaveFile("GitCommandsTests\\DeleteFileTests\\1", "#test");
