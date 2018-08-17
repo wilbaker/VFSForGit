@@ -228,7 +228,6 @@ void KauthHandler_HandleKernelMessageResponse(uint64_t messageId, MessageType re
         case MessageType_KtoU_NotifyFilePreDelete:
         case MessageType_KtoU_NotifyDirectoryPreDelete:
         case MessageType_KtoU_NotifyFileCreated:
-        case MessageType_KtoU_NotifyDirectoryCreated:
             KextLog_Error("KauthHandler_HandleKernelMessageResponse: Unexpected responseType: %d", responseType);
             break;
     }
@@ -386,84 +385,19 @@ static int HandleFileOpOperation(
         // arg1 is the (const char *) path
         int closeFlags = static_cast<int>(arg2);
         
-        if (KAUTH_FILEOP_CLOSE_MODIFIED == closeFlags)
-        {
-            vtype vnodeType = vnode_vtype(currentVnode);
-            if (ShouldIgnoreVnodeType(vnodeType, currentVnode))
-            {
-                goto CleanupAndReturn;
-            }
-    
-            bool fileFlaggedInRoot = FileIsFlaggedAsInRoot(currentVnode, context);
-            if (!fileFlaggedInRoot && !HasParentInVirtualizationRoot(currentVnode, context))
-            {
-                goto CleanupAndReturn;
-            }
-            
-            VirtualizationRoot* root = nullptr;
-            int pid;
-            if (!ShouldHandleFileOpEvent(
-                    context,
-                    currentVnode,
-                    action,
-                    &root,
-                    &pid))
-            {
-                goto CleanupAndReturn;
-            }
-            
-            char procname[MAXCOMLEN + 1];
-            proc_name(pid, procname, MAXCOMLEN + 1);
-        
-            if (fileFlaggedInRoot)
-            {
-                int kauthResult;
-                int kauthError;
-                if (!TrySendRequestAndWaitForResponse(
-                        root,
-                        MessageType_KtoU_NotifyFileModified,
-                        currentVnode,
-                        pid,
-                        procname,
-                        &kauthResult,
-                        &kauthError))
-                {
-                    goto CleanupAndReturn;
-                }
-            }
-            else
-            {
-                int kauthResult;
-                int kauthError;
-                if (!TrySendRequestAndWaitForResponse(
-                        root,
-                        MessageType_KtoU_NotifyFileCreated,
-                        currentVnode,
-                        pid,
-                        procname,
-                        &kauthResult,
-                        &kauthError))
-                {
-                    goto CleanupAndReturn;
-                }
-            }
-        }
-    }
-    else if (KAUTH_FILEOP_OPEN == action)
-    {
-        vnode_t currentVnode = reinterpret_cast<vnode_t>(arg0);
-        // arg1 is the (const char *) path
-        
         vtype vnodeType = vnode_vtype(currentVnode);
         if (ShouldIgnoreVnodeType(vnodeType, currentVnode))
         {
             goto CleanupAndReturn;
         }
-        
-        // We only care about new directories that are inside of a virtualization root
-        if (FileIsFlaggedAsInRoot(currentVnode, context) ||
-            !vnode_isdir(currentVnode) ||
-            !HasParentInVirtualizationRoot(currentVnode, context))
+
+        bool fileFlaggedInRoot = FileIsFlaggedAsInRoot(currentVnode, context);
+        if (!fileFlaggedInRoot && !HasParentInVirtualizationRoot(currentVnode, context))
+        {
+            goto CleanupAndReturn;
+        }
+    
+        if (fileFlaggedInRoot && KAUTH_FILEOP_CLOSE_MODIFIED != closeFlags)
         {
             goto CleanupAndReturn;
         }
@@ -479,22 +413,41 @@ static int HandleFileOpOperation(
         {
             goto CleanupAndReturn;
         }
-    
+        
         char procname[MAXCOMLEN + 1];
         proc_name(pid, procname, MAXCOMLEN + 1);
-
-        int kauthResult;
-        int kauthError;
-        if (!TrySendRequestAndWaitForResponse(
-                root,
-                MessageType_KtoU_NotifyDirectoryCreated,
-                currentVnode,
-                pid,
-                procname,
-                &kauthResult,
-                &kauthError))
+        
+        if (fileFlaggedInRoot)
         {
-            goto CleanupAndReturn;
+            int kauthResult;
+            int kauthError;
+            if (!TrySendRequestAndWaitForResponse(
+                    root,
+                    MessageType_KtoU_NotifyFileModified,
+                    currentVnode,
+                    pid,
+                    procname,
+                    &kauthResult,
+                    &kauthError))
+            {
+                goto CleanupAndReturn;
+            }
+        }
+        else
+        {
+            int kauthResult;
+            int kauthError;
+            if (!TrySendRequestAndWaitForResponse(
+                    root,
+                    MessageType_KtoU_NotifyFileCreated,
+                    currentVnode,
+                    pid,
+                    procname,
+                    &kauthResult,
+                    &kauthError))
+            {
+                goto CleanupAndReturn;
+            }
         }
     }
     

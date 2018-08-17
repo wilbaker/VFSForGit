@@ -35,10 +35,11 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         public void GitStatusAfterNewFile()
         {
             string filename = "new.cs";
+            string filePath = this.Enlistment.GetVirtualPathTo(filename);
 
-            this.fileSystem.WriteAllText(this.Enlistment.GetVirtualPathTo(filename), this.testFileContents);
+            this.fileSystem.WriteAllText(filePath, this.testFileContents);
 
-            this.Enlistment.GetVirtualPathTo(filename).ShouldBeAFile(this.fileSystem).WithContents(this.testFileContents);
+            filePath.ShouldBeAFile(this.fileSystem).WithContents(this.testFileContents);
 
             GitHelpers.CheckGitCommandAgainstGVFSRepo(
                 this.Enlistment.RepoRoot,
@@ -46,6 +47,8 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
                 "On branch " + Properties.Settings.Default.Commitish,
                 "Untracked files:",
                 filename);
+
+            this.fileSystem.DeleteFile(filePath);
         }
 
         [TestCase, Order(3)]
@@ -53,7 +56,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         public void GitStatusAfterFileNameCaseChange()
         {
             string oldFilename = "new.cs";
-            this.Enlistment.GetVirtualPathTo(oldFilename).ShouldBeAFile(this.fileSystem);
+            this.EnsureTestFileExists(oldFilename);
 
             string newFilename = "New.cs";
             this.fileSystem.MoveFile(this.Enlistment.GetVirtualPathTo(oldFilename), this.Enlistment.GetVirtualPathTo(newFilename));
