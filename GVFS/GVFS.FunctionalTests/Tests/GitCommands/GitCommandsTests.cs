@@ -245,25 +245,30 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         [Category(Categories.Mac.M2)]
         public void DeleteFilesWithNameAheadOfDot()
         {
-            this.FolderShouldExistAndHaveFile("GitCommandsTests\\DeleteFileTests\\1", "#test");
-            this.DeleteFile("GitCommandsTests\\DeleteFileTests\\1\\#test");
-            this.FolderShouldExistAndBeEmpty("GitCommandsTests\\DeleteFileTests\\1");
+            string folder = Path.Combine("GitCommandsTests", "DeleteFileTests", "1");
+            this.FolderShouldExistAndHaveFile(folder, "#test");
+            this.DeleteFile(Path.Combine(folder, "#test"));
+            this.FolderShouldExistAndBeEmpty(folder);
 
-            this.FolderShouldExistAndHaveFile("GitCommandsTests\\DeleteFileTests\\2", "$test");
-            this.DeleteFile("GitCommandsTests\\DeleteFileTests\\2\\$test");
-            this.FolderShouldExistAndBeEmpty("GitCommandsTests\\DeleteFileTests\\2");
+            folder = Path.Combine("GitCommandsTests", "DeleteFileTests", "2");
+            this.FolderShouldExistAndHaveFile(folder, "$test");
+            this.DeleteFile(Path.Combine(folder, "$test"));
+            this.FolderShouldExistAndBeEmpty(folder);
 
-            this.FolderShouldExistAndHaveFile("GitCommandsTests\\DeleteFileTests\\3", ")");
-            this.DeleteFile("GitCommandsTests\\DeleteFileTests\\3\\)");
-            this.FolderShouldExistAndBeEmpty("GitCommandsTests\\DeleteFileTests\\3");
+            folder = Path.Combine("GitCommandsTests", "DeleteFileTests", "3");
+            this.FolderShouldExistAndHaveFile(folder, ")");
+            this.DeleteFile(Path.Combine(folder, ")"));
+            this.FolderShouldExistAndBeEmpty(folder);
 
-            this.FolderShouldExistAndHaveFile("GitCommandsTests\\DeleteFileTests\\4", "+.test");
-            this.DeleteFile("GitCommandsTests\\DeleteFileTests\\4\\+.test");
-            this.FolderShouldExistAndBeEmpty("GitCommandsTests\\DeleteFileTests\\4");
+            folder = Path.Combine("GitCommandsTests", "DeleteFileTests", "4");
+            this.FolderShouldExistAndHaveFile(folder, "+.test");
+            this.DeleteFile(Path.Combine(folder, "+.test"));
+            this.FolderShouldExistAndBeEmpty(folder);
 
-            this.FolderShouldExistAndHaveFile("GitCommandsTests\\DeleteFileTests\\5", "-.test");
-            this.DeleteFile("GitCommandsTests\\DeleteFileTests\\5\\-.test");
-            this.FolderShouldExistAndBeEmpty("GitCommandsTests\\DeleteFileTests\\5");
+            folder = Path.Combine("GitCommandsTests", "DeleteFileTests", "5");
+            this.FolderShouldExistAndHaveFile(folder, "-.test");
+            this.DeleteFile(Path.Combine(folder, "-.test"));
+            this.FolderShouldExistAndBeEmpty(folder);
 
             this.ValidateGitCommand("status");
         }

@@ -313,11 +313,16 @@ namespace GVFS.Platform.Mac
             return Result.Success;
         }
 
-        private void OnNewFileCreated(string relativePath, bool isDirectory)
+        private bool OnNewFileCreated(string relativePath, bool isDirectory)
         {
             try
             {
-                if (!Virtualization.FileSystemCallbacks.IsPathInsideDotGit(relativePath))
+                if (Virtualization.FileSystemCallbacks.IsPathInsideDotGit(relativePath))
+                {
+                    // We don't need ProjFS to track files in the .git folder
+                    return false;
+                }
+                else
                 {
                     if (isDirectory)
                     {
@@ -346,6 +351,8 @@ namespace GVFS.Platform.Mac
                 metadata.Add("isDirectory", isDirectory);
                 this.LogUnhandledExceptionAndExit(nameof(this.OnNewFileCreated), metadata);
             }
+
+            return true;
         }
 
         private Result OnEnumerateDirectory(
