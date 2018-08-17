@@ -450,6 +450,26 @@ static void HandleKernelRequest(Message request, void* messageMemory)
                 PrjFS_NotificationType_PreDelete);
             break;
         }
+        
+        case MessageType_KtoU_NotifyFileCreated:
+        {
+            result = HandleFileNotification(
+                requestHeader,
+                request.path,
+                false,  // isDirectory
+                PrjFS_NotificationType_NewFileCreated);
+            break;
+        }
+        
+        case MessageType_KtoU_NotifyDirectoryCreated:
+        {
+            result = HandleFileNotification(
+                requestHeader,
+                request.path,
+                true,  // isDirectory
+                PrjFS_NotificationType_NewFileCreated);
+            break;
+        }
     }
     
     // async callbacks are not yet implemented

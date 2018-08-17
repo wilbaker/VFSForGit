@@ -101,6 +101,7 @@ namespace GVFS.Platform.Mac
             this.virtualizationInstance.OnGetFileStream = this.OnGetFileStream;
             this.virtualizationInstance.OnFileModified = this.OnFileModified;
             this.virtualizationInstance.OnPreDelete = this.OnPreDelete;
+            this.virtualizationInstance.OnNewFileCreated = this.OnNewFileCreated;
 
             uint threadCount = (uint)Environment.ProcessorCount * 2;
 
@@ -310,6 +311,19 @@ namespace GVFS.Platform.Mac
             }
 
             return Result.Success;
+        }
+
+        private void OnNewFileCreated(string relativePath, bool isDirectory)
+        {
+            try
+            {
+            }
+            catch (Exception e)
+            {
+                EventMetadata metadata = this.CreateEventMetadata(relativePath, e);
+                metadata.Add("isDirectory", isDirectory);
+                this.LogUnhandledExceptionAndExit(nameof(this.OnNewFileCreated), metadata);
+            }
         }
 
         private Result OnEnumerateDirectory(
