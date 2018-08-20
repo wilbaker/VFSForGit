@@ -538,78 +538,8 @@ static bool ShouldHandleVnodeOpEvent(
     {
         // There is no registered provider for this root
         
-        // TODO(Mac): why do we need to check rootIndex > 0 here?
-        // If root was null, we would have already exited. And if not null, it can't be < 0.
-        if (rootIndex >= 0)
-        {
-            bool vnodeIsDir = (*vnodeType == VDIR);
-            
-            // File/directory is within an offline virtualization root (no provider)
-            // Allow read-only access to hydrated files, deny any writes except
-            // deletions, and prevent most read accesses to empty files.
-            // Empty directories need to be read/searched in order for them to
-            // be deleted by rm -r
-            if (ActionBitsNotSet(action, KAUTH_VNODE_ACCESS) &&
-                ActionBitIsSet(
-                    action,
-                    KAUTH_VNODE_WRITE_ATTRIBUTES |
-                    KAUTH_VNODE_WRITE_EXTATTRIBUTES |
-                    KAUTH_VNODE_WRITE_DATA |
-                    KAUTH_VNODE_APPEND_DATA |
-                    KAUTH_VNODE_WRITE_SECURITY |
-                    KAUTH_VNODE_LINKTARGET))
-            {
-                KextLog_FileNote(
-                    vnode,
-                    "ShouldHandleEvent - write action 0x%x by process %u (%s) DENIED on %s with offline provider.",
-                    action,
-                    *pid,
-                    procname,
-                    vnodeIsDir ? "directory" : "file");
-                
-                *kauthResult = KAUTH_RESULT_DENY;
-                return false;
-            }
-            
-            if (FileFlagsBitIsSet(*vnodeFileFlags, FileFlags_IsEmpty))
-            {
-                // Empty files/directories with offline provider may only be queried or deleted
-                if (ActionBitIsSet(
-                        action,
-                        KAUTH_VNODE_ACCESS |
-                        KAUTH_VNODE_DELETE_CHILD |
-                        KAUTH_VNODE_DELETE |
-                        KAUTH_VNODE_READ_EXTATTRIBUTES))
-                {
-                    *kauthResult = KAUTH_RESULT_DEFER;
-                    return false;
-                }
-                
-                // Empty directories may additionally have their attributes and security read, and contents listed/searched (otherwise rm -r doesn't work)
-                if (vnodeIsDir &&
-                    ActionBitIsSet(
-                        action,
-                        KAUTH_VNODE_READ_ATTRIBUTES |
-                        KAUTH_VNODE_READ_SECURITY |
-                        KAUTH_VNODE_LIST_DIRECTORY |
-                        KAUTH_VNODE_SEARCH))
-                {
-                    *kauthResult = KAUTH_RESULT_DEFER;
-                    return false;
-                }
-                
-                // Disallow any other operations on empty placeholders
-                KextLog_FileNote(
-                    vnode,
-                    "ShouldHandleEvent - action 0x%x by process %u (%s) DENIED on empty %s with offline provider.",
-                    action,
-                    *pid,
-                    procname,
-                    vnodeIsDir ? "directory" : "file");
-                *kauthResult = KAUTH_RESULT_DENY;
-                return false;
-            }
-        }
+        // TODO(Mac): Protect files in the worktree from modification (and prevent
+        // the creation of new files) when the provider is offline
         
         *kauthResult = KAUTH_RESULT_DEFER;
         return false;
