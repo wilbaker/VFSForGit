@@ -46,10 +46,7 @@ namespace PrjFSLib.Mac
         string relativePath);
 
     // Informational post-event notifications
-
-    // Returns true if the file should be tracked (as in root), and false
-    // if it should not
-    public delegate bool NotifyNewFileCreatedEvent(
+    public delegate void NotifyNewFileCreatedEvent(
         string relativePath,
         bool isDirectory);
 

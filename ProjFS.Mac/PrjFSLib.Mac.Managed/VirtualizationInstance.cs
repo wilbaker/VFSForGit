@@ -144,7 +144,8 @@ namespace PrjFSLib.Mac
                     return Result.Success;
 
                 case NotificationType.NewFileCreated:
-                    return this.OnNewFileCreated(relativePath, isDirectory) ? Result.Success : Result.EPathNotFound;
+                    this.OnNewFileCreated(relativePath, isDirectory);
+                    return Result.Success;
             }
 
             return Result.ENotYetImplemented;
