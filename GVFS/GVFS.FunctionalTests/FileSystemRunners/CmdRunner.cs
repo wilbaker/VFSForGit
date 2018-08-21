@@ -108,6 +108,11 @@ namespace GVFS.FunctionalTests.FileSystemRunners
             this.RunProcess(string.Format("/C type NUL > \"{0}\"", path));
         }
 
+        public override void CreateHardLink(string targetPath, string newLinkPath)
+        {
+            this.RunProcess(string.Format("/C mklink /H \"{0}\" \"{1}\"", newLinkPath, targetPath));
+        }
+
         public override void AppendAllText(string path, string contents)
         {
             // Use echo|set /p with "" to avoid adding any trailing whitespace or newline
