@@ -458,16 +458,28 @@ static void HandleKernelRequest(Message request, void* messageMemory)
         
         case MessageType_KtoU_NotifyFileRenamed:
         case MessageType_KtoU_NotifyDirectoryRenamed:
+        case MessageType_KtoU_NotifyFileLinkCreated:
         {
             char fullPath[PrjFSMaxPath];
             CombinePaths(s_virtualizationRootFullPath.c_str(), request.path, fullPath);
             SetBitInFileFlags(fullPath, FileFlags_IsInVirtualizationRoot, true);
 
+            bool isDirectory = requestHeader->messageType == MessageType_KtoU_NotifyDirectoryRenamed;
+            PrjFS_NotificationType notificationType;
+            if (requestHeader->messageType == MessageType_KtoU_NotifyFileLinkCreated)
+            {
+                notificationType = PrjFS_NotificationType_LinkCreated;
+            }
+            else
+            {
+                notificationType = PrjFS_NotificationType_FileRenamed;
+            }
+            
             result = HandleFileNotification(
                 requestHeader,
                 request.path,
-                requestHeader->messageType == MessageType_KtoU_NotifyDirectoryRenamed,  // isDirectory
-                PrjFS_NotificationType_FileRenamed);
+                isDirectory,
+                notificationType);
             break;
         }
     }

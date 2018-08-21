@@ -103,6 +103,7 @@ namespace GVFS.Platform.Mac
             this.virtualizationInstance.OnPreDelete = this.OnPreDelete;
             this.virtualizationInstance.OnNewFileCreated = this.OnNewFileCreated;
             this.virtualizationInstance.OnFileRenamed = this.OnFileRenamed;
+            this.virtualizationInstance.OnLinkCreated = this.OnLinkCreated;
 
             uint threadCount = (uint)Environment.ProcessorCount * 2;
 
@@ -357,6 +358,28 @@ namespace GVFS.Platform.Mac
                 relativeSourcePath: string.Empty, 
                 relativeDestinationPath: relativeDestinationPath, 
                 isDirectory: isDirectory);
+        }
+
+        private void OnLinkCreated(string relativeNewLinkPath)
+        {
+            try
+            {
+                bool pathInDotGit = Virtualization.FileSystemCallbacks.IsPathInsideDotGit(relativeNewLinkPath);
+
+                if (pathInDotGit)
+                {
+                    this.OnDotGitFileOrFolderChanged(relativeNewLinkPath);
+                }
+                else
+                {
+                    this.FileSystemCallbacks.OnFileLinkCreated(relativeNewLinkPath);
+                }
+            }
+            catch (Exception e)
+            {
+                EventMetadata metadata = this.CreateEventMetadata(relativeNewLinkPath, e);
+                this.LogUnhandledExceptionAndExit(nameof(this.OnLinkCreated), metadata);
+            }
         }
 
         private Result OnEnumerateDirectory(
