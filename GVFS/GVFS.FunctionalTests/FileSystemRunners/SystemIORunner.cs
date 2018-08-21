@@ -9,6 +9,11 @@ namespace GVFS.FunctionalTests.FileSystemRunners
 {
     public class SystemIORunner : FileSystemRunner
     {
+        public override bool SupportsHardlinkCreation
+        {
+            get { return false; }
+        }
+
         public override bool FileExists(string path)
         {
             return File.Exists(path);

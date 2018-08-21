@@ -46,6 +46,8 @@ namespace GVFS.FunctionalTests.FileSystemRunners
             get { return defaultRunner; }
         }
 
+        public abstract bool SupportsHardlinkCreation { get; }
+
         // File methods
         public abstract bool FileExists(string path);       
         public abstract string MoveFile(string sourcePath, string targetPath);

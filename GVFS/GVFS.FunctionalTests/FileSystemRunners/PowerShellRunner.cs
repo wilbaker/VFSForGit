@@ -33,6 +33,11 @@ namespace GVFS.FunctionalTests.FileSystemRunners
             "PermissionDenied"
         };
 
+        public override bool SupportsHardlinkCreation
+        {
+            get { return false; }
+        }
+
         protected override string FileName
         {
             get

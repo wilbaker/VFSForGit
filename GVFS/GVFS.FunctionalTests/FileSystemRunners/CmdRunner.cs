@@ -27,6 +27,11 @@ namespace GVFS.FunctionalTests.FileSystemRunners
             "The process cannot access the file because it is being used by another process"
         };
 
+        public override bool SupportsHardlinkCreation
+        {
+            get { return true; }
+        }
+
         protected override string FileName
         {
             get
