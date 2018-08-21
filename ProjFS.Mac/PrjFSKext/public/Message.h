@@ -22,7 +22,7 @@ typedef enum
     MessageType_KtoU_NotifyFileCreated,
     MessageType_KtoU_NotifyFileRenamed,
     MessageType_KtoU_NotifyDirectoryRenamed,
-    MessageType_KtoU_NotifyFileLinkCreated
+    MessageType_KtoU_NotifyFileLinkCreated,
     
     // Responses
     MessageType_Response_Success,
