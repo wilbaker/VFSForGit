@@ -75,6 +75,11 @@ namespace GVFS.FunctionalTests.FileSystemRunners
             }
         }
 
+        public override void CreateHardLink(string targetPath, string newLinkPath)
+        {
+            Assert.Fail($"{nameof(SystemIORunner)} does not support {nameof(this.CreateHardLink)}");
+        }
+
         public override void WriteAllText(string path, string contents)
         {
             File.WriteAllText(path, contents);

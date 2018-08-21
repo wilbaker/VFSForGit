@@ -1,4 +1,5 @@
 ﻿using GVFS.Tests.Should;
+using NUnit.Framework;
 using System.IO;
 
 namespace GVFS.FunctionalTests.FileSystemRunners
@@ -103,6 +104,11 @@ namespace GVFS.FunctionalTests.FileSystemRunners
         public override void CreateEmptyFile(string path)
         {
             this.RunProcess(string.Format("-Command \"&{{ New-Item -ItemType file {0}}}\"", path));
+        }
+
+        public override void CreateHardLink(string targetPath, string newLinkPath)
+        {
+            Assert.Fail($"{nameof(PowerShellRunner)} does not support {nameof(this.CreateHardLink)}");
         }
 
         public override void WriteAllText(string path, string contents)
