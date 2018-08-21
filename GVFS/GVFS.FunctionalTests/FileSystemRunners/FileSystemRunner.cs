@@ -69,6 +69,8 @@ namespace GVFS.FunctionalTests.FileSystemRunners
 
         public abstract void CreateEmptyFile(string path);
 
+        public abstract void CreateHardLink(string targetPath, string newLinkPath);
+
         /// <summary>
         /// Write the specified contents to the specified file.  By calling this method the caller is
         /// indicating that they expect the write to succeed. However, the caller is responsible for verifying that

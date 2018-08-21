@@ -158,6 +158,14 @@ namespace GVFS.FunctionalTests.FileSystemRunners
             this.RunProcess(string.Format("-c \"touch {0}\"", bashPath));
         }
 
+        public override void CreateHardLink(string existingPath, string newLinkPath)
+        {
+            string existingFileBashPath = this.ConvertWinPathToBashPath(existingPath);
+            string newLinkBashPath = this.ConvertWinPathToBashPath(existingPath);
+
+            this.RunProcess(string.Format("-c \"ln {0} {1}\"", existingFileBashPath, newLinkBashPath));
+        }
+
         public override void WriteAllText(string path, string contents)
         {
             string bashPath = this.ConvertWinPathToBashPath(path);
