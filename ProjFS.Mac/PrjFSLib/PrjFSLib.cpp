@@ -458,16 +458,28 @@ static void HandleKernelRequest(Message request, void* messageMemory)
         
         case MessageType_KtoU_NotifyFileRenamed:
         case MessageType_KtoU_NotifyDirectoryRenamed:
+        case MessageType_KtoU_NotifyFileHardLinkCreated:
         {
             char fullPath[PrjFSMaxPath];
             CombinePaths(s_virtualizationRootFullPath.c_str(), request.path, fullPath);
             SetBitInFileFlags(fullPath, FileFlags_IsInVirtualizationRoot, true);
 
+            bool isDirectory = requestHeader->messageType == MessageType_KtoU_NotifyDirectoryRenamed;
+            PrjFS_NotificationType notificationType;
+            if (requestHeader->messageType == MessageType_KtoU_NotifyFileHardLinkCreated)
+            {
+                notificationType = PrjFS_NotificationType_HardLinkCreated;
+            }
+            else
+            {
+                notificationType = PrjFS_NotificationType_FileRenamed;
+            }
+            
             result = HandleFileNotification(
                 requestHeader,
                 request.path,
-                requestHeader->messageType == MessageType_KtoU_NotifyDirectoryRenamed,  // isDirectory
-                PrjFS_NotificationType_FileRenamed);
+                isDirectory,
+                notificationType);
             break;
         }
     }
@@ -781,6 +793,8 @@ static const char* NotificationTypeToString(PrjFS_NotificationType notificationT
             return STRINGIFY(PrjFS_NotificationType_PreDelete);
         case PrjFS_NotificationType_FileRenamed:
             return STRINGIFY(PrjFS_NotificationType_FileRenamed);
+        case PrjFS_NotificationType_HardLinkCreated:
+            return STRINGIFY(PrjFS_NotificationType_HardLinkCreated);
         case PrjFS_NotificationType_PreConvertToFull:
             return STRINGIFY(PrjFS_NotificationType_PreConvertToFull);
             
