@@ -793,6 +793,8 @@ static const char* NotificationTypeToString(PrjFS_NotificationType notificationT
             return STRINGIFY(PrjFS_NotificationType_PreDelete);
         case PrjFS_NotificationType_FileRenamed:
             return STRINGIFY(PrjFS_NotificationType_FileRenamed);
+        case PrjFS_NotificationType_LinkCreated:
+            return STRINGIFY(PrjFS_NotificationType_LinkCreated);
         case PrjFS_NotificationType_PreConvertToFull:
             return STRINGIFY(PrjFS_NotificationType_PreConvertToFull);
             
