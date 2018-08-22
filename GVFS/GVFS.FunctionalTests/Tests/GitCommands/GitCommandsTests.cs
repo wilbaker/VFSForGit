@@ -216,6 +216,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFileCommitChangesSwitchBranchSwitchBackDeleteFolderTest()
         {
             // 663045 - Confirm that folder can be deleted after deleting file then changing
@@ -228,24 +229,28 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFolderSwitchBranchTest()
         {
             this.SwitchBranch(fileSystemAction: () => this.DeleteFolder(@"GVFlt_DeleteFolderTest\GVFlt_DeleteLocalEmptyFolder_DeleteOnClose"));
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFolderStageChangesSwitchBranchTest()
         {
             this.StageChangesSwitchBranch(fileSystemAction: () => this.DeleteFolder(@"GVFlt_DeleteFolderTest\GVFlt_DeleteLocalEmptyFolder_SetDisposition"));
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFolderCommitChangesSwitchBranchTest()
         {
             this.CommitChangesSwitchBranch(fileSystemAction: () => this.DeleteFolder(@"GVFlt_DeleteFolderTest\GVFlt_DeleteNonRootVirtualFolder_DeleteOnClose"));
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFolderCommitChangesSwitchBranchSwitchBackTest()
         {
             this.CommitChangesSwitchBranchSwitchBack(fileSystemAction: () => this.DeleteFolder(@"GVFlt_DeleteFolderTest\GVFlt_DeleteNonRootVirtualFolder_SetDisposition"));
@@ -284,6 +289,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void RenameFilesWithNameAheadOfDot()
         {
             this.FolderShouldExistAndHaveFile("GitCommandsTests\\RenameFileTests\\1", "#test");
@@ -305,6 +311,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFileWithNameAheadOfDotAndSwitchCommits()
         {
             this.DeleteFile("DeleteFileWithNameAheadOfDotAndSwitchCommits\\(1).txt");
