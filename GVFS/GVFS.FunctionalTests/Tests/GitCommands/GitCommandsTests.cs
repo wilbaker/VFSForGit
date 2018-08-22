@@ -144,6 +144,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void CheckoutNewBranchTest()
         {
             this.ValidateGitCommand("checkout -b tests/functional/CheckoutNewBranchTest");
@@ -151,6 +152,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void CheckoutOrphanBranchTest()
         {
             this.ValidateGitCommand("checkout --orphan tests/functional/CheckoutOrphanBranchTest");
@@ -158,48 +160,56 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void CreateFileSwitchBranchTest()
         {
             this.SwitchBranch(fileSystemAction: this.CreateFile);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void CreateFileStageChangesSwitchBranchTest()
         {
             this.StageChangesSwitchBranch(fileSystemAction: this.CreateFile);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void CreateFileCommitChangesSwitchBranchTest()
         {
             this.CommitChangesSwitchBranch(fileSystemAction: this.CreateFile);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void CreateFileCommitChangesSwitchBranchSwitchBranchBackTest()
         {
             this.CommitChangesSwitchBranchSwitchBack(fileSystemAction: this.CreateFile);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFileSwitchBranchTest()
         {
             this.SwitchBranch(fileSystemAction: this.DeleteFile);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFileStageChangesSwitchBranchTest()
         {
             this.StageChangesSwitchBranch(fileSystemAction: this.DeleteFile);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFileCommitChangesSwitchBranchTest()
         {
             this.CommitChangesSwitchBranch(fileSystemAction: this.DeleteFile);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M2)]
         public void DeleteFileCommitChangesSwitchBranchSwitchBackTest()
         {
             this.CommitChangesSwitchBranchSwitchBack(fileSystemAction: this.DeleteFile);
