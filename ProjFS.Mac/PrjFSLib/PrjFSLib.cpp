@@ -352,6 +352,70 @@ CleanupAndFail:
     return PrjFS_Result_EIOError;
 }
 
+PrjFS_Result PrjFS_UpdatePlaceholderFileIfNeeded(
+    _In_    const char*                             relativePath,
+    _In_    unsigned char                           providerId[PrjFS_PlaceholderIdLength],
+    _In_    unsigned char                           contentId[PrjFS_PlaceholderIdLength],
+    _In_    unsigned long                           fileSize,
+    _In_    uint16_t                                fileMode)
+{
+#ifdef DEBUG
+    std::cout
+        << "PrjFS_UpdatePlaceholderFileIfNeeded("
+        << relativePath << ", "
+        << (int)providerId[0] << ", "
+        << (int)contentId[0] << ", "
+        << fileSize << ")" << std::endl;
+#endif
+    
+    if (nullptr == relativePath)
+    {
+        return PrjFS_Result_EInvalidArgs;
+    }
+
+    // TODO(Mac): Check if this is needed, ensure file is not full, etc.
+    char fullPath[PrjFSMaxPath];
+    CombinePaths(s_virtualizationRootFullPath.c_str(), relativePath, fullPath);
+    if (0 != unlink(fullPath))
+    {
+        return PrjFS_Result_EIOError;
+    }
+
+    return PrjFS_WritePlaceholderFile(relativePath, providerId, contentId, fileSize, fileMode);
+}
+
+PrjFS_Result PrjFS_DeleteFile(
+    _In_    const char*                             relativePath)
+{
+#ifdef DEBUG
+    std::cout
+        << "PrjFS_DeleteFile("
+        << relativePath << std::endl;
+#endif
+    
+    if (nullptr == relativePath)
+    {
+        return PrjFS_Result_EInvalidArgs;
+    }
+
+    // TODO(Mac): Check if this is needed, ensure file is not full, etc.
+    char fullPath[PrjFSMaxPath];
+    CombinePaths(s_virtualizationRootFullPath.c_str(), relativePath, fullPath);
+    if (0 != unlink(fullPath))
+    {
+        switch(errno)
+        {
+            case ENOENT:
+            case ENOTDIR: // TODO(Mac): Is this the correct behavior for ENOTDIR?
+                return PrjFS_Result_Success;
+            default:
+                return PrjFS_Result_EIOError;
+        }
+    }
+
+    return PrjFS_Result_Success;
+}
+
 PrjFS_Result PrjFS_WriteFileContents(
     _In_    const PrjFS_FileHandle*                 fileHandle,
     _In_    const void*                             bytes,

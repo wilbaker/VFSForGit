@@ -71,7 +71,12 @@ namespace PrjFSLib.Mac
             UpdateType updateFlags,
             out UpdateFailureCause failureCause)
         {
-            throw new NotImplementedException();
+            // TODO(Mac): Get the real failure cause
+            // TODO(Mac): Pass through he updateFlags
+            failureCause = UpdateFailureCause.NoFailure;
+
+            return Interop.PrjFSLib.DeleteFile(
+                relativePath);
         }
 
         public virtual Result WritePlaceholderDirectory(
@@ -109,7 +114,21 @@ namespace PrjFSLib.Mac
             UpdateType updateFlags,
             out UpdateFailureCause failureCause)
         {
-            throw new NotImplementedException();
+            // TODO(Mac): Get the real failure cause
+            failureCause = UpdateFailureCause.NoFailure;
+
+            if (providerId.Length != Interop.PrjFSLib.PlaceholderIdLength ||
+                contentId.Length != Interop.PrjFSLib.PlaceholderIdLength)
+            {
+                throw new ArgumentException();
+            }
+
+            return Interop.PrjFSLib.UpdatePlaceholderFileIfNeeded(
+                relativePath,
+                providerId,
+                contentId,
+                fileSize,
+                fileMode);
         }
 
         public virtual Result CompleteCommand(

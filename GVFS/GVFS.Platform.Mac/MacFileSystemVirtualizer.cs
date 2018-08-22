@@ -81,11 +81,14 @@ namespace GVFS.Platform.Mac
             out UpdateFailureReason failureReason)
         {
             UpdateFailureCause failureCause = UpdateFailureCause.NoFailure;
+            ushort fileMode = this.FileSystemCallbacks.GitIndexProjection.GetFilePathMode(relativePath);
+
             Result result = this.virtualizationInstance.UpdatePlaceholderIfNeeded(
                 relativePath,
-                GetPlaceholderVersionId(),
-                ConvertShaToContentId(shaContentId),
+                ToVersionIdByteArray(GetPlaceholderVersionId()),
+                ToVersionIdByteArray(ConvertShaToContentId(shaContentId)),
                 (ulong)endOfFile,
+                fileMode,
                 (UpdateType)updateFlags,
                 out failureCause);
             failureReason = (UpdateFailureReason)failureCause;
@@ -427,32 +430,46 @@ namespace GVFS.Platform.Mac
             foreach (ProjectedFileInfo fileInfo in projectedItems)
             {
                 Result result;
+                string sha = null;
+                string fullRelativePath = Path.Combine(relativePath, fileInfo.Name);
                 if (fileInfo.IsFolder)
                 {
-                    result = this.virtualizationInstance.WritePlaceholderDirectory(Path.Combine(relativePath, fileInfo.Name));
+                    result = this.virtualizationInstance.WritePlaceholderDirectory(fullRelativePath);
                 }
                 else
                 {
                     // TODO(Mac): Add functional tests that validate file mode is set correctly
-                    string filePath = Path.Combine(relativePath, fileInfo.Name);
-                    ushort fileMode = this.FileSystemCallbacks.GitIndexProjection.GetFilePathMode(filePath);
+                    ushort fileMode = this.FileSystemCallbacks.GitIndexProjection.GetFilePathMode(fullRelativePath);
+                    sha = fileInfo.Sha.ToString();
                     result = this.virtualizationInstance.WritePlaceholderFile(
-                        filePath,
+                        fullRelativePath,
                         ToVersionIdByteArray(FileSystemVirtualizer.GetPlaceholderVersionId()),
-                        ToVersionIdByteArray(FileSystemVirtualizer.ConvertShaToContentId(fileInfo.Sha.ToString())),
+                        ToVersionIdByteArray(FileSystemVirtualizer.ConvertShaToContentId(sha)),
                         (ulong)fileInfo.Size,
                         fileMode);
                 }
 
                 if (result != Result.Success)
                 {
-                    EventMetadata metadata = this.CreateEventMetadata(relativePath);
+                    EventMetadata metadata = this.CreateEventMetadata(fullRelativePath);
                     metadata.Add("fileInfo.Name", fileInfo.Name);
                     metadata.Add("fileInfo.Size", fileInfo.Size);
                     metadata.Add("fileInfo.IsFolder", fileInfo.IsFolder);
                     this.Context.Tracer.RelatedError(metadata, $"{nameof(this.CreateEnumerationPlaceholders)}: Write placeholder failed");
 
                     return result;
+                }
+                else
+                {
+                    if (fileInfo.IsFolder)
+                    {
+                        this.FileSystemCallbacks.OnPlaceholderFolderCreated(fullRelativePath);
+                    }
+                    else
+                    {
+                        this.FileSystemCallbacks.OnPlaceholderFileCreated(fullRelativePath, sha, triggeringProcessName);
+                    }
+
                 }
             }
 
