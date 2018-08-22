@@ -400,7 +400,7 @@ namespace GVFS.Platform.Mac
                         projectedItems = this.FileSystemCallbacks.GitIndexProjection.GetProjectedItems(CancellationToken.None, blobSizesConnection, relativePath);
                     }
 
-                    result = this.CreateEnumerationPlaceholders(relativePath, projectedItems);
+                    result = this.CreateEnumerationPlaceholders(relativePath, projectedItems, triggeringProcessName);
                 }
                 catch (SizesUnavailableException e)
                 {
@@ -425,7 +425,7 @@ namespace GVFS.Platform.Mac
             return Result.EIOError;
         }
 
-        private Result CreateEnumerationPlaceholders(string relativePath, IEnumerable<ProjectedFileInfo> projectedItems)
+        private Result CreateEnumerationPlaceholders(string relativePath, IEnumerable<ProjectedFileInfo> projectedItems, string triggeringProcessName)
         {
             foreach (ProjectedFileInfo fileInfo in projectedItems)
             {
