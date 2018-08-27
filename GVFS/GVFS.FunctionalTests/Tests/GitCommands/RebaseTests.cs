@@ -3,6 +3,7 @@
 namespace GVFS.FunctionalTests.Tests.GitCommands
 {
     [TestFixture]
+    [Category(Categories.GitCommands)]
     [Category(Categories.Mac.M3TODO)]
     public class RebaseTests : GitRepoTests
     {
