@@ -119,7 +119,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void MoveFullFolderToFullFolderInDotGitFolder()
         {
             string fileContents = "Test contents for MoveFullFolderToFullFolderInDotGitFolder";

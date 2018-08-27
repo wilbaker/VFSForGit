@@ -11,7 +11,6 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 {
     // TODO 469238: Elaborate on these tests?
     [TestFixture]
-    [Category(Categories.Mac.M1)]
     public class MultithreadedReadWriteTests : TestsWithEnlistmentPerFixture
     {
         [TestCase, Order(1)]

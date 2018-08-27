@@ -12,7 +12,6 @@ using System.Threading;
 namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 {
     [TestFixtureSource(typeof(FileSystemRunner), FileSystemRunner.TestRunners)]
-    [Category(Categories.Mac.M2)]
     public class GitFilesTests : TestsWithEnlistmentPerFixture
     {
         private FileSystemRunner fileSystem;

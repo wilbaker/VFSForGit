@@ -469,7 +469,6 @@ namespace GVFS.Platform.Mac
                     {
                         this.FileSystemCallbacks.OnPlaceholderFileCreated(fullRelativePath, sha, triggeringProcessName);
                     }
-
                 }
             }
 

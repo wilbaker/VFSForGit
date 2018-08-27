@@ -40,7 +40,7 @@ namespace PrjFSLib.Mac.Interop
             [MarshalAs(UnmanagedType.LPArray, SizeConst = PlaceholderIdLength)]
             byte[] contentId,
             ulong fileSize,
-            UInt16 fileMode);
+            ushort fileMode);
 
         [DllImport(PrjFSLibPath, EntryPoint = "PrjFS_DeleteFile")]
         public static extern Result DeleteFile(

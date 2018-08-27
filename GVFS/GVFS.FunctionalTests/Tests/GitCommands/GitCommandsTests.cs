@@ -29,7 +29,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void VerifyTestFilesExist()
         {
             // Sanity checks to ensure that the test files we expect to be in our test repo are present
@@ -41,28 +40,24 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void StatusTest()
         {
             this.ValidateGitCommand("status");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void StatusShortTest()
         {
             this.ValidateGitCommand("status -s");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void BranchTest()
         {
             this.ValidateGitCommand("branch");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void NewBranchTest()
         {
             this.ValidateGitCommand("branch tests/functional/NewBranchTest");
@@ -70,7 +65,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteBranchTest()
         {
             this.ValidateGitCommand("branch tests/functional/DeleteBranchTest");
@@ -88,63 +82,54 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void UntrackedFileTest()
         {
             this.BasicCommit(this.CreateFile, addCommand: "add .");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void UntrackedEmptyFileTest()
         {
             this.BasicCommit(this.CreateEmptyFile, addCommand: "add .");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void UntrackedFileAddAllTest()
         {
             this.BasicCommit(this.CreateFile, addCommand: "add --all");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void UntrackedEmptyFileAddAllTest()
         {
             this.BasicCommit(this.CreateEmptyFile, addCommand: "add --all");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void StageUntrackedFileTest()
         {
             this.BasicCommit(this.CreateFile, addCommand: "stage .");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void StageUntrackedEmptyFileTest()
         {
             this.BasicCommit(this.CreateEmptyFile, addCommand: "stage .");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void StageUntrackedFileAddAllTest()
         {
             this.BasicCommit(this.CreateFile, addCommand: "stage --all");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void StageUntrackedEmptyFileAddAllTest()
         {
             this.BasicCommit(this.CreateEmptyFile, addCommand: "stage --all");
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void CheckoutNewBranchTest()
         {
             this.ValidateGitCommand("checkout -b tests/functional/CheckoutNewBranchTest");
@@ -152,7 +137,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void CheckoutOrphanBranchTest()
         {
             this.ValidateGitCommand("checkout --orphan tests/functional/CheckoutOrphanBranchTest");
@@ -160,63 +144,54 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void CreateFileSwitchBranchTest()
         {
             this.SwitchBranch(fileSystemAction: this.CreateFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void CreateFileStageChangesSwitchBranchTest()
         {
             this.StageChangesSwitchBranch(fileSystemAction: this.CreateFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void CreateFileCommitChangesSwitchBranchTest()
         {
             this.CommitChangesSwitchBranch(fileSystemAction: this.CreateFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void CreateFileCommitChangesSwitchBranchSwitchBranchBackTest()
         {
             this.CommitChangesSwitchBranchSwitchBack(fileSystemAction: this.CreateFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFileSwitchBranchTest()
         {
             this.SwitchBranch(fileSystemAction: this.DeleteFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFileStageChangesSwitchBranchTest()
         {
             this.StageChangesSwitchBranch(fileSystemAction: this.DeleteFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFileCommitChangesSwitchBranchTest()
         {
             this.CommitChangesSwitchBranch(fileSystemAction: this.DeleteFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFileCommitChangesSwitchBranchSwitchBackTest()
         {
             this.CommitChangesSwitchBranchSwitchBack(fileSystemAction: this.DeleteFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFileCommitChangesSwitchBranchSwitchBackDeleteFolderTest()
         {
             // 663045 - Confirm that folder can be deleted after deleting file then changing
@@ -229,35 +204,30 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFolderSwitchBranchTest()
         {
             this.SwitchBranch(fileSystemAction: () => this.DeleteFolder(Path.Combine("GVFlt_DeleteFolderTest", "GVFlt_DeleteLocalEmptyFolder_DeleteOnClose")));
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFolderStageChangesSwitchBranchTest()
         {
             this.StageChangesSwitchBranch(fileSystemAction: () => this.DeleteFolder(Path.Combine(@"GVFlt_DeleteFolderTest", "GVFlt_DeleteLocalEmptyFolder_SetDisposition")));
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFolderCommitChangesSwitchBranchTest()
         {
             this.CommitChangesSwitchBranch(fileSystemAction: () => this.DeleteFolder(Path.Combine(@"GVFlt_DeleteFolderTest", "GVFlt_DeleteNonRootVirtualFolder_DeleteOnClose")));
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFolderCommitChangesSwitchBranchSwitchBackTest()
         {
             this.CommitChangesSwitchBranchSwitchBack(fileSystemAction: () => this.DeleteFolder(Path.Combine(@"GVFlt_DeleteFolderTest", "GVFlt_DeleteNonRootVirtualFolder_SetDisposition")));
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFilesWithNameAheadOfDot()
         {
             string folder = Path.Combine("GitCommandsTests", "DeleteFileTests", "1");
@@ -289,7 +259,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void RenameFilesWithNameAheadOfDot()
         {
             this.FolderShouldExistAndHaveFile(Path.Combine("GitCommandsTests", "RenameFileTests", "1"), "#test");
@@ -311,7 +280,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void DeleteFileWithNameAheadOfDotAndSwitchCommits()
         {
             string fileRelativePath = Path.Combine("DeleteFileWithNameAheadOfDotAndSwitchCommits", "(1).txt");
@@ -332,7 +300,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M3)]
+        [Category(Categories.Mac.M3TODO)]
         public void AddFileAndCommitOnNewBranchSwitchDeleteFolderAndSwitchBack()
         {
             // 663045 - Confirm that folder can be deleted after adding a file then changing branches
@@ -355,7 +323,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void OverwriteFileInSubfolderAndCommitOnNewBranchSwitchDeleteFolderAndSwitchBack()
         {
             string overwrittenFileParentFolderPath = Path.Combine("GVFlt_DeleteFolderTest", "GVFlt_DeletePlaceholderNonEmptyFolder_SetDisposition");
@@ -381,7 +348,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void AddFileInSubfolderAndCommitOnNewBranchSwitchDeleteFolderAndSwitchBack()
         {
             // 663045 - Confirm that grandparent folder can be deleted after adding a (granchild) file
@@ -407,7 +373,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void CaseOnlyRenameFileAndChangeBranches()
         {
             // 693190 - Confirm that file does not disappear after case-only rename and branch
@@ -428,7 +393,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void MoveFileFromOutsideRepoToInsideRepoAndAdd()
         {
             string testFileContents = "0123456789";
@@ -462,7 +426,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void MoveFolderFromOutsideRepoToInsideRepoAndAdd()
         {
             string testFileContents = "0123456789";
@@ -500,7 +463,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void MoveFileFromInsideRepoToOutsideRepoAndCommit()
         {
             string newBranchName = "tests/functional/MoveFileFromInsideRepoToOutsideRepoAndCommit";
@@ -537,35 +499,30 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void EditFileSwitchBranchTest()
         {
             this.SwitchBranch(fileSystemAction: this.EditFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void EditFileStageChangesSwitchBranchTest()
         {
             this.StageChangesSwitchBranch(fileSystemAction: this.EditFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void EditFileCommitChangesSwitchBranchTest()
         {
             this.CommitChangesSwitchBranch(fileSystemAction: this.EditFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void EditFileCommitChangesSwitchBranchSwitchBackTest()
         {
             this.CommitChangesSwitchBranchSwitchBack(fileSystemAction: this.EditFile);
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void RenameFileCommitChangesSwitchBranchSwitchBackTest()
         {
             this.CommitChangesSwitchBranchSwitchBack(fileSystemAction: this.RenameFile);
@@ -579,7 +536,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void AddFileCommitThenDeleteAndCommit()
         {
             this.ValidateGitCommand("checkout -b tests/functional/AddFileCommitThenDeleteAndCommit_before");
@@ -600,7 +556,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2)]
         public void AddFileCommitThenDeleteAndResetSoft()
         {
             this.ValidateGitCommand("checkout -b tests/functional/AddFileCommitThenDeleteAndResetSoft");

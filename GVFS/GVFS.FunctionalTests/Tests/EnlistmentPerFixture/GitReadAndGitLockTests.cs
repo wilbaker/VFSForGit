@@ -22,7 +22,6 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(1)]
-        [Category(Categories.Mac.M2)]
         public void GitStatus()
         {
             GitHelpers.CheckGitCommandAgainstGVFSRepo(
@@ -33,14 +32,12 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(2)]
-        [Category(Categories.Mac.M2)]
         public void GitLog()
         {
             GitHelpers.CheckGitCommandAgainstGVFSRepo(this.Enlistment.RepoRoot, "log -n1", "commit", "Author:", "Date:");
         }
 
         [TestCase, Order(3)]
-        [Category(Categories.Mac.M2)]
         public void GitBranch()
         {
             GitHelpers.CheckGitCommandAgainstGVFSRepo(

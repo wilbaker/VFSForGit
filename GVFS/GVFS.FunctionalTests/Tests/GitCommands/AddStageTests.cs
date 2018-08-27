@@ -6,7 +6,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
 {
     [TestFixture]
     [Category(Categories.GitCommands)]
-    [Category(Categories.Mac.M3)]
     public class AddStageTests : GitRepoTests
     {
         public AddStageTests() : base(enlistmentPerTest: false)
@@ -14,7 +13,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase, Order(1)]
-        [Category(Categories.Mac.M2)]
         public void AddBasicTest()
         {
             this.EditFile("Readme.md", "Some new content.");
@@ -23,7 +21,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase, Order(2)]
-        [Category(Categories.Mac.M2)]
         public void StageBasicTest()
         {
             this.EditFile("AuthoringTests.md", "Some new content.");
@@ -32,7 +29,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase, Order(3)]
-        [Category(Categories.Mac.M2)]
         public void AddAndStageHardLinksTest()
         {
             if (!this.FileSystem.SupportsHardlinkCreation)

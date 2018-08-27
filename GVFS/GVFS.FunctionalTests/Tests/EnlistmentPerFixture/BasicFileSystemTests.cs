@@ -12,7 +12,6 @@ using System.Linq;
 namespace GVFS.FunctionalTests.Tests.LongRunningEnlistment
 {
     [TestFixture]
-    [Category(Categories.Mac.M1)]
     public class BasicFileSystemTests : TestsWithEnlistmentPerFixture
     {
         [TestCaseSource(typeof(FileRunnersAndFolders), FileRunnersAndFolders.TestRunners)]
