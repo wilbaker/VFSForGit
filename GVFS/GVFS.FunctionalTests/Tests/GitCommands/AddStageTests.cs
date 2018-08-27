@@ -15,7 +15,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         [TestCase, Order(1)]
         public void AddBasicTest()
         {
-            this.EditFile("Readme.md", "Some new content.");
+            this.EditFile("Some new content.", "Readme.md");
             this.ValidateGitCommand("add Readme.md");
             this.RunGitCommand("commit -m \"Changing the Readme.md\"");
         }
@@ -23,7 +23,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         [TestCase, Order(2)]
         public void StageBasicTest()
         {
-            this.EditFile("AuthoringTests.md", "Some new content.");
+            this.EditFile("Some new content.", "AuthoringTests.md");
             this.ValidateGitCommand("stage AuthoringTests.md");
             this.RunGitCommand("commit -m \"Changing the AuthoringTests.md\"");
         }
@@ -59,7 +59,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
 
         private void CommandAllowsPlaceholderCreation(string command, string fileToRead)
         {
-            this.EditFile("Readme.md", $"Some new content for {command}.");
+            this.EditFile($"Some new content for {command}.", "Readme.md");
             ManualResetEventSlim resetEvent = GitHelpers.RunGitCommandWithWaitAndStdIn(this.Enlistment, resetTimeout: 3000, command: $"{command} -p", stdinToQuit: "q", processId: out _);
             this.FileContentsShouldMatch(fileToRead);
             this.ValidateGitCommand("--no-optional-locks status");
