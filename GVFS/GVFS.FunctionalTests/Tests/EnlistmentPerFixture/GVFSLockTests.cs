@@ -1,4 +1,5 @@
 ﻿using GVFS.FunctionalTests.FileSystemRunners;
+using GVFS.FunctionalTests.Properties;
 using GVFS.FunctionalTests.Tools;
 using GVFS.Tests.Should;
 using NUnit.Framework;
@@ -34,16 +35,16 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         public void GitCheckoutFailsOutsideLock()
         {
             const string BackupPrefix = "BACKUP_";
-            const string PreCommand = "pre-command" + Settings.Default.BinaryFileNameExtension;
-            const string PostCommand = "post-command.exe" + Settings.Default.BinaryFileNameExtension;
+            string preCommand = "pre-command" + Settings.Default.BinaryFileNameExtension;
+            string postCommand = "post-command.exe" + Settings.Default.BinaryFileNameExtension;
 
             string hooksBase = Path.Combine(this.Enlistment.RepoRoot, ".git", "hooks");
 
             try
             {
                 // Get hooks out of the way to simulate lock not being acquired as expected
-                this.fileSystem.MoveFile(Path.Combine(hooksBase, PreCommand), Path.Combine(hooksBase, BackupPrefix + PreCommand));
-                this.fileSystem.MoveFile(Path.Combine(hooksBase, PostCommand), Path.Combine(hooksBase, BackupPrefix + PostCommand));
+                this.fileSystem.MoveFile(Path.Combine(hooksBase, preCommand), Path.Combine(hooksBase, BackupPrefix + preCommand));
+                this.fileSystem.MoveFile(Path.Combine(hooksBase, postCommand), Path.Combine(hooksBase, BackupPrefix + postCommand));
 
                 ProcessResult result = GitHelpers.InvokeGitAgainstGVFSRepo(this.Enlistment.RepoRoot, "checkout FunctionalTests/20170510_minor");
                 result.Errors.ShouldContain("fatal: unable to write new index file");
@@ -57,8 +58,8 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
             finally
             {
                 // Reset hooks for cleanup.
-                this.fileSystem.MoveFile(Path.Combine(hooksBase, BackupPrefix + PreCommand), Path.Combine(hooksBase, PreCommand));
-                this.fileSystem.MoveFile(Path.Combine(hooksBase, BackupPrefix + PostCommand), Path.Combine(hooksBase, PostCommand));
+                this.fileSystem.MoveFile(Path.Combine(hooksBase, BackupPrefix + preCommand), Path.Combine(hooksBase, preCommand));
+                this.fileSystem.MoveFile(Path.Combine(hooksBase, BackupPrefix + postCommand), Path.Combine(hooksBase, postCommand));
             }
         }
 
@@ -88,7 +89,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 
         private void OverwritingIndexShouldFail(string testFilePath)
         {
-            string indexPath = this.Enlistment.GetVirtualPathTo(".git" ,"index");
+            string indexPath = this.Enlistment.GetVirtualPathTo(".git", "index");
 
             this.Enlistment.WaitForBackgroundOperations().ShouldEqual(true, "Background operations failed to complete.");
             byte[] indexContents = File.ReadAllBytes(indexPath);

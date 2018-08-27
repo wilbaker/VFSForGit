@@ -29,7 +29,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         [TestCase, Order(2)]
         public void PrefetchSpecificFiles()
         {
-            this.ExpectBlobCount(this.Enlistment.Prefetch($"--files {Path.Combine("GVFS", "GVFS", "Program.cs")}", 1));
+            this.ExpectBlobCount(this.Enlistment.Prefetch($"--files {Path.Combine("GVFS", "GVFS", "Program.cs")}"), 1);
             this.ExpectBlobCount(this.Enlistment.Prefetch($"--files {Path.Combine("GVFS", "GVFS", "Program.cs")};{Path.Combine("GVFS", "GVFS.FunctionalTests", "GVFS.FunctionalTests.csproj")}"), 2);
         }
 
