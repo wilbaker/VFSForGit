@@ -24,6 +24,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M4)]   
         public void ModifyingAndDeletingRepositoryExcludeFileInvalidatesCache()
         {
             string repositoryExcludeFile = Path.Combine(".git", "info", "exclude");
@@ -49,6 +50,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M4)]  
         public void NewRepositoryExcludeFileInvalidatesCache()
         {
             string repositoryExcludeFileRelativePath = Path.Combine(".git", "info", "exclude");
@@ -69,6 +71,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M4)]  
         public void ModifyingHeadSymbolicRefInvalidatesCache()
         {
             this.ValidateGitCommand("status");
@@ -84,6 +87,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M4)]  
         public void ModifyingHeadRefInvalidatesCache()
         {
             this.ValidateGitCommand("status");
