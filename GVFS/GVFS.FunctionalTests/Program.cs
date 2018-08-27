@@ -65,6 +65,7 @@ namespace GVFS.FunctionalTests
 
             if (runner.HasCustomArg("--mac-only"))
             {
+                excludeCategories.Add(Categories.Mac.NeedsLockHolder);
                 excludeCategories.Add(Categories.Mac.M2TODO);
                 excludeCategories.Add(Categories.Mac.M3TODO);
                 excludeCategories.Add(Categories.Mac.M4);

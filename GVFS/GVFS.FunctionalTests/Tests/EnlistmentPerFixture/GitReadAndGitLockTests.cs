@@ -48,6 +48,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(4)]
+        [Category(Categories.Mac.NeedsLockHolder)]
         public void GitCommandWaitsWhileAnotherIsRunning()
         {
             int pid;
@@ -58,6 +59,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(5)]
+        [Category(Categories.Mac.NeedsLockHolder)]
         public void GitAliasNamedAfterKnownCommandAcquiresLock()
         {
             string alias = nameof(this.GitAliasNamedAfterKnownCommandAcquiresLock);
@@ -70,6 +72,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(6)]
+        [Category(Categories.Mac.NeedsLockHolder)]
         public void GitAliasInSubfolderNamedAfterKnownCommandAcquiresLock()
         {
             string alias = nameof(this.GitAliasInSubfolderNamedAfterKnownCommandAcquiresLock);
@@ -86,6 +89,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(7)]
+        [Category(Categories.Mac.NeedsLockHolder)]
         public void ExternalLockHolderReportedWhenBackgroundTasksArePending()
         {
             int pid;
@@ -103,6 +107,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(8)]
+        [Category(Categories.Mac.NeedsLockHolder)]
         public void OrphanedGVFSLockIsCleanedUp()
         {
             int pid;

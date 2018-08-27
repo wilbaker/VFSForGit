@@ -34,8 +34,8 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         public void GitCheckoutFailsOutsideLock()
         {
             const string BackupPrefix = "BACKUP_";
-            const string PreCommand = "pre-command.exe";
-            const string PostCommand = "post-command.exe";
+            const string PreCommand = "pre-command" + Settings.Default.BinaryFileNameExtension;
+            const string PostCommand = "post-command.exe" + Settings.Default.BinaryFileNameExtension;
 
             string hooksBase = Path.Combine(this.Enlistment.RepoRoot, ".git", "hooks");
 
@@ -77,7 +77,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         [TestCase]
         public void LockPreventsRenameOfIndexLockOnTopOfIndex()
         {
-            this.OverwritingIndexShouldFail(this.Enlistment.GetVirtualPathTo(".git\\index.lock"));
+            this.OverwritingIndexShouldFail(this.Enlistment.GetVirtualPathTo(".git", "index.lock"));
         }
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
@@ -88,7 +88,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 
         private void OverwritingIndexShouldFail(string testFilePath)
         {
-            string indexPath = this.Enlistment.GetVirtualPathTo(".git\\index");
+            string indexPath = this.Enlistment.GetVirtualPathTo(".git" ,"index");
 
             this.Enlistment.WaitForBackgroundOperations().ShouldEqual(true, "Background operations failed to complete.");
             byte[] indexContents = File.ReadAllBytes(indexPath);

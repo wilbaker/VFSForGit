@@ -10,6 +10,7 @@
 
         public static class Mac
         {
+            public const string NeedsLockHolder = "NeedsDotCoreLockHolder"; 
             public const string M2TODO = "M2_StaticViewGitCommandsStillTODO";
             public const string M3TODO = "M3_AllGitCommandsTODO";
             public const string M4 = "M4_All";
