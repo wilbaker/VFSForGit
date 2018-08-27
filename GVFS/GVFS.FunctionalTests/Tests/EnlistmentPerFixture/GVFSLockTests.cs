@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 {
     [TestFixture]
+    [Category(Categories.Mac.M4)]
     public class GVFSLockTests : TestsWithEnlistmentPerFixture
     {
         private FileSystemRunner fileSystem;
@@ -32,7 +33,6 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase]
-        [Category(Categories.Mac.M4)]
         public void GitCheckoutFailsOutsideLock()
         {
             const string BackupPrefix = "BACKUP_";
@@ -65,21 +65,18 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase]
-        [Category(Categories.Mac.M4)]
         public void LockPreventsRenameFromOutsideRootOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(Path.Combine(this.Enlistment.EnlistmentRoot, "LockPreventsRenameFromOutsideRootOnTopOfIndex.txt"));
         }
 
         [TestCase]
-        [Category(Categories.Mac.M4)]
         public void LockPreventsRenameFromInsideWorkingTreeOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(this.Enlistment.GetVirtualPathTo("LockPreventsRenameFromInsideWorkingTreeOnTopOfIndex.txt"));
         }
 
         [TestCase]
-        [Category(Categories.Mac.M4)]
         public void LockPreventsRenameOfIndexLockOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(this.Enlistment.GetVirtualPathTo(".git", "index.lock"));
