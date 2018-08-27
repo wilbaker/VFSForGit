@@ -201,6 +201,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchAfterReadingFileAndVerifyContentsCorrect()
         {
             this.ControlGitRepo.Fetch(GitRepoTests.ConflictSourceBranch);
@@ -217,6 +218,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchAfterReadingAllFilesAndVerifyContentsCorrect()
         {
             this.ControlGitRepo.Fetch(GitRepoTests.ConflictSourceBranch);

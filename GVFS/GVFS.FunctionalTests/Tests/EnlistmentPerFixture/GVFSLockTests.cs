@@ -32,6 +32,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase]
+        [Category(Categories.Mac.M4)]
         public void GitCheckoutFailsOutsideLock()
         {
             const string BackupPrefix = "BACKUP_";
