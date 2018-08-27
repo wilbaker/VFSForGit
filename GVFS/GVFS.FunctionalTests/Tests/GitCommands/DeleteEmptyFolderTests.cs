@@ -6,6 +6,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
 {
     [TestFixture]
     [Category(Categories.GitCommands)]
+    [Category(Categories.Mac.M4)]
     public class DeleteEmptyFolderTests : GitRepoTests
     {
         public DeleteEmptyFolderTests() : base(enlistmentPerTest: true)

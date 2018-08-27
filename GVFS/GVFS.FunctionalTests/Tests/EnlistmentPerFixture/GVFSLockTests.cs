@@ -36,7 +36,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         {
             const string BackupPrefix = "BACKUP_";
             string preCommand = "pre-command" + Settings.Default.BinaryFileNameExtension;
-            string postCommand = "post-command.exe" + Settings.Default.BinaryFileNameExtension;
+            string postCommand = "post-command" + Settings.Default.BinaryFileNameExtension;
 
             string hooksBase = Path.Combine(this.Enlistment.RepoRoot, ".git", "hooks");
 
@@ -64,18 +64,21 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase]
+        [Category(Categories.Mac.M4)]
         public void LockPreventsRenameFromOutsideRootOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(Path.Combine(this.Enlistment.EnlistmentRoot, "LockPreventsRenameFromOutsideRootOnTopOfIndex.txt"));
         }
 
         [TestCase]
+        [Category(Categories.Mac.M4)]
         public void LockPreventsRenameFromInsideWorkingTreeOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(this.Enlistment.GetVirtualPathTo("LockPreventsRenameFromInsideWorkingTreeOnTopOfIndex.txt"));
         }
 
         [TestCase]
+        [Category(Categories.Mac.M4)]
         public void LockPreventsRenameOfIndexLockOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(this.Enlistment.GetVirtualPathTo(".git", "index.lock"));

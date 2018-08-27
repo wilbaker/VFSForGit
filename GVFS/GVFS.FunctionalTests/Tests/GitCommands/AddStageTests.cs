@@ -1,5 +1,6 @@
 ﻿using GVFS.FunctionalTests.Tools;
 using NUnit.Framework;
+using System.IO;
 using System.Threading;
 
 namespace GVFS.FunctionalTests.Tests.GitCommands
@@ -48,17 +49,18 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         [TestCase, Order(4)]
         public void AddAllowsPlaceholderCreation()
         {
-            this.CommandAllowsPlaceholderCreation("add", @"GVFS\GVFS\Program.cs");
+            this.CommandAllowsPlaceholderCreation("add", "GVFS", "GVFS", "Program.cs");
         }
 
         [TestCase, Order(5)]
         public void StageAllowsPlaceholderCreation()
         {
-            this.CommandAllowsPlaceholderCreation("stage", @"GVFS\GVFS\App.config");
+            this.CommandAllowsPlaceholderCreation("stage", "GVFS", "GVFS", "App.config");
         }
 
-        private void CommandAllowsPlaceholderCreation(string command, string fileToRead)
+        private void CommandAllowsPlaceholderCreation(string command, params string[] fileToReadPathParts)
         {
+            string fileToRead = Path.Combine(fileToReadPathParts);
             this.EditFile($"Some new content for {command}.", "Readme.md");
             ManualResetEventSlim resetEvent = GitHelpers.RunGitCommandWithWaitAndStdIn(this.Enlistment, resetTimeout: 3000, command: $"{command} -p", stdinToQuit: "q", processId: out _);
             this.FileContentsShouldMatch(fileToRead);

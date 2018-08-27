@@ -41,6 +41,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(4)]
+        [Category(Categories.Mac.M4)]
         public void PrefetchByFileExtensionWithHydrate()
         {
             int expectedCount = 3;
@@ -50,6 +51,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(5)]
+        [Category(Categories.Mac.M4)]
         public void PrefetchByFilesWithHydrateWhoseObjectsAreAlreadyDownloaded()
         {
             int expectedCount = 2;
@@ -101,6 +103,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(10)]
+        [Category(Categories.Mac.M4)] // TODO(Mac): Handle that lock files are not deleted on Mac, they are simply unlocked
         public void PrefetchCleansUpStalePrefetchLock()
         {
             this.Enlistment.Prefetch("--commits");
