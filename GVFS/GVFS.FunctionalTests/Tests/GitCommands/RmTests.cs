@@ -13,7 +13,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         [TestCase]
         public void CanReadFileAfterGitRmDryRun()
         {
-            this.ValidateGitCommand("status");
+            //this.ValidateGitCommand("status");
 
             // Validate that Readme.md is not on disk at all
             string fileName = "Readme.md";
