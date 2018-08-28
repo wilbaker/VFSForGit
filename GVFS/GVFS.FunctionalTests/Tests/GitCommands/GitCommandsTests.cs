@@ -715,6 +715,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void ResetMixed()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetMixed");
@@ -722,6 +723,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void ResetMixed2()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetMixed2");
@@ -748,6 +750,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void ResetMixedTwice()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetMixedTwice");
