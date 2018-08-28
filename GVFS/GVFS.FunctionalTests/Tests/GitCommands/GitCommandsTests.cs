@@ -10,7 +10,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
 {
     [TestFixture]
     [Category(Categories.GitCommands)]
-    [Category(Categories.Mac.M3TODO)]
     public class GitCommandsTests : GitRepoTests
     {
         private const string EncodingFileFolder = "FilenameEncoding";
@@ -995,6 +994,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void RenameOnlyFileInFolder()
         {
             ControlGitRepo.Fetch("FunctionalTests/20170202_RenameTestMergeTarget");
