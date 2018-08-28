@@ -379,6 +379,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void ResetMixedToCommitWithNewFileThenCheckoutNewBranchAndCheckoutCommitWithNewFile()
         {
             this.ControlGitRepo.Fetch(GitRepoTests.ConflictSourceBranch);
@@ -670,6 +671,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void ResetMixedTwiceThenCheckoutWithChanges()
         {
             this.ControlGitRepo.Fetch("FunctionalTests/20171219_MultipleFileEdits");
@@ -689,6 +691,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void ResetMixedTwiceThenCheckoutWithRemovedFiles()
         {
             this.ControlGitRepo.Fetch("FunctionalTests/20180102_MultipleFileDeletes");
@@ -729,6 +732,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void SuccessfullyChecksOutDirectoryToFileToDirectory()
         {
             // This test switches between two branches and verifies specific transitions occured
