@@ -708,6 +708,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void ResetSoft()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetSoft");
@@ -739,6 +740,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void ResetSoftTwice()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetSoftTwice");
