@@ -32,7 +32,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase]
-        [Category(Categories.Mac.M2TODO)]
+        [Category(Categories.DisabledOnMac.M2TODO)]
         public void GitCheckoutFailsOutsideLock()
         {
             const string BackupPrefix = "BACKUP_";
@@ -65,21 +65,21 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase]
-        [Category(Categories.Mac.M4)]
+        [Category(Categories.DisabledOnMac.M4)]
         public void LockPreventsRenameFromOutsideRootOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(Path.Combine(this.Enlistment.EnlistmentRoot, "LockPreventsRenameFromOutsideRootOnTopOfIndex.txt"));
         }
 
         [TestCase]
-        [Category(Categories.Mac.M4)]
+        [Category(Categories.DisabledOnMac.M4)]
         public void LockPreventsRenameFromInsideWorkingTreeOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(this.Enlistment.GetVirtualPathTo("LockPreventsRenameFromInsideWorkingTreeOnTopOfIndex.txt"));
         }
 
         [TestCase]
-        [Category(Categories.Mac.M4)]
+        [Category(Categories.DisabledOnMac.M4)]
         public void LockPreventsRenameOfIndexLockOnTopOfIndex()
         {
             this.OverwritingIndexShouldFail(this.Enlistment.GetVirtualPathTo(".git", "index.lock"));

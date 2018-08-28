@@ -65,12 +65,12 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(3)]
-        [Category(Categories.Mac.M2TODO)]
+        [Category(Categories.DisabledOnMac.M2TODO)]
         public void CreateFileInFolderTest()
         {
             string folderName = "folder2";
             string fileName = "file2.txt";
-            string filePath = folderName + "\\" + fileName;
+            string filePath = Path.Combine(folderName, fileName);
 
             this.Enlistment.GetVirtualPathTo(filePath).ShouldNotExistOnDisk(this.fileSystem);
             GVFSHelpers.ModifiedPathsShouldNotContain(this.fileSystem, this.Enlistment.DotGVFSRoot, filePath);
@@ -86,7 +86,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(4)]
-        [Category(Categories.Mac.M2TODO)]
+        [Category(Categories.DisabledOnMac.M3TODO)]
         public void RenameEmptyFolderTest()
         {
             string folderName = "folder3a";
@@ -107,7 +107,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(5)]
-        [Category(Categories.Mac.M2TODO)]
+        [Category(Categories.DisabledOnMac.M2TODO)]
         public void RenameFolderTest()
         {
             string folderName = "folder4a";
@@ -140,7 +140,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(6)]
-        [Category(Categories.Mac.M2TODO)]
+        [Category(Categories.DisabledOnMac.M2TODO)]
         public void CaseOnlyRenameOfNewFolderKeepsExcludeEntries()
         {
             string[] expectedModifiedPathsEntries =
@@ -189,7 +189,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(8)]
-        [Category(Categories.Mac.NeedsLockHolder)]
+        [Category(Categories.DisabledOnMac.NeedsLockHolder)]
         public void ModifiedFileWillGetAddedToModifiedPathsFile()
         {
             string gitFileToTest = "GVFS/GVFS.Common/RetryWrapper.cs";
@@ -335,7 +335,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(15)]
-        [Category(Categories.Mac.M2TODO)]
+        [Category(Categories.DisabledOnMac.M2TODO)]
         public void SupersededFileAddedToSparseCheckoutAndSkipWorktreeBitCleared()
         {
             string fileToSupersedeEntry = "GVFlt_FileOperationTest/WriteAndVerify.txt";

@@ -5,7 +5,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
 {
     [TestFixture]
     [Category(Categories.GitCommands)]
-    [Category(Categories.Mac.M3TODO)]
+    [Category(Categories.DisabledOnMac.M3TODO)]
     public class ResetMixedTests : GitRepoTests
     {
         public ResetMixedTests() : base(enlistmentPerTest: true)

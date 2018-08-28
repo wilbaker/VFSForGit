@@ -310,7 +310,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M3TODO)]
+        [Category(Categories.DisabledOnMac.M3TODO)]
         public void AddFileAndCommitOnNewBranchSwitchDeleteFolderAndSwitchBack()
         {
             // 663045 - Confirm that folder can be deleted after adding a file then changing branches
@@ -708,7 +708,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M3TODO)]
+        [Category(Categories.DisabledOnMac.M3TODO)]
         public void ResetSoft()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetSoft");
@@ -716,7 +716,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M3TODO)]
+        [Category(Categories.DisabledOnMac.M3TODO)]
         public void ResetMixed()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetMixed");
@@ -724,7 +724,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M3TODO)]
+        [Category(Categories.DisabledOnMac.M3TODO)]
         public void ResetMixed2()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetMixed2");
@@ -740,7 +740,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M3TODO)]
+        [Category(Categories.DisabledOnMac.M3TODO)]
         public void ResetSoftTwice()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetSoftTwice");
@@ -752,7 +752,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M3TODO)]
+        [Category(Categories.DisabledOnMac.M3TODO)]
         public void ResetMixedTwice()
         {
             this.ValidateGitCommand("checkout -b tests/functional/ResetMixedTwice");
@@ -999,7 +999,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M3TODO)]
+        [Category(Categories.DisabledOnMac.M3TODO)]
         public void RenameOnlyFileInFolder()
         {
             ControlGitRepo.Fetch("FunctionalTests/20170202_RenameTestMergeTarget");

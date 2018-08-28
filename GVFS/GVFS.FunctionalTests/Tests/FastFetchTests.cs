@@ -16,7 +16,7 @@ namespace GVFS.FunctionalTests.Tests
     [TestFixture]
     [Category(Categories.FastFetch)]
     [Category(Categories.FullSuiteOnly)]
-    [Category(Categories.Mac.M4)]
+    [Category(Categories.DisabledOnMac.M4)]
     public class FastFetchTests
     {
         private readonly string fastFetchRepoRoot = Settings.Default.FastFetchRoot;

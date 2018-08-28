@@ -40,7 +40,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.Mac.M4)]
+        [Category(Categories.DisabledOnMac.M4)]
         public void UpdateIndexRemoveAddFileOpenForWrite()
         {
             // TODO 940287: Remove this test and re-enable UpdateIndexRemoveFileOnDisk

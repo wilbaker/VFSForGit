@@ -60,16 +60,20 @@ namespace GVFS.FunctionalTests
 
             if (runner.HasCustomArg("--windows-only"))
             {
-                includeCategories.Add(Categories.Windows);
+                includeCategories.Add(Categories.WindowsOnly);
             }
 
-            if (runner.HasCustomArg("--mac-only"))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                excludeCategories.Add(Categories.Mac.NeedsLockHolder);
-                excludeCategories.Add(Categories.Mac.M2TODO);
-                excludeCategories.Add(Categories.Mac.M3TODO);
-                excludeCategories.Add(Categories.Mac.M4);
-                excludeCategories.Add(Categories.Windows);
+                excludeCategories.Add(Categories.DisabledOnMac.NeedsLockHolder);
+                excludeCategories.Add(Categories.DisabledOnMac.M2TODO);
+                excludeCategories.Add(Categories.DisabledOnMac.M3TODO);
+                excludeCategories.Add(Categories.DisabledOnMac.M4);
+                excludeCategories.Add(Categories.WindowsOnly);
+            }
+            else
+            {
+                excludeCategories.Add(Categories.MacOnly);
             }
 
             GVFSTestConfig.RepoToClone =

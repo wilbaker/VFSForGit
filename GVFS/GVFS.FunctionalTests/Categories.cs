@@ -6,9 +6,10 @@
         public const string FastFetch = "FastFetch";
         public const string GitCommands = "GitCommands";
 
-        public const string Windows = "Windows";
+        public const string WindowsOnly = "WindowsOnly";
+        public const string MacOnly = "MacOnly";
 
-        public static class Mac
+        public static class DisabledOnMac
         {
             public const string NeedsLockHolder = "NeedsDotCoreLockHolder"; 
             public const string M2TODO = "M2_StaticViewGitCommandsStillTODO";

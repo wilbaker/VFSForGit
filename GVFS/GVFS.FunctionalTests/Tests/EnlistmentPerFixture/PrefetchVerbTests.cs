@@ -9,7 +9,6 @@ using System.Threading;
 namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 {
     [TestFixture]
-    [Category(Categories.Mac.M4)]
     public class PrefetchVerbTests : TestsWithEnlistmentPerFixture
     {
         private const string PrefetchCommitsAndTreesLock = "prefetch-commits-trees.lock";
@@ -42,7 +41,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(4)]
-        [Category(Categories.Mac.M4)]
+        [Category(Categories.DisabledOnMac.M4)]
         public void PrefetchByFileExtensionWithHydrate()
         {
             int expectedCount = 3;
@@ -52,7 +51,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(5)]
-        [Category(Categories.Mac.M4)]
+        [Category(Categories.DisabledOnMac.M4)]
         public void PrefetchByFilesWithHydrateWhoseObjectsAreAlreadyDownloaded()
         {
             int expectedCount = 2;
@@ -100,11 +99,11 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         {
             this.ExpectBlobCount(this.Enlistment.Prefetch("--files *"), 494);
             this.ExpectBlobCount(this.Enlistment.Prefetch("--folders /"), 494);
-            this.ExpectBlobCount(this.Enlistment.Prefetch("--folders \\"), 494);
+            this.ExpectBlobCount(this.Enlistment.Prefetch($"--folders {Path.DirectorySeparatorChar}"), 494);
         }
 
         [TestCase, Order(10)]
-        [Category(Categories.Mac.M4)] // TODO(Mac): Handle that lock files are not deleted on Mac, they are simply unlocked
+        [Category(Categories.DisabledOnMac.M4)] // TODO(Mac): Handle that lock files are not deleted on Mac, they are simply unlocked
         public void PrefetchCleansUpStalePrefetchLock()
         {
             this.Enlistment.Prefetch("--commits");

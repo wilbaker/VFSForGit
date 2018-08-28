@@ -11,7 +11,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 {
     [TestFixture]
     [Category(Categories.FullSuiteOnly)]
-    [Category(Categories.Mac.M4)]
+    [Category(Categories.DisabledOnMac.M4)]
     public class PrefetchVerbWithoutSharedCacheTests : TestsWithEnlistmentPerFixture
     {
         private const string PrefetchPackPrefix = "prefetch";

@@ -260,7 +260,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
 
         // Ported from ProjFS's BugRegressionTest
         [TestCase]
-        [Category(Categories.Windows)]
+        [Category(Categories.WindowsOnly)]
         public void ProjFS_CMDHangNoneActiveInstance()
         {
             this.Enlistment.UnmountGVFS();

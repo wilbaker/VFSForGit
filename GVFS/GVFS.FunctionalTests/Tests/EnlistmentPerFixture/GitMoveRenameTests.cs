@@ -91,7 +91,6 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(5)]
-        [Category(Categories.Mac.M3TODO)]
         public void GitStatusAndObjectAfterGitAdd()
         {
             string existingFilename = "test.cs";
@@ -127,7 +126,6 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         }
 
         [TestCase, Order(6)]
-        [Category(Categories.Mac.M3TODO)]
         public void GitStatusAfterUnstage()
         {
             string existingFilename = "test.cs";
