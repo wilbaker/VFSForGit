@@ -154,6 +154,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchNoCrashOnStatus()
         {
             this.ControlGitRepo.Fetch("FunctionalTests/20170331_git_crash");
@@ -237,6 +238,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchThatHasFolderShouldGetDeleted()
         {
             // this.ControlGitRepo.Commitish should not have the folder Test_ConflictTests\AddedFiles
@@ -263,6 +265,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchThatDoesNotHaveFolderShouldNotHaveFolder()
         {
             // this.ControlGitRepo.Commitish should not have the folder Test_ConflictTests\AddedFiles
@@ -548,6 +551,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchWhileOutsideToolDoesNotAllowDeleteOfOpenRepoMetadata()
         {
             this.ControlGitRepo.Fetch(GitRepoTests.ConflictSourceBranch);
@@ -823,6 +827,7 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchWithDirectoryNameSameAsFile()
         {
             this.SetupForFileDirectoryTest();
@@ -830,18 +835,21 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchWithDirectoryNameSameAsFileEnumerate()
         {
             this.RunFileDirectoryEnumerateTest("checkout");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchWithDirectoryNameSameAsFileWithRead()
         {
             this.RunFileDirectoryReadTest("checkout");
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchWithDirectoryNameSameAsFileWithWrite()
         {
             this.RunFileDirectoryWriteTest("checkout");
@@ -856,18 +864,21 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchDirectoryWithOneFileEnumerate()
         {
             this.RunFileDirectoryEnumerateTest("checkout", commandBranch: GitRepoTests.DirectoryWithDifferentFileAfterBranch);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchDirectoryWithOneFileRead()
         {
             this.RunFileDirectoryReadTest("checkout", commandBranch: GitRepoTests.DirectoryWithDifferentFileAfterBranch);
         }
 
         [TestCase]
+        [Category(Categories.Mac.M3TODO)]
         public void CheckoutBranchDirectoryWithOneFileWrite()
         {
             this.RunFileDirectoryWriteTest("checkout", commandBranch: GitRepoTests.DirectoryWithDifferentFileAfterBranch);
