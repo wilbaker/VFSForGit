@@ -235,6 +235,14 @@ namespace GVFS.Common
                         this.Sha == GVFSConstants.ExpandedFolderSha;
                 }
             }
+
+            public bool IsExpandedFolder
+            {
+                get
+                {
+                    return this.Sha == GVFSConstants.ExpandedFolderSha;
+                }
+            }
         }
 
         private class PlaceholderDataEntry

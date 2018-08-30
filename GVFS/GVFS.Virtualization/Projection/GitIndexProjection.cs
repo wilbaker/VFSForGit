@@ -1099,11 +1099,19 @@ namespace GVFS.Virtualization.Projection
 
                 this.blobSizes.Flush();
 
-                // Waiting for the UpdateOrDeleteFilePlaceholder to fill the folderPlaceholdersToKeep before trying to remove folder placeholders
-                // so that we don't try to delete a folder placeholder that has file placeholders and just fails
-                foreach (PlaceholderListDatabase.PlaceholderData folderPlaceholder in placeholderListCopy.Where(x => x.IsFolder).OrderByDescending(x => x.Path))
+                using (BlobSizes.BlobSizesConnection blobSizesConnection = this.blobSizes.CreateConnection())
                 {
-                    this.TryRemoveFolderPlaceholder(folderPlaceholder, updatedPlaceholderList, folderPlaceholdersToKeep);
+                    // Waiting for the UpdateOrDeleteFilePlaceholder to fill the folderPlaceholdersToKeep before trying to remove folder placeholders
+                    // so that we don't try to delete a folder placeholder that has file placeholders and just fails
+                    foreach (PlaceholderListDatabase.PlaceholderData folderPlaceholder in placeholderListCopy.Where(x => x.IsFolder).OrderByDescending(x => x.Path))
+                    {
+                        if (folderPlaceholder.IsExpandedFolder)
+                        {
+                            this.ReExpandFolder(blobSizesConnection, folderPlaceholder.Path, updatedPlaceholderList, folderPlaceholdersToKeep);
+                        }
+
+                        this.TryRemoveFolderPlaceholder(folderPlaceholder, updatedPlaceholderList, folderPlaceholdersToKeep);
+                    }
                 }
 
                 this.placeholderList.WriteAllEntriesAndFlush(updatedPlaceholderList.Values);
@@ -1260,6 +1268,52 @@ namespace GVFS.Virtualization.Projection
             }
 
             return null;
+        }
+
+        private void ReExpandFolder(
+            BlobSizes.BlobSizesConnection blobSizesConnection,
+            string relativeFolderPath,
+            ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData> updatedPlaceholderList,
+            ConcurrentHashSet<string> folderPlaceholdersToKeep)
+        {
+            string folderName;
+            string parentKey;
+            this.GetChildNameAndParentKey(relativeFolderPath, out folderName, out parentKey);
+            FolderEntryData folderEntryData = this.GetProjectedFolderEntryData(
+                blobSizesConnection,
+                childName: folderName,
+                parentKey: parentKey);
+
+            if (!folderEntryData.IsFolder)
+            {
+                // TODO(Mac): Better handle this scenario
+                return;
+            }
+
+            FolderData folderData = folderEntryData as FolderData;
+
+            for (int i = 0; i < folderData.ChildEntries.Count; i++)
+            {
+                FolderEntryData childEntry = folderData.ChildEntries[i];
+                string childRelativePath = parentKey + Path.DirectorySeparatorChar + childEntry.Name;
+                if (!updatedPlaceholderList.ContainsKey(childRelativePath))
+                {
+                    if (childEntry.IsFolder)
+                    {
+                    }
+                    else
+                    {
+                        FileData childFileData = childEntry as FileData;
+                        string sha = childFileData.Sha.ToString();
+
+                        // TODO(Mac): Check return value of WritePlaceholder
+                        this.fileSystemVirtualizer.WritePlaceholder(childRelativePath, childFileData.Size, isDirectory: false, shaContentId: sha);
+                        updatedPlaceholderList.TryAdd(
+                            childRelativePath,
+                            new PlaceholderListDatabase.PlaceholderData(childRelativePath, sha));
+                    }
+                }
+            }
         }
 
         private void TryRemoveFolderPlaceholder(
