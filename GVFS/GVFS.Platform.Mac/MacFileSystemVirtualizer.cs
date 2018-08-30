@@ -476,6 +476,8 @@ namespace GVFS.Platform.Mac
                 }
             }
 
+            this.FileSystemCallbacks.OnPlaceholderFolderExpanded(directoryRelativePath);
+
             return Result.Success;
         }
 
