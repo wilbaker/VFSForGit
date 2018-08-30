@@ -229,7 +229,19 @@ namespace GVFS.Common
 
             public bool IsFolder
             {
-                get { return this.Sha == GVFSConstants.AllZeroSha; }
+                get 
+                { 
+                    return this.Sha == GVFSConstants.AllZeroSha || 
+                        this.Sha == GVFSConstants.ExpandedFolderSha;
+                }
+            }
+
+            public bool IsExpandedFolder
+            {
+                get
+                {
+                    return this.Sha == GVFSConstants.ExpandedFolderSha;
+                }
             }
         }
 
