@@ -1300,6 +1300,7 @@ namespace GVFS.Virtualization.Projection
                 {
                     if (childEntry.IsFolder)
                     {
+                        // TODO(Mac): Check return value of WritePlaceholder
                         this.fileSystemVirtualizer.WritePlaceholder(
                             childRelativePath, 
                             endOfFile: 0, 
