@@ -92,7 +92,7 @@ namespace GVFS.Platform.Mac
                     fileMode);
             }
 
-            return new FileSystemResult(ResultToFSResult(result), result);
+            return new FileSystemResult(ResultToFSResult(result), unchecked((int)result));
         }
 
         public override FileSystemResult UpdatePlaceholderIfNeeded(
