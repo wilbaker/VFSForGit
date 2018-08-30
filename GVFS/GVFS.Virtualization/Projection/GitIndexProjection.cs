@@ -1300,6 +1300,15 @@ namespace GVFS.Virtualization.Projection
                 {
                     if (childEntry.IsFolder)
                     {
+                        this.fileSystemVirtualizer.WritePlaceholder(
+                            childRelativePath, 
+                            endOfFile: 0, 
+                            isDirectory: false, 
+                            shaContentId: GVFSConstants.AllZeroSha);
+
+                        updatedPlaceholderList.TryAdd(
+                            childRelativePath,
+                            new PlaceholderListDatabase.PlaceholderData(childRelativePath, GVFSConstants.AllZeroSha));
                     }
                     else
                     {
@@ -1308,6 +1317,7 @@ namespace GVFS.Virtualization.Projection
 
                         // TODO(Mac): Check return value of WritePlaceholder
                         this.fileSystemVirtualizer.WritePlaceholder(childRelativePath, childFileData.Size, isDirectory: false, shaContentId: sha);
+
                         updatedPlaceholderList.TryAdd(
                             childRelativePath,
                             new PlaceholderListDatabase.PlaceholderData(childRelativePath, sha));
@@ -1326,6 +1336,9 @@ namespace GVFS.Virtualization.Projection
                 updatedPlaceholderList.TryAdd(placeholder.Path, placeholder);
                 return;
             }
+
+            // TODO(Mac): Also check if the folder is in the projection, otherwise we'll remove empty folders that were
+            // laid down during folder expansion
 
             UpdateFailureReason failureReason = UpdateFailureReason.NoFailure;
             FileSystemResult result = this.fileSystemVirtualizer.DeleteFile(placeholder.Path, FolderPlaceholderDeleteFlags, out failureReason);
