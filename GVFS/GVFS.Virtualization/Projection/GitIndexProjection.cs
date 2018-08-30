@@ -322,7 +322,7 @@ namespace GVFS.Virtualization.Projection
 
         public void OnPlaceholderFolderExpanded(string relativePath)
         {
-            
+            this.placeholderList.AddAndFlush(relativePath, GVFSConstants.ExpandedFolderSha);
         }
 
         public virtual void OnPlaceholderFileCreated(string virtualPath, string sha)
