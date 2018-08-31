@@ -460,7 +460,7 @@ namespace GVFS.Platform.Mac
 
         private Result CreatePlaceholders(string directoryRelativePath, IEnumerable<ProjectedFileInfo> projectedItems, string triggeringProcessName)
         {
-            this.Context.Tracer.RelatedInfo($"CreatePlaceholders({directoryRelativePath}):Expanding directory");
+            this.Context.Tracer.RelatedInfo($"CreatePlaceholders({directoryRelativePath}):Expanding directory for {triggeringProcessName}");
             foreach (ProjectedFileInfo fileInfo in projectedItems)
             {
                 Result result;
