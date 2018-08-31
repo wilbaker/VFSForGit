@@ -1284,6 +1284,7 @@ namespace GVFS.Virtualization.Projection
             if (!this.TryGetOrAddFolderDataFromCache(relativeFolderPath, out folderData))
             {
                 // TODO(Mac): Better handle this scenario
+                this.context.Tracer.RelatedInfo($"ReExpandFolder did not find folder {relativeFolderPath} in projection");
                 return;
             }
 
@@ -1311,6 +1312,7 @@ namespace GVFS.Virtualization.Projection
                 {
                     if (!existingFolderPlaceholders.Contains(childRelativePath))
                     {
+                        this.context.Tracer.RelatedInfo($"ReExpandFolder writing folder {childRelativePath}");
                         // TODO(Mac): Check return value of WritePlaceholder
                         this.fileSystemVirtualizer.WritePlaceholder(
                             childRelativePath, 
@@ -1329,6 +1331,8 @@ namespace GVFS.Virtualization.Projection
                 {
                     if (!updatedPlaceholderList.ContainsKey(childRelativePath))
                     {
+                        this.context.Tracer.RelatedInfo($"ReExpandFolder writing file {childRelativePath}");
+
                         FileData childFileData = childEntry as FileData;
                         string sha = childFileData.Sha.ToString();
 
@@ -1367,9 +1371,7 @@ namespace GVFS.Virtualization.Projection
                     break;
 
                 case FSResult.DirectoryNotEmpty:
-                    updatedPlaceholderList.TryAdd(
-                        placeholder.Path,  
-                        new PlaceholderListDatabase.PlaceholderData(placeholder.Path, GVFSConstants.AllZeroSha));
+                    updatedPlaceholderList.TryAdd(placeholder.Path, placeholder);
                     break;
 
                 case FSResult.FileOrPathNotFound:
@@ -1382,6 +1384,9 @@ namespace GVFS.Virtualization.Projection
                     metadata.Add("result.RawResult", result.RawResult);
                     metadata.Add("UpdateFailureCause", failureReason.ToString());                    
                     this.context.Tracer.RelatedEvent(EventLevel.Informational, nameof(this.TryRemoveFolderPlaceholder) + "_DeleteFileFailure", metadata);
+
+                    updatedPlaceholderList.TryAdd(placeholder.Path, placeholder);
+
                     break;
             }
         }

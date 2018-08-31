@@ -88,7 +88,6 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         }
 
         [TestCase]
-        [Category(Categories.MacTODO.M3)]
         public void CheckoutNewBranchFromStartingPointTest()
         {
             // In commit 8df701986dea0a5e78b742d2eaf9348825b14d35 the CheckoutNewBranchFromStartingPointTest files were not present
