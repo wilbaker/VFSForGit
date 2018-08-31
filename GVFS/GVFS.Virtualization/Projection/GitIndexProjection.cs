@@ -1089,7 +1089,7 @@ namespace GVFS.Virtualization.Projection
             using (ITracer activity = this.context.Tracer.StartActivity("UpdatePlaceholders", EventLevel.Informational, metadata))
             {
                 ConcurrentHashSet<string> folderPlaceholdersToKeep = new ConcurrentHashSet<string>();
-                ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData> updatedPlaceholderList = new ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData>();
+                ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData> updatedPlaceholderList = new ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData>(StringComparer.Ordinal);
                 this.ProcessListOnThreads(
                     placeholderListCopy.Where(x => !x.IsFolder).ToList(),
                     (placeholderBatch, start, end, blobSizesConnection, availableSizes) => 
@@ -1103,11 +1103,14 @@ namespace GVFS.Virtualization.Projection
                 {
                     // Waiting for the UpdateOrDeleteFilePlaceholder to fill the folderPlaceholdersToKeep before trying to remove folder placeholders
                     // so that we don't try to delete a folder placeholder that has file placeholders and just fails
-                    foreach (PlaceholderListDatabase.PlaceholderData folderPlaceholder in placeholderListCopy.Where(x => x.IsFolder).OrderByDescending(x => x.Path))
+                    IEnumerable<PlaceholderListDatabase.PlaceholderData> folderPlaceholderData = placeholderListCopy.Where(x => x.IsFolder);
+
+                    HashSet<string> folderPlaceholders = new HashSet<string>(folderPlaceholderData.Select(x => x.Path), StringComparer.OrdinalIgnoreCase);
+                    foreach (PlaceholderListDatabase.PlaceholderData folderPlaceholder in folderPlaceholderData.OrderByDescending(x => x.Path))
                     {
                         if (folderPlaceholder.IsExpandedFolder)
                         {
-                            this.ReExpandFolder(blobSizesConnection, folderPlaceholder.Path, updatedPlaceholderList, folderPlaceholdersToKeep);
+                            this.ReExpandFolder(blobSizesConnection, folderPlaceholder.Path, updatedPlaceholderList, folderPlaceholders, folderPlaceholdersToKeep);
                         }
 
                         this.TryRemoveFolderPlaceholder(folderPlaceholder, updatedPlaceholderList, folderPlaceholdersToKeep);
@@ -1274,6 +1277,7 @@ namespace GVFS.Virtualization.Projection
             BlobSizes.BlobSizesConnection blobSizesConnection,
             string relativeFolderPath,
             ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData> updatedPlaceholderList,
+            HashSet<string> existingFolderPlaceholders,
             ConcurrentHashSet<string> folderPlaceholdersToKeep)
         {
             FolderData folderData;
@@ -1303,22 +1307,27 @@ namespace GVFS.Virtualization.Projection
                     childRelativePath = relativeFolderPath + Path.DirectorySeparatorChar + childEntry.Name.GetString();                    
                 }
 
-                if (!updatedPlaceholderList.ContainsKey(childRelativePath))
+                if (childEntry.IsFolder)
                 {
-                    if (childEntry.IsFolder)
+                    if (!existingFolderPlaceholders.Contains(childRelativePath))
                     {
                         // TODO(Mac): Check return value of WritePlaceholder
-                        //this.fileSystemVirtualizer.WritePlaceholder(
-                        //    childRelativePath, 
-                        //    endOfFile: 0, 
-                        //    isDirectory: true, 
-                        //    shaContentId: GVFSConstants.AllZeroSha);
+                        this.fileSystemVirtualizer.WritePlaceholder(
+                            childRelativePath, 
+                            endOfFile: 0, 
+                            isDirectory: true, 
+                            shaContentId: GVFSConstants.AllZeroSha);
 
-                        //updatedPlaceholderList.TryAdd(
-                            //childRelativePath,
-                            //new PlaceholderListDatabase.PlaceholderData(childRelativePath, GVFSConstants.AllZeroSha));
+                        updatedPlaceholderList.TryAdd(
+                            childRelativePath,
+                            new PlaceholderListDatabase.PlaceholderData(childRelativePath, GVFSConstants.AllZeroSha));
+
+                        folderPlaceholdersToKeep.Add(relativeFolderPath);
                     }
-                    else
+                }
+                else
+                {
+                    if (!updatedPlaceholderList.ContainsKey(childRelativePath))
                     {
                         FileData childFileData = childEntry as FileData;
                         string sha = childFileData.Sha.ToString();
@@ -1329,6 +1338,8 @@ namespace GVFS.Virtualization.Projection
                         updatedPlaceholderList.TryAdd(
                             childRelativePath,
                             new PlaceholderListDatabase.PlaceholderData(childRelativePath, sha));
+
+                        folderPlaceholdersToKeep.Add(relativeFolderPath);
                     }
                 }
             }
