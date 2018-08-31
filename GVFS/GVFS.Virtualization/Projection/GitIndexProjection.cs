@@ -1283,6 +1283,13 @@ namespace GVFS.Virtualization.Projection
                 return;
             }
 
+            folderData.PopulateSizes(
+                this.context.Tracer,
+                this.gitObjects,
+                blobSizesConnection,
+                availableSizes: null,
+                cancellationToken: CancellationToken.None);
+
             for (int i = 0; i < folderData.ChildEntries.Count; i++)
             {
                 FolderEntryData childEntry = folderData.ChildEntries[i];
@@ -1301,15 +1308,15 @@ namespace GVFS.Virtualization.Projection
                     if (childEntry.IsFolder)
                     {
                         // TODO(Mac): Check return value of WritePlaceholder
-                        this.fileSystemVirtualizer.WritePlaceholder(
-                            childRelativePath, 
-                            endOfFile: 0, 
-                            isDirectory: false, 
-                            shaContentId: GVFSConstants.AllZeroSha);
+                        //this.fileSystemVirtualizer.WritePlaceholder(
+                        //    childRelativePath, 
+                        //    endOfFile: 0, 
+                        //    isDirectory: true, 
+                        //    shaContentId: GVFSConstants.AllZeroSha);
 
-                        updatedPlaceholderList.TryAdd(
-                            childRelativePath,
-                            new PlaceholderListDatabase.PlaceholderData(childRelativePath, GVFSConstants.AllZeroSha));
+                        //updatedPlaceholderList.TryAdd(
+                            //childRelativePath,
+                            //new PlaceholderListDatabase.PlaceholderData(childRelativePath, GVFSConstants.AllZeroSha));
                     }
                     else
                     {
