@@ -1108,7 +1108,7 @@ namespace GVFS.Virtualization.Projection
                     HashSet<string> folderPlaceholders = new HashSet<string>(folderPlaceholderData.Select(x => x.Path), StringComparer.OrdinalIgnoreCase);
                     foreach (PlaceholderListDatabase.PlaceholderData folderPlaceholder in folderPlaceholderData.OrderByDescending(x => x.Path))
                     {
-                        if (folderPlaceholder.IsExpandedFolder)
+                        if (GVFSPlatform.Instance.FileSystem.EnumerationExpandsDirectories && folderPlaceholder.IsExpandedFolder)
                         {
                             this.ReExpandFolder(blobSizesConnection, folderPlaceholder.Path, updatedPlaceholderList, folderPlaceholders, folderPlaceholdersToKeep);
                         }
@@ -1280,11 +1280,14 @@ namespace GVFS.Virtualization.Projection
             HashSet<string> existingFolderPlaceholders,
             ConcurrentHashSet<string> folderPlaceholdersToKeep)
         {
+            this.context.Tracer.RelatedInfo($"ReExpandFolder({relativeFolderPath})");
+
             FolderData folderData;
             if (!this.TryGetOrAddFolderDataFromCache(relativeFolderPath, out folderData))
             {
-                // TODO(Mac): Better handle this scenario
-                this.context.Tracer.RelatedInfo($"ReExpandFolder did not find folder {relativeFolderPath} in projection");
+                this.context.Tracer.RelatedInfo($"ReExpandFolder({relativeFolderPath}): Not in projection");
+
+                // Folder is no longer in the projection
                 return;
             }
 
@@ -1312,7 +1315,8 @@ namespace GVFS.Virtualization.Projection
                 {
                     if (!existingFolderPlaceholders.Contains(childRelativePath))
                     {
-                        this.context.Tracer.RelatedInfo($"ReExpandFolder writing folder {childRelativePath}");
+                        this.context.Tracer.RelatedInfo($"ReExpandFolder({relativeFolderPath}): Writing folder {childRelativePath}");
+
                         // TODO(Mac): Check return value of WritePlaceholder
                         this.fileSystemVirtualizer.WritePlaceholder(
                             childRelativePath, 
@@ -1331,7 +1335,7 @@ namespace GVFS.Virtualization.Projection
                 {
                     if (!updatedPlaceholderList.ContainsKey(childRelativePath))
                     {
-                        this.context.Tracer.RelatedInfo($"ReExpandFolder writing file {childRelativePath}");
+                        this.context.Tracer.RelatedInfo($"ReExpandFolder({relativeFolderPath}): Writing file {childRelativePath}");
 
                         FileData childFileData = childEntry as FileData;
                         string sha = childFileData.Sha.ToString();
@@ -1356,12 +1360,30 @@ namespace GVFS.Virtualization.Projection
         {
             if (folderPlaceholdersToKeep.Contains(placeholder.Path))
             {
+                this.context.Tracer.RelatedInfo($"TryRemoveFolderPlaceholder({placeholder.Path}): Marked as 'to keep'");
                 updatedPlaceholderList.TryAdd(placeholder.Path, placeholder);
                 return;
             }
 
-            // TODO(Mac): Also check if the folder is in the projection, otherwise we'll remove empty folders that were
-            // laid down during folder expansion
+            if (GVFSPlatform.Instance.FileSystem.EnumerationExpandsDirectories)
+            {
+                // If enumeration does not expand directories we should not exit
+                // early if the folder is still in the projection.  There may
+                // be folder tombstones on disk that need to get cleaned up (if git
+                // deleted a folder a folder that was not in ModifiedPaths.dat)
+
+                FolderData folderData;
+                if (this.TryGetOrAddFolderDataFromCache(placeholder.Path, out folderData))
+                {
+                    this.context.Tracer.RelatedInfo($"TryRemoveFolderPlaceholder({placeholder.Path}): Folder still in projection");
+
+                    // Folder is still in the projection and should not be removed
+                    updatedPlaceholderList.TryAdd(placeholder.Path, placeholder);
+                    return;
+                }
+            }
+
+            this.context.Tracer.RelatedInfo($"TryRemoveFolderPlaceholder({placeholder.Path}): Deleting");
 
             UpdateFailureReason failureReason = UpdateFailureReason.NoFailure;
             FileSystemResult result = this.fileSystemVirtualizer.DeleteFile(placeholder.Path, FolderPlaceholderDeleteFlags, out failureReason);
