@@ -320,7 +320,7 @@ namespace GVFS.Virtualization.Projection
             this.placeholderList.AddAndFlush(virtualPath, GVFSConstants.AllZeroSha);
         }
 
-        public void OnPlaceholderFolderExpanded(string relativePath)
+        public virtual void OnPlaceholderFolderExpanded(string relativePath)
         {
             this.placeholderList.AddAndFlush(relativePath, GVFSConstants.ExpandedFolderSha);
         }

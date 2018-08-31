@@ -116,7 +116,7 @@ namespace GVFS.Platform.Windows
             string sha)
         {
             uint fileAttributes;
-            if (fileInfo.IsFolder)
+            if (isDirectory)
             {
                 fileAttributes = (uint)NativeMethods.FileAttributes.FILE_ATTRIBUTE_DIRECTORY;
             }
@@ -138,7 +138,7 @@ namespace GVFS.Platform.Windows
                 contentId: FileSystemVirtualizer.ConvertShaToContentId(sha),
                 providerId: FileSystemVirtualizer.GetPlaceholderVersionId());
 
-            return new FileSystemResult(HResultToFSResult(result), result);
+            return new FileSystemResult(HResultToFSResult(result), unchecked((int)result));
         }
 
         public override FileSystemResult UpdatePlaceholderIfNeeded(
