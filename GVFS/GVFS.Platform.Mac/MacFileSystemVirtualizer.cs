@@ -460,6 +460,7 @@ namespace GVFS.Platform.Mac
 
         private Result CreatePlaceholders(string directoryRelativePath, IEnumerable<ProjectedFileInfo> projectedItems, string triggeringProcessName)
         {
+            this.Context.Tracer.RelatedInfo($"CreatePlaceholders({directoryRelativePath}):Expanding directory");
             foreach (ProjectedFileInfo fileInfo in projectedItems)
             {
                 Result result;
@@ -482,10 +483,12 @@ namespace GVFS.Platform.Mac
                 {
                     if (fileInfo.IsFolder)
                     {
+                        this.Context.Tracer.RelatedInfo($"CreatePlaceholders({directoryRelativePath}): Created folder {childRelativePath}");
                         this.FileSystemCallbacks.OnPlaceholderFolderCreated(childRelativePath);
                     }
                     else
                     {
+                        this.Context.Tracer.RelatedInfo($"CreatePlaceholders({directoryRelativePath}): Created file {childRelativePath}");
                         this.FileSystemCallbacks.OnPlaceholderFileCreated(childRelativePath, sha, triggeringProcessName);
                     }
                 }

@@ -97,6 +97,12 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
 
             // In commit cd5c55fea4d58252bb38058dd3818da75aff6685 the CheckoutNewBranchFromStartingPointTest files were present
             this.ValidateGitCommand("checkout -b tests/functional/CheckoutNewBranchFromStartingPointTest cd5c55fea4d58252bb38058dd3818da75aff6685");
+
+            while (!File.Exists(this.Enlistment.GetVirtualPathTo("GitCommandsTests", "CheckoutNewBranchFromStartingPointTest", "test2.txt")))
+            {
+                System.Threading.Thread.Sleep(1000);
+            }
+
             this.FileShouldHaveContents("TestFile1 \r\n", "GitCommandsTests", "CheckoutNewBranchFromStartingPointTest", "test1.txt");
             this.FileShouldHaveContents("TestFile2 \r\n", "GitCommandsTests", "CheckoutNewBranchFromStartingPointTest", "test2.txt");
 

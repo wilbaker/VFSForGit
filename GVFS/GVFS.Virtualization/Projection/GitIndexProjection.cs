@@ -1383,20 +1383,21 @@ namespace GVFS.Virtualization.Projection
                 }
             }
 
-            this.context.Tracer.RelatedInfo($"TryRemoveFolderPlaceholder({placeholder.Path}): Deleting");
-
             UpdateFailureReason failureReason = UpdateFailureReason.NoFailure;
             FileSystemResult result = this.fileSystemVirtualizer.DeleteFile(placeholder.Path, FolderPlaceholderDeleteFlags, out failureReason);
             switch (result.Result)
             {
                 case FSResult.Ok:
+                    this.context.Tracer.RelatedInfo($"TryRemoveFolderPlaceholder({placeholder.Path}): Deleted");
                     break;
 
                 case FSResult.DirectoryNotEmpty:
+                    this.context.Tracer.RelatedInfo($"TryRemoveFolderPlaceholder({placeholder.Path}): Directory not empty");
                     updatedPlaceholderList.TryAdd(placeholder.Path, placeholder);
                     break;
 
                 case FSResult.FileOrPathNotFound:
+                    this.context.Tracer.RelatedInfo($"TryRemoveFolderPlaceholder({placeholder.Path}): File or path not found");
                     break;
 
                 default:
