@@ -1276,26 +1276,26 @@ namespace GVFS.Virtualization.Projection
             ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData> updatedPlaceholderList,
             ConcurrentHashSet<string> folderPlaceholdersToKeep)
         {
-            string folderName;
-            string parentKey;
-            this.GetChildNameAndParentKey(relativeFolderPath, out folderName, out parentKey);
-            FolderEntryData folderEntryData = this.GetProjectedFolderEntryData(
-                blobSizesConnection,
-                childName: folderName,
-                parentKey: parentKey);
-
-            if (!folderEntryData.IsFolder)
+            FolderData folderData;
+            if (!this.TryGetOrAddFolderDataFromCache(relativeFolderPath, out folderData))
             {
                 // TODO(Mac): Better handle this scenario
                 return;
             }
 
-            FolderData folderData = folderEntryData as FolderData;
-
             for (int i = 0; i < folderData.ChildEntries.Count; i++)
             {
                 FolderEntryData childEntry = folderData.ChildEntries[i];
-                string childRelativePath = parentKey + Path.DirectorySeparatorChar + childEntry.Name;
+                string childRelativePath;
+                if (relativeFolderPath.Length == 0)
+                {
+                    childRelativePath = childEntry.Name.GetString();
+                }
+                else
+                {
+                    childRelativePath = relativeFolderPath + Path.DirectorySeparatorChar + childEntry.Name.GetString();                    
+                }
+
                 if (!updatedPlaceholderList.ContainsKey(childRelativePath))
                 {
                     if (childEntry.IsFolder)
