@@ -72,7 +72,10 @@ static size_t packet_bin_read(void *buf, size_t count, FILE *stream)
 	size_t len, ret;
 
 	/* if we timeout waiting for input, exit and git will restart us if needed */
+    fprintf(stderr, "Waiting on fread ... ");
 	size_t bytes_read = fread(packetlen, 1, 4, stream);
+    fprintf(stderr, "fread read %u \n", bytes_read);
+ 
 	if (0 == bytes_read)
 	{
 		exit(0);

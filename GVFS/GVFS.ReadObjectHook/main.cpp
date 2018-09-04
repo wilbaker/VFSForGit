@@ -12,6 +12,7 @@
 #include "stdafx.h"
 #include "packet.h"
 #include "common.h"
+#include <stdio.h>
 
 #define MAX_PACKET_LENGTH 512
 #define SHA1_LENGTH 40
@@ -29,6 +30,8 @@ enum ReadObjectHookErrorReturnCode
 
 int DownloadSHA(PIPE_HANDLE pipeHandle, const char *sha1)
 {
+    fprintf(stderr, "DownloadSHA: %s \n", sha1);
+
     // Construct download request message
     // Format:  "DLO|<40 character SHA>"
     // Example: "DLO|920C34DCDDFC8F07AC4704C8C0D087D6F2095729"
@@ -71,12 +74,16 @@ int DownloadSHA(PIPE_HANDLE pipeHandle, const char *sha1)
     {
         die(ReturnCode::PipeReadFailed, "Read response from pipe failed (%d)\n", error);
     }
+    
+    fprintf(stderr, "Downloaded: %s %c \n", sha1, *response);
 
     return *response == 'S' ? ReturnCode::Success : ReturnCode::FailureToDownload;
 }
 
 int main(int, char *argv[])
 {
+    fprintf(stderr, "Starting read-object hooj \n");
+
     char packet_buffer[MAX_PACKET_LENGTH];
     size_t len;
     int err;
@@ -124,6 +131,7 @@ int main(int, char *argv[])
 
     while (1)
     {
+        fprintf(stderr, "Inside read-object loop \n");
         packet_txt_read(packet_buffer, sizeof(packet_buffer));
         if (strcmp(packet_buffer, "command=get"))
         {
