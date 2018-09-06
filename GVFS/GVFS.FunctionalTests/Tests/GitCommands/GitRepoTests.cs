@@ -21,10 +21,12 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
         protected const string DirectoryWithDifferentFileAfterBranch = "FunctionalTests/20171025_DirectoryWithDifferentFile";
 
         private bool enlistmentPerTest;
+        private bool validateRepoInSetup;
 
-        public GitRepoTests(bool enlistmentPerTest)
+        public GitRepoTests(bool enlistmentPerTest, bool validateRepoInSetup = true)
         {
             this.enlistmentPerTest = enlistmentPerTest;
+            this.validateRepoInSetup = validateRepoInSetup;
             this.FileSystem = new SystemIORunner();
         }
 
@@ -72,8 +74,13 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
             this.ValidateGitCommand("checkout " + this.ControlGitRepo.Commitish);
 
             this.CheckHeadCommitTree();
-            this.Enlistment.RepoRoot.ShouldBeADirectory(this.FileSystem)
-                .WithDeepStructure(this.FileSystem, this.ControlGitRepo.RootPath);
+
+            if (this.validateRepoInSetup)
+            {
+                this.Enlistment.RepoRoot.ShouldBeADirectory(this.FileSystem)
+                    .WithDeepStructure(this.FileSystem, this.ControlGitRepo.RootPath);
+            }
+
             this.ValidateGitCommand("status");
         }
 
