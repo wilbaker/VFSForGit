@@ -403,15 +403,6 @@ namespace GVFS.Common.Git
             processInfo.StandardOutputEncoding = UTF8NoBOM;
             processInfo.StandardErrorEncoding = UTF8NoBOM;
 
-            // Removing trace variables that might change git output and break parsing
-            // List of environment variables: https://git-scm.com/book/gr/v2/Git-Internals-Environment-Variables
-            foreach (string key in processInfo.EnvironmentVariables.Keys.Cast<string>()
-                .Where(x => x.StartsWith("GIT_TRACE", StringComparison.OrdinalIgnoreCase))
-                .ToList())
-            {
-                processInfo.EnvironmentVariables.Remove(key);
-            }
-
             processInfo.EnvironmentVariables["GIT_TERMINAL_PROMPT"] = "0";
             processInfo.EnvironmentVariables["GCM_VALIDATE"] = "0";
             processInfo.EnvironmentVariables["PATH"] =
