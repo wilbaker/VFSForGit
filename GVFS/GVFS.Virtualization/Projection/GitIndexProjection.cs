@@ -787,7 +787,12 @@ namespace GVFS.Virtualization.Projection
                 parentFolder = parentFolder.ChildEntries.GetOrAddFolder(indexEntry.PathParts[pathIndex]);
             }
 
-            parentFolder.AddChildFile(indexEntry.PathParts[indexEntry.NumParts - 1], indexEntry.Sha);
+            if (parentFolder.AddChildFile(indexEntry.PathParts[indexEntry.NumParts - 1], indexEntry.Sha) == null)
+            {
+                EventMetadata metadata = CreateEventMetadata();
+                metadata.Add("gitPath", indexEntry.GetFullPath());
+                this.context.Tracer.RelatedError(metadata, "AddChildFile: Failed due to duplicate file");
+            }
 
             return parentFolder;
         }

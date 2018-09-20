@@ -36,7 +36,14 @@ namespace GVFS.Virtualization.Projection
 
             public FileData AddChildFile(LazyUTF8String name, byte[] shaBytes)
             {
-                return this.ChildEntries.AddFile(name, shaBytes);
+                try
+                {
+                    return this.ChildEntries.AddFile(name, shaBytes);
+                }
+                catch (InvalidOperationException)
+                {
+                    return null;
+                }
             }
 
             public void PopulateSizes(
