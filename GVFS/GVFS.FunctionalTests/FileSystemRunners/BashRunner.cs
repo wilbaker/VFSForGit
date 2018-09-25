@@ -99,6 +99,14 @@ namespace GVFS.FunctionalTests.FileSystemRunners
             return this.FileExistsOnDisk(path, FileType.SymLink);
         }
 
+        public void CreateSymbolicLink(string newLinkFilePath, string existingFilePath)
+        {
+            string existingFileBashPath = this.ConvertWinPathToBashPath(existingFilePath);
+            string newLinkBashPath = this.ConvertWinPathToBashPath(newLinkFilePath);
+
+            this.RunProcess(string.Format("-c \"ln -s -F {0} {1}\"", existingFileBashPath, newLinkBashPath));
+        }
+
         public override bool FileExists(string path)
         {
             return this.FileExistsOnDisk(path, FileType.File);
