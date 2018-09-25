@@ -38,10 +38,12 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         [TestCase, Order(1)]
         public void CheckoutBranchWithSymLinks()
         {
+            GitHelpers.InvokeGitAgainstGVFSRepo(this.Enlistment.RepoRoot, "checkout FunctionalTests/20180925_SymLinksPart1");
             GitHelpers.CheckGitCommandAgainstGVFSRepo(
-                this.Enlistment.RepoRoot, 
-                "checkout FunctionalTests/20180925_SymLinksPart1",
-                "Switched to branch 'FunctionalTests/20180925_SymLinksPart1'");
+                this.Enlistment.RepoRoot,
+                "status",
+                "On branch FunctionalTests/20180925_SymLinksPart1",
+                "nothing to commit, working tree clean");
 
             string testFilePath = this.Enlistment.GetVirtualPathTo(Path.Combine(TestFolderName, TestFileName));
             testFilePath.ShouldBeAFile(this.bashRunner).WithContents(TestFileContents);
@@ -63,10 +65,12 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         [TestCase, Order(2)]
         public void CheckoutBranchWhereSymLinksChangeContentsAndTransitionToFile()
         {
+            GitHelpers.InvokeGitAgainstGVFSRepo(this.Enlistment.RepoRoot, "checkout FunctionalTests/20180925_SymLinksPart2");
             GitHelpers.CheckGitCommandAgainstGVFSRepo(
                 this.Enlistment.RepoRoot,
-                "checkout FunctionalTests/20180925_SymLinksPart2",
-                "Switched to branch 'FunctionalTests/20180925_SymLinksPart2'");
+                "status",
+                "On branch FunctionalTests/20180925_SymLinksPart2",
+                "nothing to commit, working tree clean");
 
             // testFilePath and testFile2Path are unchanged from FunctionalTests/20180925_SymLinksPart2
             string testFilePath = this.Enlistment.GetVirtualPathTo(Path.Combine(TestFolderName, TestFileName));
@@ -96,10 +100,12 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         [TestCase, Order(3)]
         public void CheckoutBranchWhereFilesTransitionToSymLinks()
         {
+            GitHelpers.InvokeGitAgainstGVFSRepo(this.Enlistment.RepoRoot, "checkout FunctionalTests/20180925_SymLinksPart3");
             GitHelpers.CheckGitCommandAgainstGVFSRepo(
                 this.Enlistment.RepoRoot,
-                "checkout FunctionalTests/20180925_SymLinksPart3",
-                "Switched to branch 'FunctionalTests/20180925_SymLinksPart3'");
+                "status",
+                "On branch FunctionalTests/20180925_SymLinksPart3",
+                "nothing to commit, working tree clean");
 
             // In this branch testFilePath has been changed to point to newGrandChildFilePath
             string testFilePath = this.Enlistment.GetVirtualPathTo(Path.Combine(TestFolderName, TestFileName));
@@ -127,6 +133,12 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
         [TestCase, Order(4)]
         public void GitStatusReportsSymLinkChanges()
         {
+            GitHelpers.CheckGitCommandAgainstGVFSRepo(
+                this.Enlistment.RepoRoot,
+                "status",
+                "On branch FunctionalTests/20180925_SymLinksPart3",
+                "nothing to commit, working tree clean");
+            
             string testFilePath = this.Enlistment.GetVirtualPathTo(Path.Combine(TestFolderName, TestFileName));
             testFilePath.ShouldBeAFile(this.bashRunner).WithContents(GrandChildFileContents);
             this.bashRunner.IsSymbolicLink(testFilePath).ShouldBeTrue($"{testFilePath} should be a symlink");
@@ -145,7 +157,7 @@ namespace GVFS.FunctionalTests.Tests.EnlistmentPerFixture
                 this.Enlistment.RepoRoot,
                 "status",
                 "On branch FunctionalTests/20180925_SymLinksPart3",
-                "modified:   TestFile.txt");
+                $"modified:   {TestFolderName}/{TestFileName}");
         }
     }
 }
