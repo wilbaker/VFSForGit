@@ -15,6 +15,7 @@ namespace GVFS.UnitTests.Mock.Mac
         {
             this.commandCompleted = new AutoResetEvent(false);
             this.CreatedPlaceholders = new ConcurrentDictionary<string, ushort>();
+            this.CreatedSymLinks = new ConcurrentHashSet<string>();
             this.WriteFileReturnResult = Result.Success;
         }
 
@@ -27,6 +28,8 @@ namespace GVFS.UnitTests.Mock.Mac
         public UpdateFailureCause DeleteFileUpdateFailureCause { get; set; }
 
         public ConcurrentDictionary<string, ushort> CreatedPlaceholders { get; private set; }
+
+        public ConcurrentHashSet<string> CreatedSymLinks { get; }
 
         public override EnumerateDirectoryCallback OnEnumerateDirectory { get; set; }
         public override GetFileStreamCallback OnGetFileStream { get; set; }
@@ -76,6 +79,12 @@ namespace GVFS.UnitTests.Mock.Mac
             ushort fileMode)
         {
             this.CreatedPlaceholders.TryAdd(relativePath, fileMode);
+            return Result.Success;
+        }
+
+        public override Result WriteSymLink(string relativePath, string symLinkContents)
+        {
+            this.CreatedSymLinks.Add(relativePath);
             return Result.Success;
         }
 
