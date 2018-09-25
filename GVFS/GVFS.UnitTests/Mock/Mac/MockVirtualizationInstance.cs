@@ -82,7 +82,9 @@ namespace GVFS.UnitTests.Mock.Mac
             return Result.Success;
         }
 
-        public override Result WriteSymLink(string relativePath, string symLinkContents)
+        public override Result WriteSymLink(
+            string relativePath, 
+            string symLinkContents)
         {
             this.CreatedSymLinks.Add(relativePath);
             return Result.Success;
@@ -97,6 +99,17 @@ namespace GVFS.UnitTests.Mock.Mac
             UpdateType updateFlags,
             out UpdateFailureCause failureCause)
         {
+            failureCause = this.UpdatePlaceholderIfNeededFailureCause;
+            return this.UpdatePlaceholderIfNeededResult;
+        }
+
+        public override Result ReplacePlaceholderFileWithSymLink(
+            string relativePath, 
+            string symLinkContents, 
+            UpdateType updateFlags, 
+            out UpdateFailureCause failureCause)
+        {
+            this.CreatedSymLinks.Add(relativePath);
             failureCause = this.UpdatePlaceholderIfNeededFailureCause;
             return this.UpdatePlaceholderIfNeededResult;
         }

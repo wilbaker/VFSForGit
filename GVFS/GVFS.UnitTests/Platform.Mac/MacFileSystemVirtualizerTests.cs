@@ -180,11 +180,15 @@ namespace GVFS.UnitTests.Platform.Mac
                 virtualizer))
             {
                 string filePath = "test" + Path.DirectorySeparatorChar + "test.txt";
-                gitIndexProjection.MockFileTypesAndModes.TryAdd(filePath, (ushort)((ushort)GitIndexProjection.FileType.SymLink));
+                gitIndexProjection.MockFileTypesAndModes.TryAdd(filePath, (ushort)GitIndexProjection.FileType.SymLink);
                 string error;
                 fileSystemCallbacks.TryStart(out error).ShouldEqual(true);
 
-                virtualizer.WritePlaceholderFile(filePath, endOfFile: 0, sha: string.Empty).ShouldEqual(new FileSystemResult(FSResult.Ok, (int)Result.Success));
+                virtualizer.WritePlaceholderFile(
+                    filePath, 
+                    endOfFile: 0, 
+                    sha: string.Empty).ShouldEqual(new FileSystemResult(FSResult.Ok, (int)Result.Success));
+
                 mockVirtualization.CreatedPlaceholders.ShouldBeEmpty();
                 mockVirtualization.CreatedSymLinks.Count.ShouldEqual(1);
                 mockVirtualization.CreatedSymLinks.ShouldContain(entry => entry.Equals(filePath));
@@ -215,7 +219,7 @@ namespace GVFS.UnitTests.Platform.Mac
                 virtualizer))
             {
                 string filePath = "test" + Path.DirectorySeparatorChar + "test.txt";
-                gitIndexProjection.MockFileTypesAndModes.TryAdd(filePath, (ushort)((ushort)GitIndexProjection.FileType.Regular | FileMode644));
+                gitIndexProjection.MockFileTypesAndModes.TryAdd(filePath, (ushort)GitIndexProjection.FileType.SymLink);
                 string error;
                 fileSystemCallbacks.TryStart(out error).ShouldEqual(true);
 
@@ -238,42 +242,14 @@ namespace GVFS.UnitTests.Platform.Mac
                     .ShouldEqual(new FileSystemResult(FSResult.Ok, (int)mockVirtualization.UpdatePlaceholderIfNeededResult));
                 failureReason.ShouldEqual((UpdateFailureReason)mockVirtualization.UpdatePlaceholderIfNeededFailureCause);
 
-                mockVirtualization.UpdatePlaceholderIfNeededResult = Result.EFileNotFound;
-                mockVirtualization.UpdatePlaceholderIfNeededFailureCause = UpdateFailureCause.NoFailure;
-                virtualizer
-                    .UpdatePlaceholderIfNeeded(
-                        filePath,
-                        DateTime.Now,
-                        DateTime.Now,
-                        DateTime.Now,
-                        DateTime.Now,
-                        0,
-                        15,
-                        string.Empty,
-                        UpdatePlaceholderType.AllowReadOnly,
-                        out failureReason)
-                    .ShouldEqual(new FileSystemResult(FSResult.FileOrPathNotFound, (int)mockVirtualization.UpdatePlaceholderIfNeededResult));
-                failureReason.ShouldEqual((UpdateFailureReason)mockVirtualization.UpdatePlaceholderIfNeededFailureCause);
+                mockVirtualization.CreatedSymLinks.Count.ShouldEqual(1);
+                mockVirtualization.CreatedSymLinks.ShouldContain(entry => entry.Equals(filePath));
 
-                // TODO: What will the result be when the UpdateFailureCause is DirtyData
-                mockVirtualization.UpdatePlaceholderIfNeededResult = Result.EInvalidOperation;
-                mockVirtualization.UpdatePlaceholderIfNeededFailureCause = UpdateFailureCause.DirtyData;
+                // Creating a symlink should schedule a background task
+                backgroundTaskRunner.Count.ShouldEqual(1);
+                backgroundTaskRunner.BackgroundTasks[0].Operation.ShouldEqual(GVFS.Virtualization.Background.FileSystemTask.OperationType.OnFileSymLinkCreated);
+                backgroundTaskRunner.BackgroundTasks[0].VirtualPath.ShouldEqual(filePath);
 
-                // TODO: The result should probably be VirtualizationInvalidOperation but for now it's IOError
-                virtualizer
-                    .UpdatePlaceholderIfNeeded(
-                        filePath,
-                        DateTime.Now,
-                        DateTime.Now,
-                        DateTime.Now,
-                        DateTime.Now,
-                        0,
-                        15,
-                        string.Empty,
-                        UpdatePlaceholderType.AllowReadOnly,
-                        out failureReason)
-                    .ShouldEqual(new FileSystemResult(FSResult.IOError, (int)mockVirtualization.UpdatePlaceholderIfNeededResult));
-                failureReason.ShouldEqual((UpdateFailureReason)mockVirtualization.UpdatePlaceholderIfNeededFailureCause);
                 fileSystemCallbacks.Stop();
             }
         }
