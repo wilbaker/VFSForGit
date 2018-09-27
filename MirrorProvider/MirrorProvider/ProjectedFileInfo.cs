@@ -2,14 +2,14 @@
 {
     public class ProjectedFileInfo
     {
-        public ProjectedFileInfo(string name, long size, Type type)
+        public ProjectedFileInfo(string name, long size, FileType type)
         {
             this.Name = name;
             this.Size = size;
             this.Type = type;
         }
 
-        public enum Type
+        public enum FileType
         {
             Invalid,
 
@@ -21,6 +21,7 @@
 
         public string Name { get; }
         public long Size { get; }
-        public Type Type { get; }
+        public FileType Type { get; }
+        public bool IsDirectory => this.Type == FileType.Directory;
     }
 }

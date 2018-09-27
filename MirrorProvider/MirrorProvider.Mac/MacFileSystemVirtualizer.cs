@@ -58,7 +58,7 @@ namespace MirrorProvider.Mac
 
                 foreach (ProjectedFileInfo child in this.GetChildItems(relativePath))
                 {
-                    if (child.IsDirectory)
+                    if (child.Type == ProjectedFileInfo.FileType.Directory)
                     {
                         Result result = this.virtualizationInstance.WritePlaceholderDirectory(
                             Path.Combine(relativePath, child.Name));
@@ -66,6 +66,21 @@ namespace MirrorProvider.Mac
                         if (result != Result.Success)
                         {
                             Console.WriteLine($"WritePlaceholderDirectory failed: {result}");
+                            return result;
+                        }
+                    }
+                    else if (child.Type == ProjectedFileInfo.FileType.SymLink)
+                    {
+                        string childRelativePath = Path.Combine(relativePath, child.Name);
+                        string symLinkTarget = this.GetSymLinkTarget(childRelativePath);
+
+                        Result result = this.virtualizationInstance.WriteSymLink(
+                            childRelativePath,
+                            symLinkTarget);
+
+                        if (result != Result.Success)
+                        {
+                            Console.WriteLine($"WriteSymLink failed: {result}");
                             return result;
                         }
                     }

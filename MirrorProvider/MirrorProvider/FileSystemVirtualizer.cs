@@ -42,11 +42,12 @@ namespace MirrorProvider
             string actualCaseName;
             if (this.DirectoryExists(fullParentPath, fileName, out actualCaseName))
             {
-                return new ProjectedFileInfo(actualCaseName, size: 0, type: ProjectedFileInfo.Type.Directory);
+                return new ProjectedFileInfo(actualCaseName, size: 0, type: ProjectedFileInfo.FileType.Directory);
             }
             else if (this.FileExists(fullParentPath, fileName, out actualCaseName))
             {
-                return new ProjectedFileInfo(actualCaseName, size: new FileInfo(fullPathInMirror).Length, isDirectory: false);
+                // TODO: Check if the file is a symlink
+                return new ProjectedFileInfo(actualCaseName, size: new FileInfo(fullPathInMirror).Length, type: ProjectedFileInfo.FileType.File);
             }
 
             return null;
@@ -68,12 +69,14 @@ namespace MirrorProvider
                 yield return new ProjectedFileInfo(
                     file.Name, 
                     file.Length, 
-                    type: file.Attributes.ReparsePoint ? ProjectedFileInfo.Type.SymLink : ProjectedFileInfo.Type.File);
+                    type: (file.Attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint ? 
+                        ProjectedFileInfo.FileType.SymLink : 
+                        ProjectedFileInfo.FileType.File);
             }
 
             foreach (DirectoryInfo subDirectory in dirInfo.GetDirectories())
             {
-                yield return new ProjectedFileInfo(subDirectory.Name, size: 0, type: ProjectedFileInfo.Type.Directory);
+                yield return new ProjectedFileInfo(subDirectory.Name, size: 0, type: ProjectedFileInfo.FileType.Directory);
             }
         }
 
@@ -108,6 +111,11 @@ namespace MirrorProvider
             }
 
             return FileSystemResult.Success;
+        }
+
+        private string GetSymLinkTarget(string relativePath)
+        {
+            string fullPathInMirror = Path.Combine(this.enlistment.MirrorRoot, relativePath);
         }
 
         private bool DirectoryExists(string fullParentPath, string directoryName, out string actualCaseName)
