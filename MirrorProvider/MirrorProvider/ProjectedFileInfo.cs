@@ -2,15 +2,25 @@
 {
     public class ProjectedFileInfo
     {
-        public ProjectedFileInfo(string name, long size, bool isDirectory)
+        public ProjectedFileInfo(string name, long size, Type type)
         {
             this.Name = name;
             this.Size = size;
-            this.IsDirectory = isDirectory;
+            this.Type = type;
+        }
+
+        public enum Type
+        {
+            Invalid,
+
+            File,
+            Directory,
+            SymLink
+
         }
 
         public string Name { get; }
         public long Size { get; }
-        public bool IsDirectory { get; }
+        public Type Type { get; }
     }
 }

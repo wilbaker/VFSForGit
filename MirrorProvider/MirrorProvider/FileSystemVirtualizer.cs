@@ -42,7 +42,7 @@ namespace MirrorProvider
             string actualCaseName;
             if (this.DirectoryExists(fullParentPath, fileName, out actualCaseName))
             {
-                return new ProjectedFileInfo(actualCaseName, size: 0, isDirectory: true);
+                return new ProjectedFileInfo(actualCaseName, size: 0, type: ProjectedFileInfo.Type.Directory);
             }
             else if (this.FileExists(fullParentPath, fileName, out actualCaseName))
             {
@@ -64,12 +64,16 @@ namespace MirrorProvider
 
             foreach (FileInfo file in dirInfo.GetFiles())
             {
-                yield return new ProjectedFileInfo(file.Name, file.Length, isDirectory: false);
+                // While not 100% accurate on all platforms, for simplicity assume that if the the file has reparse data it's a symlink
+                yield return new ProjectedFileInfo(
+                    file.Name, 
+                    file.Length, 
+                    type: file.Attributes.ReparsePoint ? ProjectedFileInfo.Type.SymLink : ProjectedFileInfo.Type.File);
             }
 
             foreach (DirectoryInfo subDirectory in dirInfo.GetDirectories())
             {
-                yield return new ProjectedFileInfo(subDirectory.Name, size: 0, isDirectory: true);
+                yield return new ProjectedFileInfo(subDirectory.Name, size: 0, type: ProjectedFileInfo.Type.Directory);
             }
         }
 
