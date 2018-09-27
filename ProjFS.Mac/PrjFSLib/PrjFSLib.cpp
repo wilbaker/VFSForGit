@@ -374,7 +374,7 @@ PrjFS_Result PrjFS_WriteSymLink(
     char fullPath[PrjFSMaxPath];
     CombinePaths(s_virtualizationRootFullPath.c_str(), relativePath, fullPath);
     
-    if(symlink(symLinkContents, fullPath))
+    if(symlink(symLinkTarget, fullPath))
     {
         goto CleanupAndFail;
     }

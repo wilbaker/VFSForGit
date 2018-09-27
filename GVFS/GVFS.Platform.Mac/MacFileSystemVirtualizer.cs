@@ -83,21 +83,20 @@ namespace GVFS.Platform.Mac
             string sha)
         {
             // TODO(Mac): Add functional tests that validate file mode is set correctly
-            ushort fileTypeAndMode = this.FileSystemCallbacks.GitIndexProjection.GetFileTypeAndMode(relativePath);
-            GitIndexProjection.FileType fileType = (GitIndexProjection.FileType)(fileTypeAndMode & GitIndexProjection.FileTypeMask);
+            FileTypeAndMode fileTypeAndMode = this.FileSystemCallbacks.GitIndexProjection.GetFileTypeAndMode(relativePath);
 
-            if (fileType == GitIndexProjection.FileType.Regular)
+            if (fileTypeAndMode.Type == FileTypeAndMode.FileType.Regular)
             {
                 Result result = this.virtualizationInstance.WritePlaceholderFile(
                     relativePath,
                     PlaceholderVersionId,
                     ToVersionIdByteArray(FileSystemVirtualizer.ConvertShaToContentId(sha)),
                     (ulong)endOfFile,
-                    (ushort)(fileTypeAndMode & GitIndexProjection.FileModeMask));
+                    fileTypeAndMode.Mode);
 
                 return new FileSystemResult(ResultToFSResult(result), unchecked((int)result));
             }
-            else if (fileType == GitIndexProjection.FileType.SymLink)
+            else if (fileTypeAndMode.Type == FileTypeAndMode.FileType.SymLink)
             {
                 string symLinkTarget;
                 if (this.TryGetSymLinkTarget(sha, out symLinkTarget))
@@ -117,7 +116,7 @@ namespace GVFS.Platform.Mac
             else
             {
                 EventMetadata metadata = this.CreateEventMetadata(relativePath);
-                metadata.Add(nameof(fileType), fileType);
+                metadata.Add("FileType", fileTypeAndMode.Type);
                 this.Context.Tracer.RelatedError(metadata, $"{nameof(this.WritePlaceholderFile)}: Unsupported fileType");
                 return new FileSystemResult(FSResult.IOError, 0);
             }
@@ -146,24 +145,23 @@ namespace GVFS.Platform.Mac
             // TODO(Mac): Add functional tests that include:
             //     - Mode + content changes between commits
             //     - Mode only changes (without any change to content, see issue #223)
-            ushort fileTypeAndMode = this.FileSystemCallbacks.GitIndexProjection.GetFileTypeAndMode(relativePath);
-            GitIndexProjection.FileType fileType = (GitIndexProjection.FileType)(fileTypeAndMode & GitIndexProjection.FileTypeMask);
+            FileTypeAndMode fileTypeAndMode = this.FileSystemCallbacks.GitIndexProjection.GetFileTypeAndMode(relativePath);
 
-            if (fileType == GitIndexProjection.FileType.Regular)
+            if (fileTypeAndMode.Type == FileTypeAndMode.FileType.Regular)
             {
                 Result result = this.virtualizationInstance.UpdatePlaceholderIfNeeded(
                     relativePath,
                     PlaceholderVersionId,
                     ToVersionIdByteArray(ConvertShaToContentId(shaContentId)),
                     (ulong)endOfFile,
-                    (ushort)(fileTypeAndMode & GitIndexProjection.FileModeMask),
+                    fileTypeAndMode.Mode,
                     (UpdateType)updateFlags,
                     out failureCause);
                 
                 failureReason = (UpdateFailureReason)failureCause;
                 return new FileSystemResult(ResultToFSResult(result), unchecked((int)result));
             }
-            else if (fileType == GitIndexProjection.FileType.SymLink)
+            else if (fileTypeAndMode.Type == FileTypeAndMode.FileType.SymLink)
             {
                 string symLinkTarget;
                 if (this.TryGetSymLinkTarget(shaContentId, out symLinkTarget))
@@ -189,8 +187,8 @@ namespace GVFS.Platform.Mac
             else
             {
                 EventMetadata metadata = this.CreateEventMetadata(relativePath);
-                metadata.Add(nameof(fileType), fileType);
-                metadata.Add(nameof(fileTypeAndMode), fileTypeAndMode);
+                metadata.Add("FileType", fileTypeAndMode.Type);
+                metadata.Add("FileMode", fileTypeAndMode.Mode);
                 this.Context.Tracer.RelatedError(metadata, $"{nameof(this.UpdatePlaceholderIfNeeded)}: Unsupported fileType");
                 failureReason = UpdateFailureReason.NoFailure;
                 return new FileSystemResult(FSResult.IOError, 0);
@@ -243,6 +241,7 @@ namespace GVFS.Platform.Mac
         {
             symLinkTarget = null;
 
+            string symLinkBlobContents = null;
             try
             {
                 if (!this.GitObjects.TryCopyBlobContentStream(
@@ -268,6 +267,7 @@ namespace GVFS.Platform.Mac
                             if (bufferIndex < buffer.Length)
                             {
                                 buffer[bufferIndex] = 0;
+                                symLinkBlobContents = Encoding.UTF8.GetString(buffer);
                             }
                             else
                             {
@@ -278,11 +278,9 @@ namespace GVFS.Platform.Mac
                                 metadata.Add("bufferContents", Encoding.UTF8.GetString(buffer));
                                 this.Context.Tracer.RelatedError(metadata, $"{nameof(this.TryGetSymLinkTarget)}: SymLink target exceeds buffer size");
 
-                                return false;
+                                throw new GetSymLinkTargetException("SymLink target exceeds buffer size");;
                             }
                         }
-
-                        symLinkTarget = Encoding.UTF8.GetString(buffer);
                     }))
                 {
                     EventMetadata metadata = this.CreateEventMetadata();
@@ -292,11 +290,11 @@ namespace GVFS.Platform.Mac
                     return false;
                 }
             }
-            catch (GetFileStreamException e)
+            catch (GetSymLinkTargetException e)
             {
                 EventMetadata metadata = this.CreateEventMetadata(relativePath: null, exception: e);
                 metadata.Add(nameof(sha), sha);
-                this.Context.Tracer.RelatedError(metadata, $"{nameof(this.TryGetSymLinkTarget)}: TryCopyBlobContentStream caught GetFileStreamException");
+                this.Context.Tracer.RelatedError(metadata, $"{nameof(this.TryGetSymLinkTarget)}: TryCopyBlobContentStream caught GetSymLinkTargetException");
 
                 return false;
             }
@@ -308,6 +306,8 @@ namespace GVFS.Platform.Mac
 
                 return false;
             }
+
+            symLinkTarget = symLinkBlobContents;
 
             return true;
         }
@@ -682,6 +682,14 @@ namespace GVFS.Platform.Mac
             }
 
             public Result Result { get; }
+        }
+
+        private class GetSymLinkTargetException : Exception
+        {
+            public GetSymLinkTargetException(string message)
+                : base(message)
+            {
+            }
         }
     }
 }
