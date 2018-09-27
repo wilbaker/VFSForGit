@@ -17,7 +17,7 @@ namespace GVFS.Virtualization.Projection
             private const ushort SkipWorktreeBit = 0x4000;
 
             private static readonly ushort FileMode755 = Convert.ToUInt16("755", 8);
-            private static readonly ushort FileMode664 = Convert.ToUInt16("644", 8);
+            private static readonly ushort FileMode664 = Convert.ToUInt16("664", 8);
             private static readonly ushort FileMode644 = Convert.ToUInt16("644", 8);
 
             private Stream indexStream;

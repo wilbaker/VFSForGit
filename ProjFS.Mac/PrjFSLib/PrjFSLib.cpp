@@ -357,16 +357,16 @@ CleanupAndFail:
 
 PrjFS_Result PrjFS_WriteSymLink(
     _In_    const char*                             relativePath,
-    _In_    const char*                             symLinkContents)
+    _In_    const char*                             symLinkTarget)
 {
 #ifdef DEBUG
     std::cout
         << "PrjFS_WriteSymLink("
         << relativePath << ", "
-        << symLinkContents << ")" << std::endl;
+        << symLinkTarget << ")" << std::endl;
 #endif
     
-    if (nullptr == relativePath || nullptr == symLinkContents)
+    if (nullptr == relativePath || nullptr == symLinkTarget)
     {
         return PrjFS_Result_EInvalidArgs;
     }
@@ -421,7 +421,7 @@ PrjFS_Result PrjFS_UpdatePlaceholderFileIfNeeded(
 
 PrjFS_Result PrjFS_ReplacePlaceholderFileWithSymLink(
     _In_    const char*                             relativePath,
-    _In_    const char*                             symLinkContents,
+    _In_    const char*                             symLinkTarget,
     _In_    PrjFS_UpdateType                        updateFlags,
     _Out_   PrjFS_UpdateFailureCause*               failureCause)
 {
@@ -429,7 +429,7 @@ PrjFS_Result PrjFS_ReplacePlaceholderFileWithSymLink(
     std::cout
         << "PrjFS_ReplacePlaceholderFileWithSymLink("
         << relativePath << ", "
-        << symLinkContents << ", "
+        << symLinkTarget << ", "
         << std::hex << updateFlags << std::dec << ")" << std::endl;
 #endif
     
@@ -439,7 +439,7 @@ PrjFS_Result PrjFS_ReplacePlaceholderFileWithSymLink(
        return result;
     }
     
-    return PrjFS_WriteSymLink(relativePath, symLinkContents);
+    return PrjFS_WriteSymLink(relativePath, symLinkTarget);
 }
 
 PrjFS_Result PrjFS_DeleteFile(
