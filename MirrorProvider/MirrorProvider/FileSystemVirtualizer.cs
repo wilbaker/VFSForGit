@@ -7,7 +7,7 @@ namespace MirrorProvider
 {
     public abstract class FileSystemVirtualizer
     {
-        private Enlistment enlistment;
+        protected Enlistment enlistment;
 
         public abstract bool TryConvertVirtualizationRoot(string directory, out string error);
         public virtual bool TryStartVirtualizationInstance(Enlistment enlistment, out string error)

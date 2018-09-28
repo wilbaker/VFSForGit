@@ -208,7 +208,21 @@ namespace MirrorProvider.Mac
             }
 
             targetBuffer[bytesRead] = 0;
-            return Encoding.UTF8.GetString(targetBuffer);
+            string symLinkTarget = Encoding.UTF8.GetString(targetBuffer);
+
+            if (symLinkTarget.StartsWith('/'))
+            {
+                // Absolute path
+                if (symLinkTarget.StartsWith(this.enlistment.MirrorRoot, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Absolute path to target inside the MirrorRoot needs to be adjusted to point inside the src root
+                    symLinkTarget = Path.Combine(
+                        this.enlistment.SrcRoot.TrimEnd(Path.DirectorySeparatorChar),
+                        symLinkTarget.Substring(this.enlistment.MirrorRoot.Length).TrimStart(Path.DirectorySeparatorChar));
+                }
+            }
+
+            return symLinkTarget;
 
         }
 
