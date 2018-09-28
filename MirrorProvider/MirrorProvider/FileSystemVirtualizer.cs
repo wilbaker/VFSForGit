@@ -17,9 +17,14 @@ namespace MirrorProvider
             return true;
         }
 
+        protected string GetFullPathInMirror(string relativePath)
+        {
+            return Path.Combine(this.enlistment.MirrorRoot, relativePath);
+        }
+
         protected bool DirectoryExists(string relativePath)
         {
-            string fullPathInMirror = Path.Combine(this.enlistment.MirrorRoot, relativePath);
+            string fullPathInMirror = this.GetFullPathInMirror(relativePath);
             DirectoryInfo dirInfo = new DirectoryInfo(fullPathInMirror);
 
             return dirInfo.Exists;
@@ -27,7 +32,7 @@ namespace MirrorProvider
 
         protected bool FileExists(string relativePath)
         {
-            string fullPathInMirror = Path.Combine(this.enlistment.MirrorRoot, relativePath);
+            string fullPathInMirror = this.GetFullPathInMirror(relativePath);
             FileInfo fileInfo = new FileInfo(fullPathInMirror);
 
             return fileInfo.Exists;
@@ -35,7 +40,7 @@ namespace MirrorProvider
 
         protected ProjectedFileInfo GetFileInfo(string relativePath)
         {
-            string fullPathInMirror = Path.Combine(this.enlistment.MirrorRoot, relativePath);
+            string fullPathInMirror = this.GetFullPathInMirror(relativePath);
             string fullParentPath = Path.GetDirectoryName(fullPathInMirror);
             string fileName = Path.GetFileName(relativePath);
 
@@ -55,7 +60,7 @@ namespace MirrorProvider
 
         protected IEnumerable<ProjectedFileInfo> GetChildItems(string relativePath)
         {
-            string fullPathInMirror = Path.Combine(this.enlistment.MirrorRoot, relativePath);
+            string fullPathInMirror = this.GetFullPathInMirror(relativePath);
             DirectoryInfo dirInfo = new DirectoryInfo(fullPathInMirror);
 
             if (!dirInfo.Exists)
@@ -82,7 +87,7 @@ namespace MirrorProvider
 
         protected FileSystemResult HydrateFile(string relativePath, int bufferSize, Func<byte[], uint, bool> tryWriteBytes)
         {
-            string fullPathInMirror = Path.Combine(this.enlistment.MirrorRoot, relativePath);
+            string fullPathInMirror = this.GetFullPathInMirror(relativePath);
             if (!File.Exists(fullPathInMirror))
             {
                 return FileSystemResult.EFileNotFound;
@@ -111,11 +116,6 @@ namespace MirrorProvider
             }
 
             return FileSystemResult.Success;
-        }
-
-        private string GetSymLinkTarget(string relativePath)
-        {
-            string fullPathInMirror = Path.Combine(this.enlistment.MirrorRoot, relativePath);
         }
 
         private bool DirectoryExists(string fullParentPath, string directoryName, out string actualCaseName)

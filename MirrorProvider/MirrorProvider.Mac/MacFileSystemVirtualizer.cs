@@ -1,6 +1,8 @@
 ﻿using PrjFSLib.Mac;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace MirrorProvider.Mac
 {
@@ -192,6 +194,24 @@ namespace MirrorProvider.Mac
             Console.WriteLine($"OnHardLinkCreated: {relativeNewLinkPath}");
         }
 
+        private string GetSymLinkTarget(string relativePath)
+        {
+            string fullPathInMirror = this.GetFullPathInMirror(relativePath);
+
+            const ulong BufSize = 4096;
+            byte[] targetBuffer = new byte[BufSize];
+            long bytesRead = ReadLink(fullPathInMirror, targetBuffer, BufSize);
+            if (bytesRead < 0)
+            {
+                Console.WriteLine($"GetSymLinkTarget failed: {Marshal.GetLastWin32Error()}");
+                return null;
+            }
+
+            targetBuffer[bytesRead] = 0;
+            return Encoding.UTF8.GetString(targetBuffer);
+
+        }
+
         private static byte[] ToVersionIdByteArray(byte version)
         {
             byte[] bytes = new byte[VirtualizationInstance.PlaceholderIdLength];
@@ -199,5 +219,11 @@ namespace MirrorProvider.Mac
 
             return bytes;
         }
+
+        [DllImport("libc", EntryPoint = "readlink", SetLastError = true)]
+        private static extern long ReadLink(
+            string path,
+            byte[] buf,
+            ulong bufsize);
     }
 }
