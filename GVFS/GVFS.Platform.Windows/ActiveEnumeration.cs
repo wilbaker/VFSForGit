@@ -6,10 +6,11 @@ namespace GVFS.Platform.Windows
 {
     public class ActiveEnumeration
     {
-        private static FileNamePatternMatcher doesPatternMatch = null;
+        private static FileNamePatternMatcher wildcardPatternMatcher = null;
 
         // Use our own enumerator to avoid having to dispose anything
         private ProjectedFileInfoEnumerator fileInfoEnumerator;
+        private FileNamePatternMatcher patternMatcher;
 
         private string filterString = null;
 
@@ -39,9 +40,9 @@ namespace GVFS.Platform.Windows
         /// Sets the pattern matching delegate that will be used for file name comparisons
         /// </summary>
         /// <param name="patternMatcher">FileNamePatternMatcher to be used by ActiveEnumeration</param>
-        public static void SetPatternMatcher(FileNamePatternMatcher patternMatcher)
+        public static void SetWildcardPatternMatcher(FileNamePatternMatcher patternMatcher)
         {
-            doesPatternMatch = patternMatcher;
+            wildcardPatternMatcher = patternMatcher;
         }
 
         /// <summary>
@@ -107,15 +108,31 @@ namespace GVFS.Platform.Windows
             return this.filterString;
         }
 
+        private static bool NameMatchsNoWildcardFilter(string name, string filter)
+        {
+            return string.Equals(name, filter, System.StringComparison.OrdinalIgnoreCase);
+        }
+
         private void SaveFilter(string filter)
         {
             if (string.IsNullOrEmpty(filter))
             {
                 this.filterString = string.Empty;
+                this.patternMatcher = null;
             }
             else
             {
                 this.filterString = filter;
+
+                if (ProjFS.Utils.DoesNameContainWildCards(this.filterString))
+                {
+                    this.patternMatcher = wildcardPatternMatcher;
+                }
+                else
+                {
+                    this.patternMatcher = NameMatchsNoWildcardFilter;
+                }
+
                 if (this.IsCurrentValid && this.IsCurrentHidden())
                 {
                     this.MoveNext();
@@ -125,7 +142,12 @@ namespace GVFS.Platform.Windows
 
         private bool IsCurrentHidden()
         {
-            return !doesPatternMatch(this.Current.Name, this.GetFilterString());
+            if (this.patternMatcher == null)
+            {
+                return false;
+            }
+
+            return !this.patternMatcher(this.Current.Name, this.GetFilterString());
         }
 
         private void ResetEnumerator()
