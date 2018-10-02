@@ -11,6 +11,7 @@
 #include <queue>
 #include <unordered_map>
 #include <set>
+#include <map>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IODataQueueClient.h>
 #include <mach/mach_port.h>
@@ -35,6 +36,7 @@ using std::hex;
 using std::is_pod;
 using std::lock_guard;
 using std::make_pair;
+using std::map;
 using std::move;
 using std::mutex;
 using std::oct;
@@ -80,6 +82,8 @@ static PrjFS_Result HandleFileNotification(
     PrjFS_NotificationType notificationType);
 
 static Message ParseMessageMemory(const void* messageMemory, uint32_t size);
+static bool RecordPendingHydrationRequest(const Message& message);
+static bool RecordPendingEnumerationRequest(const Message& message);
 
 static void ClearMachNotification(mach_port_t port);
 
@@ -98,6 +102,9 @@ static dispatch_queue_t s_kernelRequestHandlingConcurrentQueue;
 static unordered_map<string, set<uint64_t>> s_PendingHydrateFileMessageIDs;
 static mutex s_PendingHydrateFileMessageMutex;
 
+// Map of relative path -> (map of pending message IDs -> recursive) for enumeration requests for that path, plus mutex to protect it.
+static unordered_map<string, map<uint64_t, bool>> s_PendingEnumerateMessageIDs;
+static mutex s_PendingEnumerateMessageMutex;
 
 // The full API is defined in the header, but only the minimal set of functions needed
 // for the initial MirrorProvider implementation are listed here. Calling any other function
@@ -203,32 +210,27 @@ PrjFS_Result PrjFS_StartVirtualizationInstance(
                 case MessageType_KtoU_HydrateFile:
                 {
                     // Ensure we don't run more than one hydrate request handler at once for the same file
-                    mutex_lock lock(s_PendingHydrateFileMessageMutex);
-                    typedef unordered_map<string, set<uint64_t>>::iterator PendingMessageIterator;
-                        PendingMessageIterator file_messages_found = s_PendingHydrateFileMessageIDs.find(message.path);
-                    if (file_messages_found == s_PendingHydrateFileMessageIDs.end())
+                    bool newPath = RecordPendingHydrationRequest(message);
+                    if (!newPath)
                     {
-                        // Not handling this file/dir yet
-                        pair<PendingMessageIterator, bool> inserted =
-                            s_PendingHydrateFileMessageIDs.insert(make_pair(string(message.path), set<uint64_t>{ message.messageHeader->messageId }));
-                        assert(inserted.second);
-                    }
-                    else
-                    {
-                        // Already a handler running to hydrate this path, don't handle it again.
-                        file_messages_found->second.insert(message.messageHeader->messageId);
                         free(messageMemory);
                         continue;
                     }
+                    
+                    break;
                 }
                 
                 case MessageType_KtoU_EnumerateDirectory:
-                {
-                    break;
-                }
-        
                 case MessageType_KtoU_RecursivelyEnumerateDirectory:
                 {
+                    // Ensure we don't run more than one enumeration request handler at once for the same directory
+                    bool newPath = RecordPendingEnumerationRequest(message);
+                    if (!newPath)
+                    {
+                        free(messageMemory);
+                        continue;
+                    }
+                    
                     break;
                 }
                 
@@ -578,6 +580,59 @@ static Message ParseMessageMemory(const void* messageMemory, uint32_t size)
     return Message { header, path };
 }
 
+static bool RecordPendingHydrationRequest(const Message& message)
+{
+    assert(message.messageHeader->messageType == MessageType_KtoU_HydrateFile);
+    
+    mutex_lock lock(s_PendingHydrateFileMessageMutex);
+    typedef unordered_map<string, set<uint64_t>>::iterator PendingMessageIterator;
+    PendingMessageIterator hydrate_messages_found = s_PendingHydrateFileMessageIDs.find(message.path);
+    if (hydrate_messages_found == s_PendingHydrateFileMessageIDs.end())
+    {
+        // Not handling this file yet
+        pair<PendingMessageIterator, bool> inserted =
+            s_PendingHydrateFileMessageIDs.insert(make_pair(string(message.path), set<uint64_t>{ message.messageHeader->messageId }));
+        assert(inserted.second);
+        return true;
+    }
+    else
+    {
+        // Already a handler running to hydrate this path, don't handle it again.
+        pair<set<uint64_t>::iterator, bool> messageIdInsert = hydrate_messages_found->second.insert(message.messageHeader->messageId);
+        assert(messageIdInsert.second);
+        return false;
+    }
+}
+
+static bool RecordPendingEnumerationRequest(const Message& message)
+{
+    assert(
+        message.messageHeader->messageType == MessageType_KtoU_EnumerateDirectory ||
+        message.messageHeader->messageType == MessageType_KtoU_RecursivelyEnumerateDirectory);
+    
+    bool recursive = message.messageHeader->messageType == MessageType_KtoU_RecursivelyEnumerateDirectory;
+    mutex_lock lock(s_PendingEnumerateMessageMutex);
+    typedef unordered_map<string, map<uint64_t, bool>>::iterator PendingMessageIterator;
+    PendingMessageIterator enumerate_messages_found = s_PendingEnumerateMessageIDs.find(message.path);
+    if (enumerate_messages_found == s_PendingEnumerateMessageIDs.end())
+    {
+        // Not handling this directory yet
+        pair<PendingMessageIterator, bool> inserted =
+            s_PendingEnumerateMessageIDs.insert(
+                make_pair(string(message.path), map<uint64_t, bool>{ make_pair(message.messageHeader->messageId, recursive) }));
+        assert(inserted.second);
+        return true;
+    }
+    else
+    {
+        // Already a handler running to enumerate this path, don't handle it again.
+        pair<map<uint64_t, bool>::iterator, bool> messageIdInsert =
+            enumerate_messages_found->second.insert(make_pair(message.messageHeader->messageId, recursive));
+        assert(messageIdInsert.second);
+        return false;
+    }
+}
+
 static void HandleKernelRequest(Message request, void* messageMemory)
 {
     PrjFS_Result result = PrjFS_Result_EIOError;
@@ -588,14 +643,61 @@ static void HandleKernelRequest(Message request, void* messageMemory)
     switch (requestHeader->messageType)
     {
         case MessageType_KtoU_EnumerateDirectory:
-        {
-            result = HandleEnumerateDirectoryRequest(requestHeader, request.path);
-            break;
-        }
-        
         case MessageType_KtoU_RecursivelyEnumerateDirectory:
         {
-            result = HandleRecursivelyEnumerateDirectoryRequest(requestHeader, request.path);
+            PrjFS_Result enumerationResult = HandleEnumerateDirectoryRequest(requestHeader, request.path);
+            
+            map<uint64_t, bool> enumerationMessages;
+            {
+                mutex_lock lock(s_PendingEnumerateMessageMutex);
+                unordered_map<string, map<uint64_t, bool>>::iterator enumerateMessageIDsFound = s_PendingEnumerateMessageIDs.find(request.path);
+                assert(enumerateMessageIDsFound != s_PendingEnumerateMessageIDs.end());
+                enumerationMessages.swap(enumerateMessageIDsFound->second);
+            }
+            
+            MessageType responseType =
+                PrjFS_Result_Success == enumerationResult
+                ? MessageType_Response_Success
+                : MessageType_Response_Fail;
+
+            messageIDs.clear();
+            for (pair<uint64_t, bool> enumMessage : enumerationMessages)
+            {
+                if (enumMessage.second)
+                {
+                    messageIDs.insert(enumMessage.first);
+                }
+                else
+                {
+                    SendKernelMessageResponse(enumMessage.first, responseType);
+                }
+            }
+            
+            if (!messageIDs.empty())
+            {
+                result = HandleRecursivelyEnumerateDirectoryRequest(requestHeader, request.path);
+            }
+            
+            {
+                mutex_lock lock(s_PendingEnumerateMessageMutex);
+                unordered_map<string, map<uint64_t, bool>>::iterator enumerateMessageIDsFound = s_PendingEnumerateMessageIDs.find(request.path);
+                assert(enumerateMessageIDsFound != s_PendingEnumerateMessageIDs.end());
+                enumerationMessages = move(enumerateMessageIDsFound->second);
+                s_PendingEnumerateMessageIDs.erase(enumerateMessageIDsFound);
+            }
+            
+            for (pair<uint64_t, bool> enumMessage : enumerationMessages)
+            {
+                if (enumMessage.second)
+                {
+                    messageIDs.insert(enumMessage.first);
+                }
+                else
+                {
+                    SendKernelMessageResponse(enumMessage.first, responseType);
+                }
+            }
+            
             break;
         }
             
@@ -670,6 +772,13 @@ static PrjFS_Result HandleEnumerateDirectoryRequest(const MessageHeader* request
     cout << "PrjFSLib.HandleEnumerateDirectoryRequest: " << path << endl;
 #endif
     
+    char fullPath[PrjFSMaxPath];
+    CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
+    if (!IsBitSetInFileFlags(fullPath, FileFlags_IsEmpty))
+    {
+        return PrjFS_Result_Success;
+    }
+    
     PrjFS_Result callbackResult = s_callbacks.EnumerateDirectory(
         0 /* commandId */,
         path,
@@ -678,9 +787,6 @@ static PrjFS_Result HandleEnumerateDirectoryRequest(const MessageHeader* request
     
     if (PrjFS_Result_Success == callbackResult)
     {
-        char fullPath[PrjFSMaxPath];
-        CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
-        
         if (!SetBitInFileFlags(fullPath, FileFlags_IsEmpty, false))
         {
             // TODO(Mac): how should we handle this scenario where the provider thinks it succeeded, but we were unable to
@@ -712,13 +818,10 @@ static PrjFS_Result HandleRecursivelyEnumerateDirectoryRequest(const MessageHead
         
         CombinePaths(s_virtualizationRootFullPath.c_str(), directoryRelativePath.c_str(), pathBuffer);
     
-        if (IsBitSetInFileFlags(pathBuffer, FileFlags_IsEmpty))
+        PrjFS_Result result = HandleEnumerateDirectoryRequest(request, directoryRelativePath.c_str());
+        if (result != PrjFS_Result_Success)
         {
-            PrjFS_Result result = HandleEnumerateDirectoryRequest(request, directoryRelativePath.c_str());
-            if (result != PrjFS_Result_Success)
-            {
-                goto CleanupAndReturn;
-            }
+            goto CleanupAndReturn;
         }
         
         DIR* directory = opendir(pathBuffer);
@@ -760,6 +863,11 @@ static PrjFS_Result HandleHydrateFileRequest(const MessageHeader* request, const
     
     char fullPath[PrjFSMaxPath];
     CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
+    
+    if (IsBitSetInFileFlags(fullPath, FileFlags_IsEmpty))
+    {
+        return PrjFS_Result_Success;
+    }
     
     PrjFSFileXAttrData xattrData = {};
     if (!GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData))
