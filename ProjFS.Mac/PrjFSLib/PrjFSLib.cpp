@@ -94,9 +94,9 @@ static PrjFS_Callbacks s_callbacks;
 static dispatch_queue_t s_messageQueueDispatchQueue;
 static dispatch_queue_t s_kernelRequestHandlingConcurrentQueue;
 
-// Map of relative path -> set of pending message IDs for that path, plus mutex to protect it.
-static unordered_map<string, set<uint64_t>> s_PendingRequestMessageIDs;
-static mutex s_PendingRequestMessageMutex;
+// Map of relative path -> set of pending message IDs for hydration requests for that path, plus mutex to protect it.
+static unordered_map<string, set<uint64_t>> s_PendingHydrateFileMessageIDs;
+static mutex s_PendingHydrateFileMessageMutex;
 
 
 // The full API is defined in the header, but only the minimal set of functions needed
@@ -198,26 +198,50 @@ PrjFS_Result PrjFS_StartVirtualizationInstance(
             // At the moment, we expect all messages to include a path
             assert(message.path != nullptr);
 
-            // Ensure we don't run more than one request handler at once for the same file
+            switch (message.messageHeader->messageType)
             {
-                mutex_lock lock(s_PendingRequestMessageMutex);
-                typedef unordered_map<string, set<uint64_t>>::iterator PendingMessageIterator;
-                    PendingMessageIterator file_messages_found = s_PendingRequestMessageIDs.find(message.path);
-                if (file_messages_found == s_PendingRequestMessageIDs.end())
+                case MessageType_KtoU_HydrateFile:
                 {
-                    // Not handling this file/dir yet
-                    pair<PendingMessageIterator, bool> inserted =
-                        s_PendingRequestMessageIDs.insert(make_pair(string(message.path), set<uint64_t>{ message.messageHeader->messageId }));
-                    assert(inserted.second);
+                    // Ensure we don't run more than one hydrate request handler at once for the same file
+                    mutex_lock lock(s_PendingHydrateFileMessageMutex);
+                    typedef unordered_map<string, set<uint64_t>>::iterator PendingMessageIterator;
+                        PendingMessageIterator file_messages_found = s_PendingHydrateFileMessageIDs.find(message.path);
+                    if (file_messages_found == s_PendingHydrateFileMessageIDs.end())
+                    {
+                        // Not handling this file/dir yet
+                        pair<PendingMessageIterator, bool> inserted =
+                            s_PendingHydrateFileMessageIDs.insert(make_pair(string(message.path), set<uint64_t>{ message.messageHeader->messageId }));
+                        assert(inserted.second);
+                    }
+                    else
+                    {
+                        // Already a handler running to hydrate this path, don't handle it again.
+                        file_messages_found->second.insert(message.messageHeader->messageId);
+                        free(messageMemory);
+                        continue;
+                    }
                 }
-                else
+                
+                case MessageType_KtoU_EnumerateDirectory:
                 {
-                    // Already a handler running for this path, don't handle it again.
-                    file_messages_found->second.insert(message.messageHeader->messageId);
-                    continue;
+                    break;
                 }
-            }
+        
+                case MessageType_KtoU_RecursivelyEnumerateDirectory:
+                {
+                    break;
+                }
+                
+                case MessageType_KtoU_NotifyFileModified:
+                case MessageType_KtoU_NotifyFilePreDelete:
+                case MessageType_KtoU_NotifyDirectoryPreDelete:
+                case MessageType_KtoU_NotifyFileCreated:
+                case MessageType_KtoU_NotifyFileRenamed:
+                case MessageType_KtoU_NotifyDirectoryRenamed:
+                case MessageType_KtoU_NotifyFileHardLinkCreated:
+                    break;
             
+            }
 
             dispatch_async(
                 s_kernelRequestHandlingConcurrentQueue,
@@ -559,6 +583,8 @@ static void HandleKernelRequest(Message request, void* messageMemory)
     PrjFS_Result result = PrjFS_Result_EIOError;
     
     const MessageHeader* requestHeader = request.messageHeader;
+    set<uint64_t> messageIDs;
+    messageIDs.insert(requestHeader->messageId);
     switch (requestHeader->messageType)
     {
         case MessageType_KtoU_EnumerateDirectory:
@@ -576,6 +602,13 @@ static void HandleKernelRequest(Message request, void* messageMemory)
         case MessageType_KtoU_HydrateFile:
         {
             result = HandleHydrateFileRequest(requestHeader, request.path);
+            
+            mutex_lock lock(s_PendingHydrateFileMessageMutex);
+            unordered_map<string, set<uint64_t>>::iterator fileMessageIDsFound = s_PendingHydrateFileMessageIDs.find(request.path);
+            assert(fileMessageIDsFound != s_PendingHydrateFileMessageIDs.end());
+            messageIDs = move(fileMessageIDsFound->second);
+            s_PendingHydrateFileMessageIDs.erase(fileMessageIDsFound);
+            
             break;
         }
             
@@ -621,16 +654,6 @@ static void HandleKernelRequest(Message request, void* messageMemory)
             PrjFS_Result_Success == result
             ? MessageType_Response_Success
             : MessageType_Response_Fail;
-
-        set<uint64_t> messageIDs;
-
-        {
-            mutex_lock lock(s_PendingRequestMessageMutex);
-            unordered_map<string, set<uint64_t>>::iterator fileMessageIDsFound = s_PendingRequestMessageIDs.find(request.path);
-            assert(fileMessageIDsFound != s_PendingRequestMessageIDs.end());
-            messageIDs = move(fileMessageIDsFound->second);
-            s_PendingRequestMessageIDs.erase(fileMessageIDsFound);
-        }
 
         for (uint64_t messageID : messageIDs)
         {
