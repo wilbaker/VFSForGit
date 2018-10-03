@@ -9,9 +9,9 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <queue>
-#include <unordered_map>
 #include <memory>
 #include <set>
+#include <map>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IODataQueueClient.h>
 #include <mach/mach_port.h>
@@ -36,6 +36,8 @@ using std::hex;
 using std::is_pod;
 using std::lock_guard;
 using std::make_pair;
+using std::make_shared;
+using std::map;
 using std::move;
 using std::mutex;
 using std::oct;
@@ -44,7 +46,6 @@ using std::queue;
 using std::set;
 using std::shared_ptr;
 using std::string;
-using std::unordered_map;
 
 typedef lock_guard<mutex> mutex_lock;
 
@@ -96,10 +97,27 @@ static PrjFS_Callbacks s_callbacks;
 static dispatch_queue_t s_messageQueueDispatchQueue;
 static dispatch_queue_t s_kernelRequestHandlingConcurrentQueue;
 
-// Map of relative path -> pair(mutex, thread count) for that path, plus mutex to protect it.
-static unordered_map<string, pair<shared_ptr<mutex>, int>> s_InProgressExpansions;
-static mutex s_InProgressExpansionsMutex;
+struct CaseInsensitiveStringComp
+{
+    bool operator() (const std::string& lhs, const std::string& rhs) const
+    {
+        return strcasecmp(lhs.c_str(), rhs.c_str()) < 0;
+    }
+};
 
+// Map of relative path -> pair(mutex, thread count) for that path, plus mutex to protect it.
+struct MutexAndUseCount
+{
+    shared_ptr<mutex> mutex;
+    int useCount;
+};
+
+typedef map<string, MutexAndUseCount, CaseInsensitiveStringComp> PathToMutexMap;
+PathToMutexMap s_inProgressExpansions;
+mutex s_inProgressExpansionsMutex;
+
+static shared_ptr<mutex> CheckoutPathMutex(const string& fullPath);
+static void ReturnPathMutex(const string& fullPath, const shared_ptr<mutex>& mutex);
 
 // The full API is defined in the header, but only the minimal set of functions needed
 // for the initial MirrorProvider implementation are listed here. Calling any other function
@@ -622,23 +640,37 @@ static PrjFS_Result HandleEnumerateDirectoryRequest(const MessageHeader* request
         return PrjFS_Result_Success;
     }
     
-    PrjFS_Result callbackResult = s_callbacks.EnumerateDirectory(
-        0 /* commandId */,
-        path,
-        request->pid,
-        request->procname);
-    
-    if (PrjFS_Result_Success == callbackResult)
+    PrjFS_Result result;
+    shared_ptr<mutex> expansionMutex = CheckoutPathMutex(fullPath);
     {
-        if (!SetBitInFileFlags(fullPath, FileFlags_IsEmpty, false))
+        mutex_lock lock(*expansionMutex);
+        if (!IsBitSetInFileFlags(fullPath, FileFlags_IsEmpty))
         {
-            // TODO(Mac): how should we handle this scenario where the provider thinks it succeeded, but we were unable to
-            // update placeholder metadata?
-            return PrjFS_Result_EIOError;
+            result = PrjFS_Result_Success;
+            goto CleanupAndReturn;
+        }
+    
+        result = s_callbacks.EnumerateDirectory(
+            0 /* commandId */,
+            path,
+            request->pid,
+            request->procname);
+        
+        if (PrjFS_Result_Success == result)
+        {
+            if (!SetBitInFileFlags(fullPath, FileFlags_IsEmpty, false))
+            {
+                // TODO(Mac): how should we handle this scenario where the provider thinks it succeeded, but we were unable to
+                // update placeholder metadata?
+                result = PrjFS_Result_EIOError;
+            }
         }
     }
-    
-    return callbackResult;
+
+CleanupAndReturn:
+    ReturnPathMutex(fullPath, expansionMutex);
+
+    return result;
 }
 
 static PrjFS_Result HandleRecursivelyEnumerateDirectoryRequest(const MessageHeader* request, const char* path)
@@ -718,59 +750,76 @@ static PrjFS_Result HandleHydrateFileRequest(const MessageHeader* request, const
         return PrjFS_Result_Success;
     }
     
+    PrjFS_Result result;
     PrjFS_FileHandle fileHandle;
     
-    // Mode "rb+" means:
-    //  - The file must already exist
-    //  - The handle is opened for reading and writing
-    //  - We are allowed to seek to somewhere other than end of stream for writing
-    fileHandle.file = fopen(fullPath, "rb+");
-    if (nullptr == fileHandle.file)
+    shared_ptr<mutex> hydrationMutex = CheckoutPathMutex(fullPath);
+    
     {
-        return PrjFS_Result_EIOError;
-    }
-    
-    // Seek back to the beginning so the provider can overwrite the empty contents
-    if (fseek(fileHandle.file, 0, 0))
-    {
-        fclose(fileHandle.file);
-        return PrjFS_Result_EIOError;
-    }
-    
-    PrjFS_Result callbackResult = s_callbacks.GetFileStream(
-        0 /* comandId */,
-        path,
-        xattrData.providerId,
-        xattrData.contentId,
-        request->pid,
-        request->procname,
-        &fileHandle);
-    
-    // TODO: once we support async callbacks, we'll need to save off the fileHandle if the result is Pending
-    
-    if (fclose(fileHandle.file))
-    {
-        // TODO: under what conditions can fclose fail? How do we recover?
-        return PrjFS_Result_EIOError;
-    }
-    
-    if (PrjFS_Result_Success == callbackResult)
-    {
-        // TODO: validate that the total bytes written match the size that was reported on the placeholder in the first place
-        // Potential bugs if we don't:
-        //  * The provider writes fewer bytes than expected. The hydrated is left with extra padding up to the original reported size.
-        //  * The provider writes more bytes than expected. The write succeeds, but whatever tool originally opened the file may have already
-        //    allocated the originally reported size, and now the contents appear truncated.
-        
-        if (!SetBitInFileFlags(fullPath, FileFlags_IsEmpty, false))
+        mutex_lock lock(*hydrationMutex);
+        if (!IsBitSetInFileFlags(fullPath, FileFlags_IsEmpty))
         {
-            // TODO: how should we handle this scenario where the provider thinks it succeeded, but we were unable to
-            // update placeholder metadata?
-            return PrjFS_Result_EIOError;
+            result = PrjFS_Result_Success;
+            goto CleanupAndReturn;
+        }
+        
+        // Mode "rb+" means:
+        //  - The file must already exist
+        //  - The handle is opened for reading and writing
+        //  - We are allowed to seek to somewhere other than end of stream for writing
+        fileHandle.file = fopen(fullPath, "rb+");
+        if (nullptr == fileHandle.file)
+        {
+            result = PrjFS_Result_EIOError;
+            goto CleanupAndReturn;
+        }
+        
+        // Seek back to the beginning so the provider can overwrite the empty contents
+        if (fseek(fileHandle.file, 0, 0))
+        {
+            fclose(fileHandle.file);
+            result = PrjFS_Result_EIOError;
+            goto CleanupAndReturn;
+        }
+        
+        result = s_callbacks.GetFileStream(
+            0 /* comandId */,
+            path,
+            xattrData.providerId,
+            xattrData.contentId,
+            request->pid,
+            request->procname,
+            &fileHandle);
+        
+        // TODO: once we support async callbacks, we'll need to save off the fileHandle if the result is Pending
+        
+        if (fclose(fileHandle.file))
+        {
+            // TODO: under what conditions can fclose fail? How do we recover?
+            result = PrjFS_Result_EIOError;
+            goto CleanupAndReturn;
+        }
+        
+        if (PrjFS_Result_Success == result)
+        {
+            // TODO: validate that the total bytes written match the size that was reported on the placeholder in the first place
+            // Potential bugs if we don't:
+            //  * The provider writes fewer bytes than expected. The hydrated is left with extra padding up to the original reported size.
+            //  * The provider writes more bytes than expected. The write succeeds, but whatever tool originally opened the file may have already
+            //    allocated the originally reported size, and now the contents appear truncated.
+            
+            if (!SetBitInFileFlags(fullPath, FileFlags_IsEmpty, false))
+            {
+                // TODO: how should we handle this scenario where the provider thinks it succeeded, but we were unable to
+                // update placeholder metadata?
+                result = PrjFS_Result_EIOError;
+            }
         }
     }
-    
-    return callbackResult;
+
+CleanupAndReturn:
+    ReturnPathMutex(fullPath, hydrationMutex);
+    return result;
 }
 
 static PrjFS_Result HandleFileNotification(
@@ -1005,3 +1054,34 @@ static const char* NotificationTypeToString(PrjFS_NotificationType notificationT
     }
 }
 #endif
+
+static shared_ptr<mutex> CheckoutPathMutex(const string& fullPath)
+{
+    mutex_lock lock(s_inProgressExpansionsMutex);
+    PathToMutexMap::iterator iter = s_inProgressExpansions.find(fullPath);
+    if (iter == s_inProgressExpansions.end())
+    {
+        pair<PathToMutexMap::iterator, bool> newEntry = s_inProgressExpansions.insert(
+            PathToMutexMap::value_type(fullPath, { make_shared<mutex>(), 1 }));
+        assert(newEntry.second);
+        return newEntry.first->second.mutex;
+    }
+    else
+    {
+        iter->second.useCount++;
+        return iter->second.mutex;
+    }
+}
+
+static void ReturnPathMutex(const string& fullPath, const shared_ptr<mutex>& mutex)
+{
+    mutex_lock lock(s_inProgressExpansionsMutex);
+    PathToMutexMap::iterator iter = s_inProgressExpansions.find(fullPath);
+    assert(iter != s_inProgressExpansions.end());
+    assert(iter->second.mutex.get() == mutex.get());
+    iter->second.useCount--;
+    if (iter->second.useCount == 0)
+    {
+        s_inProgressExpansions.erase(iter);
+    }
+}
