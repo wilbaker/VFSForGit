@@ -647,6 +647,13 @@ static PrjFS_Result HandleEnumerateDirectoryRequest(const MessageHeader* request
     cout << "PrjFSLib.HandleEnumerateDirectoryRequest: " << path << endl;
 #endif
     
+    char fullPath[PrjFSMaxPath];
+    CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
+    if (!IsBitSetInFileFlags(fullPath, FileFlags_IsEmpty))
+    {
+        return PrjFS_Result_Success;
+    }
+    
     PrjFS_Result callbackResult = s_callbacks.EnumerateDirectory(
         0 /* commandId */,
         path,
@@ -655,9 +662,6 @@ static PrjFS_Result HandleEnumerateDirectoryRequest(const MessageHeader* request
     
     if (PrjFS_Result_Success == callbackResult)
     {
-        char fullPath[PrjFSMaxPath];
-        CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
-        
         if (!SetBitInFileFlags(fullPath, FileFlags_IsEmpty, false))
         {
             // TODO(Mac): how should we handle this scenario where the provider thinks it succeeded, but we were unable to
@@ -689,13 +693,10 @@ static PrjFS_Result HandleRecursivelyEnumerateDirectoryRequest(const MessageHead
         
         CombinePaths(s_virtualizationRootFullPath.c_str(), directoryRelativePath.c_str(), pathBuffer);
     
-        if (IsBitSetInFileFlags(pathBuffer, FileFlags_IsEmpty))
+        PrjFS_Result result = HandleEnumerateDirectoryRequest(request, directoryRelativePath.c_str());
+        if (result != PrjFS_Result_Success)
         {
-            PrjFS_Result result = HandleEnumerateDirectoryRequest(request, directoryRelativePath.c_str());
-            if (result != PrjFS_Result_Success)
-            {
-                goto CleanupAndReturn;
-            }
+            goto CleanupAndReturn;
         }
         
         DIR* directory = opendir(pathBuffer);
@@ -742,6 +743,11 @@ static PrjFS_Result HandleHydrateFileRequest(const MessageHeader* request, const
     if (!GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData))
     {
         return PrjFS_Result_EIOError;
+    }
+    
+    if (!IsBitSetInFileFlags(fullPath, FileFlags_IsEmpty))
+    {
+        return PrjFS_Result_Success;
     }
     
     PrjFS_FileHandle fileHandle;
