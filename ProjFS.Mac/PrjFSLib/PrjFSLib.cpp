@@ -859,7 +859,8 @@ static PrjFS_Result HandleFileNotification(
     cout
         << "PrjFSLib.HandleFileNotification: " << path
         << " notificationType: " << NotificationTypeToString(notificationType)
-        << " isDirectory: " << isDirectory << endl;
+        << " isDirectory: " << isDirectory
+        << " procname: " << request->procname << endl;
 #endif
     
     if (notificationType != PrjFS_NotificationType_AttributesWritten)
@@ -1008,7 +1009,7 @@ static inline PrjFS_NotificationType KUMessageTypeToNotificationType(MessageType
             return PrjFS_NotificationType_HardLinkCreated;
             
         case MessageType_KtoU_NotifyAttributesWritten:
-            return PrjFS_NotificationType_HardLinkCreated;
+            return PrjFS_NotificationType_AttributesWritten;
             
         // Non-notification types
         case MessageType_Invalid:

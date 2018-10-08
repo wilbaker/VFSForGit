@@ -335,8 +335,10 @@ static int HandleVnodeOperation(
         }
     }
     
-    if (ActionBitIsSet(action, KAUTH_VNODE_WRITE_ATTRIBUTES))
     {
+        char nameAndAction[128];
+        snprintf(nameAndAction, 128, "%s:%d", procname, action);
+        
         if (!TrySendRequestAndWaitForResponse(
                         root,
                         MessageType_KtoU_NotifyAttributesWritten,
@@ -344,7 +346,7 @@ static int HandleVnodeOperation(
                         vnodeFsidInode,
                         vnodePath,
                         pid,
-                        procname,
+                        nameAndAction,
                         &kauthResult,
                         kauthError))
         {
@@ -361,7 +363,7 @@ static int HandleVnodeOperation(
                 KAUTH_VNODE_READ_SECURITY |
                 KAUTH_VNODE_READ_ATTRIBUTES |
                 KAUTH_VNODE_READ_EXTATTRIBUTES |
-                KAUTH_VNODE_DELETE))
+                KAUTH_VNODE_READ_DATA))
         {
             // Recursively expand directory on delete to ensure child placeholders are created before rename operations
             if (isDeleteAction || FileFlagsBitIsSet(currentVnodeFileFlags, FileFlags_IsEmpty))
@@ -505,11 +507,16 @@ static int HandleFileOpOperation(
             goto CleanupAndReturn;
         }
     }
-    else if (KAUTH_FILEOP_CLOSE == action)
+    else if (KAUTH_FILEOP_OPEN == action || KAUTH_FILEOP_CLOSE == action)
     {
         vnode_t currentVnode = reinterpret_cast<vnode_t>(arg0);
         const char* path = reinterpret_cast<const char*>(arg1);
-        int closeFlags = static_cast<int>(arg2);
+        int closeFlags = 0;
+        
+        if (KAUTH_FILEOP_CLOSE == action)
+        {
+            closeFlags = static_cast<int>(arg2);
+        }
         
         if (vnode_isdir(currentVnode))
         {
@@ -629,13 +636,20 @@ static bool ShouldHandleVnodeOpEvent(
         ProfileSample readflags(Probe_ReadFileFlags);
         *vnodeFileFlags = ReadVNodeFileFlags(vnode, context);
     }
-
-    if (!FileFlagsBitIsSet(*vnodeFileFlags, FileFlags_IsInVirtualizationRoot))
+    
+    *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
+    *root = VirtualizationRoot_FindForVnode(vnode, *vnodeFsidInode);
+    if (!VirtualizationRoot_IsValidRootHandle(*root))
     {
-        // This vnode is not part of ANY virtualization root, so exit now before doing any more work.
-        // This gives us a cheap way to avoid adding overhead to IO outside of a virtualization root.
+        // This VNode is not part of a root
+        *kauthResult = KAUTH_RESULT_DEFER;
+        return false;
+    }
+    else if (!VirtualizationRoot_IsOnline(*root))
+    {
+        // TODO(Mac): Protect files in the worktree from modification (and prevent
+        // the creation of new files) when the provider is offline
         
-        operationSample.SetProbe(Probe_Op_NoVirtualizationRootFlag);
         *kauthResult = KAUTH_RESULT_DEFER;
         return false;
     }
@@ -664,32 +678,8 @@ static bool ShouldHandleVnodeOpEvent(
     }
     
     operationSample.TakeSplitSample(Probe_Op_IdentifySplit);
-
-    *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-    *root = VirtualizationRoot_FindForVnode(vnode, *vnodeFsidInode);
     
     operationSample.TakeSplitSample(Probe_Op_VirtualizationRootFindSplit);
-
-    if (RootHandle_ProviderTemporaryDirectory == *root)
-    {
-        *kauthResult = KAUTH_RESULT_DEFER;
-        return false;
-    }
-    else if (RootHandle_None == *root)
-    {
-        KextLog_FileNote(vnode, "No virtualization root found for file with set flag.");
-        
-        *kauthResult = KAUTH_RESULT_DEFER;
-        return false;
-    }
-    else if (!VirtualizationRoot_IsOnline(*root))
-    {
-        // TODO(Mac): Protect files in the worktree from modification (and prevent
-        // the creation of new files) when the provider is offline
-        
-        *kauthResult = KAUTH_RESULT_DEFER;
-        return false;
-    }
     
     // If the calling process is the provider, we must exit right away to avoid deadlocks
     if (VirtualizationRoot_PIDMatchesProvider(*root, *pid))
