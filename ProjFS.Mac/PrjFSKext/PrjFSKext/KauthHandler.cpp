@@ -236,6 +236,7 @@ void KauthHandler_HandleKernelMessageResponse(uint64_t messageId, MessageType re
         case MessageType_KtoU_NotifyFileRenamed:
         case MessageType_KtoU_NotifyDirectoryRenamed:
         case MessageType_KtoU_NotifyFileHardLinkCreated:
+        case MessageType_KtoU_NotifyAttributesWritten:
             KextLog_Error("KauthHandler_HandleKernelMessageResponse: Unexpected responseType: %d", responseType);
             break;
     }
@@ -329,6 +330,23 @@ static int HandleVnodeOperation(
                 procname,
                 &kauthResult,
                 kauthError))
+        {
+            goto CleanupAndReturn;
+        }
+    }
+    
+    if (ActionBitIsSet(action, KAUTH_VNODE_WRITE_ATTRIBUTES))
+    {
+        if (!TrySendRequestAndWaitForResponse(
+                        root,
+                        MessageType_KtoU_NotifyAttributesWritten,
+                        currentVnode,
+                        vnodeFsidInode,
+                        vnodePath,
+                        pid,
+                        procname,
+                        &kauthResult,
+                        kauthError))
         {
             goto CleanupAndReturn;
         }

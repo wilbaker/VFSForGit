@@ -25,6 +25,7 @@ typedef enum
     MessageType_KtoU_NotifyFileRenamed,
     MessageType_KtoU_NotifyDirectoryRenamed,
     MessageType_KtoU_NotifyFileHardLinkCreated,
+    MessageType_KtoU_NotifyAttributesWritten,
     
     // Responses
     MessageType_Response_Success,

@@ -622,6 +622,20 @@ static void HandleKernelRequest(void* messageMemory, uint32_t messageSize)
                 KUMessageTypeToNotificationType(static_cast<MessageType>(requestHeader->messageType)));
             break;
         }
+        
+        case MessageType_KtoU_NotifyAttributesWritten:
+        {
+            char fullPath[PrjFSMaxPath];
+            CombinePaths(s_virtualizationRootFullPath.c_str(), request.path, fullPath);
+            
+            bool isDirectory = requestHeader->messageType == MessageType_KtoU_NotifyDirectoryRenamed;
+            result = HandleFileNotification(
+                requestHeader,
+                request.path,
+                isDirectory,
+                KUMessageTypeToNotificationType(static_cast<MessageType>(requestHeader->messageType)));
+            break;
+        }
     }
     
     // async callbacks are not yet implemented
@@ -848,22 +862,27 @@ static PrjFS_Result HandleFileNotification(
         << " isDirectory: " << isDirectory << endl;
 #endif
     
-    char fullPath[PrjFSMaxPath];
-    CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
-    
-    PrjFSFileXAttrData xattrData = {};
-    GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData);
+    if (notificationType != PrjFS_NotificationType_AttributesWritten)
+    {
+        char fullPath[PrjFSMaxPath];
+        CombinePaths(s_virtualizationRootFullPath.c_str(), path, fullPath);
+        
+        PrjFSFileXAttrData xattrData = {};
+        GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData);
 
-    return s_callbacks.NotifyOperation(
-        0 /* commandId */,
-        path,
-        xattrData.providerId,
-        xattrData.contentId,
-        request->pid,
-        request->procname,
-        isDirectory,
-        notificationType,
-        nullptr /* destinationRelativePath */);
+        return s_callbacks.NotifyOperation(
+            0 /* commandId */,
+            path,
+            xattrData.providerId,
+            xattrData.contentId,
+            request->pid,
+            request->procname,
+            isDirectory,
+            notificationType,
+            nullptr /* destinationRelativePath */);
+    }
+    
+    return PrjFS_Result_Success;
 }
 
 static bool InitializeEmptyPlaceholder(const char* fullPath)
@@ -987,7 +1006,10 @@ static inline PrjFS_NotificationType KUMessageTypeToNotificationType(MessageType
             
         case MessageType_KtoU_NotifyFileHardLinkCreated:
             return PrjFS_NotificationType_HardLinkCreated;
-        
+            
+        case MessageType_KtoU_NotifyAttributesWritten:
+            return PrjFS_NotificationType_HardLinkCreated;
+            
         // Non-notification types
         case MessageType_Invalid:
         case MessageType_UtoK_StartVirtualizationInstance:
@@ -1062,8 +1084,8 @@ static const char* NotificationTypeToString(PrjFS_NotificationType notificationT
             return STRINGIFY(PrjFS_NotificationType_PreModify);
         case PrjFS_NotificationType_FileModified:
             return STRINGIFY(PrjFS_NotificationType_FileModified);
-        case PrjFS_NotificationType_FileDeleted:
-            return STRINGIFY(PrjFS_NotificationType_FileDeleted);
+        case PrjFS_NotificationType_AttributesWritten:
+            return STRINGIFY(PrjFS_NotificationType_AttributesWritten);
     }
 }
 #endif

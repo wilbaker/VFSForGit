@@ -51,7 +51,8 @@ typedef enum
     
     PrjFS_NotificationType_PreModify                = 0x10000001,
     PrjFS_NotificationType_FileModified             = 0x10000002,
-    PrjFS_NotificationType_FileDeleted              = 0x10000004,
+    
+    PrjFS_NotificationType_AttributesWritten        = 0x10000004,
 
 } PrjFS_NotificationType;
 
