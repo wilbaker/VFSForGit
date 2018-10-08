@@ -140,10 +140,7 @@ namespace GVFS.Virtualization.FileSystem
         /// </remarks>
         protected bool CanCreatePlaceholder()
         {
-            GitCommandLineParser gitCommand = new GitCommandLineParser(this.Context.Repository.GVFSLock.GetLockedGitCommand());
-            return
-                !gitCommand.IsValidGitCommand ||
-                gitCommand.IsVerb(FileSystemVirtualizer.CanCreatePlaceholderVerbs);
+            return true;
         }
 
         protected bool IsSpecialGitFile(string fileName)
