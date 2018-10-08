@@ -527,13 +527,16 @@ namespace GVFS.Platform.Mac
                     {
                         if (!relativePath.Equals(GVFSConstants.DotGit.Root, StringComparison.OrdinalIgnoreCase))
                         {
-                            GitCommandLineParser gitCommand = new GitCommandLineParser(this.Context.Repository.GVFSLock.GetLockedGitCommand());
+                            string lockedGitCommand = this.Context.Repository.GVFSLock.GetLockedGitCommand();
+                            GitCommandLineParser gitCommand = new GitCommandLineParser(lockedGitCommand);
                             if (gitCommand.IsValidGitCommand)
                             {
-                                // TODO(Mac): Ensure that when git creates a folder all files\folders within that folder are written to disk
                                 EventMetadata metadata = this.CreateEventMetadata(relativePath);
-                                metadata.Add("isDirectory", isDirectory);
-                                this.Context.Tracer.RelatedWarning(metadata, $"{nameof(this.OnNewFileCreated)}: Git created a folder, currently an unsupported scenario on Mac");
+                                metadata.Add(nameof(lockedGitCommand), lockedGitCommand);
+                                metadata.Add(TracingConstants.MessageKey.InfoMessage, "Git command created new folder");
+                                this.Context.Tracer.RelatedEvent(EventLevel.Informational, $"{nameof(this.OnNewFileCreated)}_GitCreatedFolder", metadata);
+
+                                this.FileSystemCallbacks.OnPlaceholderFolderCreated(relativePath);
                             }
                             else
                             {
