@@ -58,11 +58,6 @@ namespace GVFS.FunctionalTests
                 GVFSTestConfig.FileSystemRunners = FileSystemRunners.FileSystemRunner.DefaultRunners;
             }
 
-            if (runner.HasCustomArg("--windows-only"))
-            {
-                includeCategories.Add(Categories.WindowsOnly);
-            }
-
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 excludeCategories.Add(Categories.MacTODO.NeedsLockHolder);
@@ -75,6 +70,7 @@ namespace GVFS.FunctionalTests
             else
             {
                 excludeCategories.Add(Categories.MacOnly);
+                excludeCategories.Add(Categories.WindowsOnly);
             }
 
             GVFSTestConfig.RepoToClone =
