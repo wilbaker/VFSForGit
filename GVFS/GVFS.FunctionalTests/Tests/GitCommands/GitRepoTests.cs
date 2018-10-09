@@ -71,6 +71,8 @@ namespace GVFS.FunctionalTests.Tests.GitCommands
 
             this.ValidateGitCommand("checkout " + this.ControlGitRepo.Commitish);
 
+            this.Enlistment.Prefetch("--files * --hydrate");
+
             this.CheckHeadCommitTree();
             this.Enlistment.RepoRoot.ShouldBeADirectory(this.FileSystem)
                 .WithDeepStructure(this.FileSystem, this.ControlGitRepo.RootPath);
