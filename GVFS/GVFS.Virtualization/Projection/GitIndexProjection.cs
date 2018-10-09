@@ -1360,10 +1360,23 @@ namespace GVFS.Virtualization.Projection
             ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData> updatedPlaceholderList,
             HashSet<string> existingFolderPlaceholders)
         {
+            this.context.Tracer.RelatedInfo($"ReExpandFolder: {relativeFolderPath}");
+
             FolderData folderData;
             if (!this.TryGetOrAddFolderDataFromCache(relativeFolderPath, out folderData))
             {
+                this.context.Tracer.RelatedInfo($"ReExpandFolder folder no longer in projection: {relativeFolderPath}");
+
                 // Folder is no longer in the projection
+                return;
+            }
+
+            string fullPathToFolder = Path.Combine(this.context.Enlistment.WorkingDirectoryRoot, relativeFolderPath);
+            if (!this.context.FileSystem.DirectoryExists(fullPathToFolder))
+            {
+                // Git command removed the folder, we must remove it from existingFolderPlaceholders so that its parent will create
+                // it again
+                existingFolderPlaceholders.Remove(relativeFolderPath);
                 return;
             }
 
@@ -1393,10 +1406,16 @@ namespace GVFS.Virtualization.Projection
                 {
                     if (!existingFolderPlaceholders.Contains(childRelativePath))
                     {
-                        this.fileSystemVirtualizer.WritePlaceholderDirectory(childRelativePath);                    
+                        this.context.Tracer.RelatedInfo($"ReExpandFolder writing child folder: {childRelativePath}");
+
+                        this.fileSystemVirtualizer.WritePlaceholderDirectory(childRelativePath);
                         updatedPlaceholderList.TryAdd(
-                            childRelativePath, 
+                            childRelativePath,
                             new PlaceholderListDatabase.PlaceholderData(childRelativePath, PlaceholderListDatabase.PartialFolderValue));
+                    }
+                    else
+                    {
+                        this.context.Tracer.RelatedInfo($"ReExpandFolder skipping child folder (alreay exists): {childRelativePath}");
                     }
                 }
                 else
@@ -1406,10 +1425,16 @@ namespace GVFS.Virtualization.Projection
                         FileData childFileData = childEntry as FileData;
                         string sha = childFileData.Sha.ToString();
 
+                        this.context.Tracer.RelatedInfo($"ReExpandFolder writing child file: {childRelativePath}");
+
                         this.fileSystemVirtualizer.WritePlaceholderFile(childRelativePath, childFileData.Size, sha);
                         updatedPlaceholderList.TryAdd(
                             childRelativePath, 
                             new PlaceholderListDatabase.PlaceholderData(childRelativePath, sha));
+                    }
+                    else
+                    {
+                        this.context.Tracer.RelatedInfo($"ReExpandFolder skipping child file (alreay exists): {childRelativePath}");
                     }
                 }
             }
@@ -1432,6 +1457,7 @@ namespace GVFS.Virtualization.Projection
         {
             if (folderPlaceholdersToKeep.Contains(placeholder.Path))
             {
+                this.context.Tracer.RelatedInfo($"RemoveFolderPlaceholderIfEmpty, marked as to keep: {placeholder.Path}");
                 addPlaceholderToUpdatedPlaceholders(placeholder);
                 return false;
             }
@@ -1451,6 +1477,7 @@ namespace GVFS.Virtualization.Projection
                 FolderData folderData;
                 if (this.TryGetOrAddFolderDataFromCache(placeholder.Path, out folderData))
                 {
+                    this.context.Tracer.RelatedInfo($"RemoveFolderPlaceholderIfEmpty, leaving folder on disk: {placeholder.Path}");
                     addPlaceholderToUpdatedPlaceholders(placeholder);
                     return false;
                 }
@@ -1458,6 +1485,7 @@ namespace GVFS.Virtualization.Projection
 
             UpdateFailureReason failureReason = UpdateFailureReason.NoFailure;
             FileSystemResult result = this.fileSystemVirtualizer.DeleteFile(placeholder.Path, FolderPlaceholderDeleteFlags, out failureReason);
+            this.context.Tracer.RelatedInfo($"RemoveFolderPlaceholderIfEmpty, ldeleted: {placeholder.Path}, result: {result.Result}");
             switch (result.Result)
             {
                 case FSResult.Ok:
