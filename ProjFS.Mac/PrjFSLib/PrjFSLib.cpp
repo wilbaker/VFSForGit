@@ -503,6 +503,8 @@ PrjFS_Result PrjFS_DeleteFile(
             case ENOENT:  // A component of fullPath does not exist
             case ENOTDIR: // A component of fullPath is not a directory
                 return PrjFS_Result_Success;
+            case ENOTEMPTY:
+                return PrjFS_Result_EDirectoryNotEmpty;
             default:
                 return PrjFS_Result_EIOError;
         }

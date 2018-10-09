@@ -53,6 +53,9 @@ namespace GVFS.Platform.Mac
                 case Result.EPathNotFound:
                     return FSResult.FileOrPathNotFound;
 
+                case Result.EDirectoryNotEmpty:
+                    return FSResult.DirectoryNotEmpty;
+
                 default:
                     return FSResult.IOError;
             }
@@ -536,7 +539,10 @@ namespace GVFS.Platform.Mac
                                 metadata.Add(TracingConstants.MessageKey.InfoMessage, "Git command created new folder");
                                 this.Context.Tracer.RelatedEvent(EventLevel.Informational, $"{nameof(this.OnNewFileCreated)}_GitCreatedFolder", metadata);
 
-                                this.FileSystemCallbacks.OnPlaceholderFolderCreated(relativePath);
+                                // Record this folder as expanded so that GitIndexProjection will re-expand the folder
+                                // when the projection change completes.  This is the closest we can get to converting this
+                                // new folder to partial (as we do on Windows).
+                                this.FileSystemCallbacks.OnPlaceholderFolderExpanded(relativePath);
                             }
                             else
                             {
