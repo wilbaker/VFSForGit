@@ -1360,13 +1360,9 @@ namespace GVFS.Virtualization.Projection
             ConcurrentDictionary<string, PlaceholderListDatabase.PlaceholderData> updatedPlaceholderList,
             HashSet<string> existingFolderPlaceholders)
         {
-            this.context.Tracer.RelatedInfo($"ReExpandFolder: Called for {relativeFolderPath}");
-
             FolderData folderData;
             if (!this.TryGetOrAddFolderDataFromCache(relativeFolderPath, out folderData))
             {
-                this.context.Tracer.RelatedInfo($"ReExpandFolder: Folder not in projection: {relativeFolderPath}");
-
                 // Folder is no longer in the projection
                 return;
             }
@@ -1397,15 +1393,10 @@ namespace GVFS.Virtualization.Projection
                 {
                     if (!existingFolderPlaceholders.Contains(childRelativePath))
                     {
-                        this.context.Tracer.RelatedInfo($"ReExpandFolder: Writing folder placeholder for: {childRelativePath}");
-                        this.fileSystemVirtualizer.WritePlaceholderDirectory(childRelativePath);
+                        this.fileSystemVirtualizer.WritePlaceholderDirectory(childRelativePath);                    
                         updatedPlaceholderList.TryAdd(
-                            childRelativePath,
+                            childRelativePath, 
                             new PlaceholderListDatabase.PlaceholderData(childRelativePath, PlaceholderListDatabase.PartialFolderValue));
-                    }
-                    else
-                    {
-                        this.context.Tracer.RelatedInfo($"ReExpandFolder: Skipping placeholder (folder already exists): {childRelativePath}");
                     }
                 }
                 else
@@ -1415,15 +1406,10 @@ namespace GVFS.Virtualization.Projection
                         FileData childFileData = childEntry as FileData;
                         string sha = childFileData.Sha.ToString();
 
-                        this.context.Tracer.RelatedInfo($"ReExpandFolder: Writing file placeholder: {childRelativePath}");
                         this.fileSystemVirtualizer.WritePlaceholderFile(childRelativePath, childFileData.Size, sha);
                         updatedPlaceholderList.TryAdd(
                             childRelativePath, 
                             new PlaceholderListDatabase.PlaceholderData(childRelativePath, sha));
-                    }
-                    else
-                    {
-                        this.context.Tracer.RelatedInfo($"ReExpandFolder: Skipping placeholder (file already exists): {childRelativePath}");
                     }
                 }
             }
