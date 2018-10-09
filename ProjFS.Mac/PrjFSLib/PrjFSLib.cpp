@@ -91,6 +91,7 @@ static bool InitializeEmptyPlaceholder(const char* fullPath);
 template<typename TPlaceholder> static bool InitializeEmptyPlaceholder(const char* fullPath, TPlaceholder* data, const char* xattrName);
 static bool AddXAttr(const char* path, const char* name, const void* value, size_t size);
 static bool GetXAttr(const char* path, const char* name, size_t size, _Out_ void* value);
+static bool RemoveXAttr(const char* path, const char* name);
 
 static inline PrjFS_NotificationType KUMessageTypeToNotificationType(MessageType kuNotificationType);
 
@@ -483,7 +484,6 @@ PrjFS_Result PrjFS_DeleteFile(
         << hex << updateFlags << dec << ")" << endl;
 #endif
     
-    // TODO(Mac): Populate failure cause appropriately
     *failureCause = PrjFS_UpdateFailureCause_Invalid;
     
     if (nullptr == relativePath)
@@ -492,10 +492,23 @@ PrjFS_Result PrjFS_DeleteFile(
     }
 
     // TODO(Mac): Ensure that races with hydration are handled properly
-    // TODO(Mac): Ensure file is not full before proceeding
     
     char fullPath[PrjFSMaxPath];
     CombinePaths(s_virtualizationRootFullPath.c_str(), relativePath, fullPath);
+    
+    struct stat path_stat;
+    stat(fullPath, &path_stat);
+    if (S_ISREG(path_stat.st_mode))
+    {
+        // TODO(Mac): Perform this check for directories as well
+        PrjFSFileXAttrData xattrData = {};
+        if (!GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData))
+        {
+            *failureCause = PrjFS_UpdateFailureCause_FullFile;
+            return PrjFS_Result_EVirtualizationInvalidOperation;
+        }
+    }
+    
     if (0 != remove(fullPath))
     {
         switch(errno)
@@ -903,7 +916,11 @@ static PrjFS_Result HandleFileNotification(
     }
     
     PrjFSFileXAttrData xattrData = {};
-    GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData);
+    if (GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData) &&
+        PrjFS_NotificationType_FileModified == notificationType)
+    {
+        RemoveXAttr(fullPath, PrjFSFileXAttrName);
+    }
 
     return s_callbacks.NotifyOperation(
         0 /* commandId */,
@@ -1016,6 +1033,16 @@ static bool GetXAttr(const char* path, const char* name, size_t size, _Out_ void
     }
     
     return false;
+}
+
+static bool RemoveXAttr(const char* path, const char* name)
+{
+    if (removexattr(path, name, XATTR_NOFOLLOW))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 static inline PrjFS_NotificationType KUMessageTypeToNotificationType(MessageType kuNotificationType)
