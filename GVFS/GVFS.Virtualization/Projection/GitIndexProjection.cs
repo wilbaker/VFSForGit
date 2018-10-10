@@ -1367,16 +1367,6 @@ namespace GVFS.Virtualization.Projection
                 return;
             }
 
-            string fullPathToFolder = Path.Combine(this.context.Enlistment.WorkingDirectoryRoot, relativeFolderPath);
-            if (!this.context.FileSystem.DirectoryExists(fullPathToFolder))
-            {
-                // TODO(Mac): Switch to using a failure to write a child of this folder to detect this scenario
-                // Git command removed the folder, we must remove it from existingFolderPlaceholders so that its parent will create
-                // it again
-                existingFolderPlaceholders.Remove(relativeFolderPath);
-                return;
-            }
-
             // TODO(Mac): Issue #255, batch file sizes up-front for the new placeholders written by ReExpandFolder
             folderData.PopulateSizes(
                 this.context.Tracer,
