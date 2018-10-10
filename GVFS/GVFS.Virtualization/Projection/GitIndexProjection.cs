@@ -1158,8 +1158,11 @@ namespace GVFS.Virtualization.Projection
                         new HashSet<string>(placeholderFoldersListCopy.Select(x => x.Path), StringComparer.OrdinalIgnoreCase) : 
                         null;
                     
-                    // Order the folders in decscending order so that we walk the tree from bottom up (ensuring child folders are deleted before
-                    // their parents)
+                    // Order the folders in decscending order so that we walk the tree from bottom up.
+                    // Traversing the folders in this order:
+                    //  1. Ensures child folders are deleted before their parents
+                    //  2. Ensures that folders that have been deleted by git (but are still in the projection) are found before their
+                    //     parent folder is re-expanded (only applies on platforms where EnumerationExpandsDirectories is true)
                     foreach (PlaceholderListDatabase.PlaceholderData folderPlaceholder in placeholderFoldersListCopy.OrderByDescending(x => x.Path))
                     {
                         // Remove folder placeholders before re-expansion to ensure that projection changes that convert a folder to a file work
