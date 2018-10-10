@@ -498,9 +498,17 @@ PrjFS_Result PrjFS_DeleteFile(
     
     struct stat path_stat;
     stat(fullPath, &path_stat);
+    if (!(S_ISREG(path_stat.st_mode) || S_ISDIR(path_stat.st_mode)))
+    {
+        // Only files and directories can be deleted with PrjFS_DeleteFile
+        // Anything else should be treated as a full
+        *failureCause = PrjFS_UpdateFailureCause_FullFile;
+        return PrjFS_Result_EVirtualizationInvalidOperation;
+    }
+    
     if (S_ISREG(path_stat.st_mode))
     {
-        // TODO(Mac): Perform this check for directories as well
+        // TODO(Mac): Determine if we need a similar check for directories as well
         PrjFSFileXAttrData xattrData = {};
         if (!GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData))
         {
