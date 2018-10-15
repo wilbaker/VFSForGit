@@ -922,15 +922,11 @@ static PrjFS_Result HandleFileNotification(
         CombinePaths(s_virtualizationRootFullPath.c_str(), path, computedFullPath);
         fullPath = computedFullPath;
     }
-    
-    PrjFSFileXAttrData xattrData = {};
-    if (GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData) &&
-        PrjFS_NotificationType_FileModified == notificationType)
-    {
-        RemoveXAttr(fullPath, PrjFSFileXAttrName);
-    }
 
-    return s_callbacks.NotifyOperation(
+    PrjFSFileXAttrData xattrData = {};
+    bool partialFile = GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData);
+
+    PrjFS_Result result = s_callbacks.NotifyOperation(
         0 /* commandId */,
         path,
         xattrData.providerId,
@@ -940,6 +936,13 @@ static PrjFS_Result HandleFileNotification(
         isDirectory,
         notificationType,
         nullptr /* destinationRelativePath */);
+    
+    if (partialFile && PrjFS_NotificationType_FileModified == notificationType)
+    {
+        RemoveXAttr(fullPath, PrjFSFileXAttrName);
+    }
+    
+    return result;
 }
 
 static bool InitializeEmptyPlaceholder(const char* fullPath)
