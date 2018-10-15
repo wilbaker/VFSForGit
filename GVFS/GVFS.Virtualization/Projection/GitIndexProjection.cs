@@ -1457,7 +1457,7 @@ namespace GVFS.Virtualization.Projection
             }
 
             UpdateFailureReason failureReason = UpdateFailureReason.NoFailure;
-            FileSystemResult result = this.fileSystemVirtualizer.DeleteDirectory(placeholder.Path, FolderPlaceholderDeleteFlags, out failureReason);
+            FileSystemResult result = this.fileSystemVirtualizer.DeleteFile(placeholder.Path, FolderPlaceholderDeleteFlags, out failureReason);
             switch (result.Result)
             {
                 case FSResult.Ok:
