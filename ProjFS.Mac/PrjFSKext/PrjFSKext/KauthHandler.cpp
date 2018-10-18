@@ -38,7 +38,7 @@ static int GetPid(vfs_context_t context);
 
 static uint32_t ReadVNodeFileFlags(vnode_t vn, vfs_context_t context);
 static inline bool FileFlagsBitIsSet(uint32_t fileFlags, uint32_t bit);
-static inline bool FileIsFlaggedAsInRoot(vnode_t vnode, vfs_context_t context);
+//static inline bool FileIsFlaggedAsInRoot(vnode_t vnode, vfs_context_t context);
 static inline bool ActionBitIsSet(kauth_action_t action, kauth_action_t mask);
 
 static bool IsFileSystemCrawler(char* procname);
@@ -487,7 +487,7 @@ static int HandleFileOpOperation(
             goto CleanupAndReturn;
         }
     }
-    else if (KAUTH_FILEOP_CLOSE == action)
+    /*else if (KAUTH_FILEOP_CLOSE == action)
     {
         vnode_t currentVnode = reinterpret_cast<vnode_t>(arg0);
         const char* path = reinterpret_cast<const char*>(arg1);
@@ -557,7 +557,7 @@ static int HandleFileOpOperation(
                 goto CleanupAndReturn;
             }
         }
-    }
+    }*/
     
 CleanupAndReturn:    
     if (NULLVP != currentVnodeFromPath)
@@ -638,7 +638,7 @@ static bool ShouldHandleVnodeOpEvent(
             // it is missing its contents.
             
             operationSample.SetProbe(Probe_Op_DenyCrawler);
-            *kauthResult = KAUTH_RESULT_DENY;
+            *kauthResult = KAUTH_RESULT_DEFER;
             return false;
         }
 
@@ -745,8 +745,7 @@ static bool TrySendRequestAndWaitForResponse(
     if (nullptr == vnodePath)
     {
         // Default error code is EACCES. See errno.h for more codes.
-        *kauthError = EAGAIN;
-        *kauthResult = KAUTH_RESULT_DENY;
+        *kauthResult = KAUTH_RESULT_DEFER;
         return false;
     }
     
@@ -808,8 +807,7 @@ static bool TrySendRequestAndWaitForResponse(
     else
     {
         // Default error code is EACCES. See errno.h for more codes.
-        *kauthError = EAGAIN;
-        *kauthResult = KAUTH_RESULT_DENY;
+        *kauthResult = KAUTH_RESULT_DEFER;
         goto CleanupAndReturn;
     }
     
@@ -891,11 +889,13 @@ static inline bool FileFlagsBitIsSet(uint32_t fileFlags, uint32_t bit)
     return 0 != (fileFlags & bit);
 }
 
+/*
 static inline bool FileIsFlaggedAsInRoot(vnode_t vnode, vfs_context_t context)
 {
     uint32_t vnodeFileFlags = ReadVNodeFileFlags(vnode, context);
     return FileFlagsBitIsSet(vnodeFileFlags, FileFlags_IsInVirtualizationRoot);
 }
+*/
 static inline bool ActionBitIsSet(kauth_action_t action, kauth_action_t mask)
 {
     return action & mask;

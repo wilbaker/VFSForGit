@@ -927,7 +927,7 @@ static PrjFS_Result HandleNewFileInRootNotification(
         notificationType);
     
     // TODO(Mac) #391: Handle SetBitInFileFlags failures
-    SetBitInFileFlags(fullPath, FileFlags_IsInVirtualizationRoot, true);
+    // SetBitInFileFlags(fullPath, FileFlags_IsInVirtualizationRoot, true);
     
     return result;
 }
@@ -947,7 +947,12 @@ static PrjFS_Result HandleFileNotification(
 #endif
     
     PrjFSFileXAttrData xattrData = {};
-    bool partialFile = GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData);
+    bool partialFile = false;
+    
+    if (PrjFS_NotificationType_FileModified == notificationType)
+    {
+        partialFile = GetXAttr(fullPath, PrjFSFileXAttrName, sizeof(PrjFSFileXAttrData), &xattrData);
+    }
 
     PrjFS_Result result = s_callbacks.NotifyOperation(
         0 /* commandId */,
