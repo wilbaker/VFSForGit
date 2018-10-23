@@ -24,9 +24,14 @@ namespace GVFS.Virtualization.Projection
             private GitIndexProjection projection;
 
             /// <summary>
-            /// A single GitIndexEntry instance used for parsing all entries in the index
+            /// A single GitIndexEntry instance used by the parsing thread for parsing all entries in the index
             /// </summary>
-            private GitIndexEntry resuableParsedIndexEntry = new GitIndexEntry();
+            private GitIndexEntry resuableParsingThreadIndexEntry = new GitIndexEntry(useLazyPaths: true);
+
+            /// <summary>
+            /// A single GitIndexEntry instance used by the background task thread for parsing all entries in the index
+            /// </summary>
+            private GitIndexEntry resuableBackgroundTaskThreadIndexEntry = new GitIndexEntry(useLazyPaths: false);
 
             public GitIndexParser(GitIndexProjection projection)
             {
