@@ -1,6 +1,7 @@
 ﻿using GVFS.Common;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace GVFS.Virtualization.Projection
 {
@@ -148,9 +149,81 @@ namespace GVFS.Virtualization.Projection
                 return string.Join(GVFSConstants.GitPathSeparatorString, this.PathParts.Take(this.NumParts).Select(x => x.GetString()));
             }
 
-            public string GetRelativePath()
+            public unsafe string ParsePathAndReturnRelativePath()
             {
-                return string.Join(PathSeparatorString, this.PathParts.Take(this.NumParts).Select(x => x.GetString()));
+                this.PathBuffer[this.PathLength] = 0;
+
+                // The index of that path part that is after the path separator
+                int currentPartStartIndex = 0;
+
+                // The index to start looking for the next path separator
+                // Because the previous final separator is stored and we know where the previous path will be replaced
+                // the code can use the previous final separator to start looking from that point instead of having to 
+                // run through the entire path to break it apart
+                /* Example:
+                 * Previous path = folder/where/previous/separator/is/used/file.txt
+                 * This path     = folder/where/previous/separator/is/used/file2.txt
+                 *                                                        ^    ^
+                 *                         this.previousFinalSeparatorIndex    |
+                 *                                                             this.ReplaceIndex
+                 *
+                 *   folder/where/previous/separator/is/used/file2.txt
+                 *                                           ^^
+                 *                       currentPartStartIndex|
+                 *                                            forLoopStartIndex
+                 */
+                int forLoopStartIndex = 0;
+
+                fixed (byte* pathPtr = this.PathBuffer)
+                {
+                    if (this.previousFinalSeparatorIndex < this.ReplaceIndex &&
+                        !this.RangeContains(pathPtr + this.ReplaceIndex, this.PathLength - this.ReplaceIndex, PathSeparatorCode))
+                    {
+                        // Only need to parse the last part, because the rest of the string is unchanged
+
+                        // The logical thing to do would be to start the for loop at previousFinalSeparatorIndex+1, but two 
+                        // repeated / characters would make an invalid path, so we'll assume that git would not have stored that path
+                        forLoopStartIndex = this.previousFinalSeparatorIndex + 2;
+
+                        // we still do need to start the current part's index at the correct spot, so subtract one for that
+                        currentPartStartIndex = forLoopStartIndex - 1;
+
+                        this.NumParts--;
+
+                        this.HasSameParentAsLastEntry = true;
+                    }
+                    else
+                    {
+                        this.NumParts = 0;
+                        this.ClearLastParent();
+                    }
+
+                    int partIndex = this.NumParts;
+
+                    byte* forLoopPtr = pathPtr + forLoopStartIndex;
+                    for (int i = forLoopStartIndex; i < this.PathLength + 1; i++)
+                    {
+                        if (*forLoopPtr == PathSeparatorCode)
+                        {
+                            this.PathParts[partIndex] = Encoding.UTF8.GetString(pathPtr + currentPartStartIndex, i - currentPartStartIndex);
+
+                            partIndex++;
+                            currentPartStartIndex = i + 1;
+
+                            this.NumParts++;
+                            this.previousFinalSeparatorIndex = i;
+                        }
+
+                        ++forLoopPtr;
+                    }
+
+                    // We unrolled the final part calculation to after the loop, to avoid having to do a 0-byte check inside the for loop
+                    this.PathParts[partIndex] = Encoding.UTF8.GetString(pathPtr + currentPartStartIndex, this.PathLength - currentPartStartIndex);
+
+                    this.NumParts++;
+
+                    return string.Join(PathSeparatorString, this.PathParts.Take(this.NumParts).Select(x => x.GetString()));
+                }
             }
             
             private unsafe bool RangeContains(byte* bufferPtr, int count, byte value)

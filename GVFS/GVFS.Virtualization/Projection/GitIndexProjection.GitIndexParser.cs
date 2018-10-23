@@ -148,8 +148,7 @@ namespace GVFS.Virtualization.Projection
                 GitIndexEntry gitIndexEntry,
                 Dictionary<string, PlaceholderListDatabase.PlaceholderData> filePlaceholders)
             {
-                gitIndexEntry.ParsePath();
-                string placeholderRelativePath = gitIndexEntry.GetRelativePath();
+                string placeholderRelativePath = gitIndexEntry.ParsePathAndReturnRelativePath();
 
                 FileSystemTaskResult result = FileSystemTaskResult.Success;
 
