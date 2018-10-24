@@ -814,7 +814,7 @@ namespace GVFS.Virtualization.Projection
                 parentFolder = parentFolder.ChildEntries.GetOrAddFolder(indexEntry.GetLazyPathPart(pathIndex));
             }
 
-            parentFolder.AddChildFile(indexEntry.PathParts[indexEntry.NumParts - 1], indexEntry.Sha);
+            parentFolder.AddChildFile(indexEntry.GetLazyPathPart(indexEntry.NumParts - 1), indexEntry.Sha);
 
             return parentFolder;
         }
