@@ -16,11 +16,24 @@ namespace GVFS.Common
 
         private const char PathTerminator = '\0';
 
-        // This list holds entries that would otherwise be lost because WriteAllEntriesAndFlush has not been called, but a file 
-        // snapshot has been taken using GetAllEntriesAndPrepToWriteAllEntries.
-        // See the unit test PlaceholderDatabaseTests.HandlesRaceBetweenAddAndWriteAllEntries for example
+        // This list holds placeholder entries that are created between calls to 
+        // GetAllEntriesAndPrepToWriteAllEntries and WriteAllEntriesAndFlush.
         //
-        // With this list, we can no longer call GetAllEntriesAndPrepToWriteAllEntries without a matching WriteAllEntries afterwards.
+        //    Example:
+        //
+        //       1) VFS4G parses the updated index (as part of a projection change)
+        //       2) VFS4G starts the work to update placeholders
+        //       3) VFS4G calls GetAllEntriesAndPrepToWriteAllEntries
+        //       4) VFS4G starts updating placeholders
+        //       5) Some application reads a pure-virtual file (creating a new placeholder) while VFS4G is updating existing placeholders. 
+        //          That new placeholder is added to placeholderChangesWhileRebuildingList.
+        //       6) VFS4G completes updating the placeholders and calls WriteAllEntriesAndFlush. 
+        //          Note: this list does *not* include the placeholders created in step 5, as the were not included in GetAllEntries.
+        //       7) WriteAllEntriesAndFlush writes *both* the entires in placeholderDataEntries and those that were passed in as the parameter.
+        //
+        // This scenario is covered in the unit test PlaceholderDatabaseTests.HandlesRaceBetweenAddAndWriteAllEntries
+        //
+        // Because of this list, callers must always call WriteAllEntries after calling GetAllEntriesAndPrepToWriteAllEntries.
         // 
         // This list must always be accessed from inside one of FileBasedCollection's synchronizedAction callbacks because
         // there is race potential between creating the queue, adding to the queue, and writing to the data file.
@@ -89,6 +102,13 @@ namespace GVFS.Common
             }
         }
 
+        /// <summary>
+        /// Gets all entries and intializes placeholderChangesWhileRebuildingList in preparation fr a call to WriteAllEntriesAndFlush.
+        /// </summary>
+        /// <remarks>
+        /// See placeholderChangesWhileRebuildingList declaration for additional details as to why WriteAllEntriesAndFlush
+        /// must be called.
+        /// </remarks>
         public List<PlaceholderData> GetAllEntriesAndPrepToWriteAllEntries()
         {
             try
@@ -122,6 +142,13 @@ namespace GVFS.Common
             }
         }
 
+        /// <summary>
+        /// Gets all entries and intializes placeholderChangesWhileRebuildingList in preparation fr a call to WriteAllEntriesAndFlush.
+        /// </summary>
+        /// <remarks>
+        /// See placeholderChangesWhileRebuildingList declaration for additional details as to why WriteAllEntriesAndFlush
+        /// must be called.
+        /// </remarks>
         public void GetAllEntriesAndPrepToWriteAllEntries(out List<PlaceholderData> filePlaceholders, out List<PlaceholderData> folderPlaceholders)
         {
             try
