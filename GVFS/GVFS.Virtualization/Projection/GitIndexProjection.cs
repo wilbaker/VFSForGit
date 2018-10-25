@@ -1111,7 +1111,7 @@ namespace GVFS.Virtualization.Projection
 
             List<PlaceholderListDatabase.PlaceholderData> placeholderFilesListCopy;
             List<PlaceholderListDatabase.PlaceholderData> placeholderFoldersListCopy;
-            this.placeholderList.GetAllEntries(out placeholderFilesListCopy, out placeholderFoldersListCopy);
+            this.placeholderList.GetAllEntriesAndPrepToWriteAllEntries(out placeholderFilesListCopy, out placeholderFoldersListCopy);
 
             EventMetadata metadata = new EventMetadata();
             metadata.Add("File placeholder count", placeholderFilesListCopy.Count);

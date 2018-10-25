@@ -17,14 +17,14 @@ namespace GVFS.Common
         private const char PathTerminator = '\0';
 
         // This list holds entries that would otherwise be lost because WriteAllEntriesAndFlush has not been called, but a file 
-        // snapshot has been taken using GetAllEntries.
+        // snapshot has been taken using GetAllEntriesAndPrepToWriteAllEntries.
         // See the unit test PlaceholderDatabaseTests.HandlesRaceBetweenAddAndWriteAllEntries for example
         //
-        // With this list, we can no longer call GetAllEntries without a matching WriteAllEntries afterwards.
+        // With this list, we can no longer call GetAllEntriesAndPrepToWriteAllEntries without a matching WriteAllEntries afterwards.
         // 
         // This list must always be accessed from inside one of FileBasedCollection's synchronizedAction callbacks because
         // there is race potential between creating the queue, adding to the queue, and writing to the data file.
-        private List<PlaceholderDataEntry> placeholderDataEntries;
+        private List<PlaceholderDataEntry> placeholderChangesWhileRebuildingList;
         
         private PlaceholderListDatabase(ITracer tracer, PhysicalFileSystem fileSystem, string dataFilePath)
             : base(tracer, fileSystem, dataFilePath, collectionAppendsDirectlyToFile: true)
@@ -77,9 +77,9 @@ namespace GVFS.Common
                     () =>
                     {
                         this.EstimatedCount--;
-                        if (this.placeholderDataEntries != null)
+                        if (this.placeholderChangesWhileRebuildingList != null)
                         {
-                            this.placeholderDataEntries.Add(new PlaceholderDataEntry(path));
+                            this.placeholderChangesWhileRebuildingList.Add(new PlaceholderDataEntry(path));
                         }
                     });
             }
@@ -89,7 +89,7 @@ namespace GVFS.Common
             }
         }
 
-        public List<PlaceholderData> GetAllEntries()
+        public List<PlaceholderData> GetAllEntriesAndPrepToWriteAllEntries()
         {
             try
             {
@@ -103,12 +103,12 @@ namespace GVFS.Common
                     out error,
                     () =>
                     {
-                        if (this.placeholderDataEntries != null)
+                        if (this.placeholderChangesWhileRebuildingList != null)
                         {
-                            throw new InvalidOperationException("PlaceholderListDatabase should always flush queue placeholders using WriteAllEntriesAndFlush before calling GetAllEntries again.");
+                        throw new InvalidOperationException($"PlaceholderListDatabase should always flush queue placeholders using WriteAllEntriesAndFlush before calling {nameof(this.GetAllEntriesAndPrepToWriteAllEntries)} again.");
                         }
 
-                        this.placeholderDataEntries = new List<PlaceholderDataEntry>();
+                        this.placeholderChangesWhileRebuildingList = new List<PlaceholderDataEntry>();
                     }))
                 {
                     throw new InvalidDataException(error);
@@ -122,7 +122,7 @@ namespace GVFS.Common
             }
         }
 
-        public void GetAllEntries(out List<PlaceholderData> filePlaceholders, out List<PlaceholderData> folderPlaceholders)
+        public void GetAllEntriesAndPrepToWriteAllEntries(out List<PlaceholderData> filePlaceholders, out List<PlaceholderData> folderPlaceholders)
         {
             try
             {
@@ -147,12 +147,12 @@ namespace GVFS.Common
                     out error,
                     () =>
                     {
-                        if (this.placeholderDataEntries != null)
+                        if (this.placeholderChangesWhileRebuildingList != null)
                         {
-                            throw new InvalidOperationException("PlaceholderListDatabase should always flush queue placeholders using WriteAllEntriesAndFlush before calling GetAllEntries again.");
+                            throw new InvalidOperationException($"PlaceholderListDatabase should always flush queue placeholders using WriteAllEntriesAndFlush before calling {(nameof(this.GetAllEntriesAndPrepToWriteAllEntries))} again.");
                         }
 
-                        this.placeholderDataEntries = new List<PlaceholderDataEntry>();
+                        this.placeholderChangesWhileRebuildingList = new List<PlaceholderDataEntry>();
                     }))
                 {
                     throw new InvalidDataException(error);
@@ -225,9 +225,9 @@ namespace GVFS.Common
                 yield return this.FormatAddLine(updated.Path + PathTerminator + updated.Sha);
             }
 
-            if (this.placeholderDataEntries != null)
+            if (this.placeholderChangesWhileRebuildingList != null)
             {
-                foreach (PlaceholderDataEntry entry in this.placeholderDataEntries)
+                foreach (PlaceholderDataEntry entry in this.placeholderChangesWhileRebuildingList)
                 {
                     if (entry.DeleteEntry)
                     {
@@ -248,7 +248,7 @@ namespace GVFS.Common
                     }
                 }
 
-                this.placeholderDataEntries = null;
+                this.placeholderChangesWhileRebuildingList = null;
             }
         }
 
@@ -261,9 +261,9 @@ namespace GVFS.Common
                     () =>
                     {
                         this.EstimatedCount++;
-                        if (this.placeholderDataEntries != null)
+                        if (this.placeholderChangesWhileRebuildingList != null)
                         {
-                            this.placeholderDataEntries.Add(new PlaceholderDataEntry(path, sha));
+                            this.placeholderChangesWhileRebuildingList.Add(new PlaceholderDataEntry(path, sha));
                         }
                     });
             }
