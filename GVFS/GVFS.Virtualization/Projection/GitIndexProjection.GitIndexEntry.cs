@@ -70,6 +70,13 @@ namespace GVFS.Virtualization.Projection
                get; private set;
             }
 
+            /// <summary>
+            /// Parses the path using LazyUTF8Strings. It should only be called when building a new projection.
+            /// </summary>
+            /// <remarks>
+            /// Code in this method has been fine-tuned for performance. None of it is shared with 
+            /// BackgroundTask_ParsePath to avoid overhead.
+            /// </remarks>
             public unsafe void BuildingProjection_ParsePath()
             {
                 this.PathBuffer[this.PathLength] = 0;
@@ -145,6 +152,14 @@ namespace GVFS.Virtualization.Projection
                 }
             }
 
+
+            /// <summary>
+            /// Parses the path without using LazyUTF8Strings. It should only be called when running a background task.
+            /// </summary>
+            /// <remarks>
+            /// Code in this method has been fine-tuned for performance. None of it is shared with 
+            /// BuildingProjection_ParsePath to avoid overhead.
+            /// </remarks>
             public unsafe void BackgroundTask_ParsePath()
             {
                 this.PathBuffer[this.PathLength] = 0;
