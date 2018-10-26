@@ -23,6 +23,10 @@ namespace GVFS.Virtualization.Projection
 
             private int previousFinalSeparatorIndex = int.MaxValue;
 
+            // Only used when buildingNewProjection is false
+            private string backgroundTaskRelativePath;
+            private StringBuilder backgroundTaskRelativePathBuilder;
+
             public GitIndexEntry(bool buildingNewProjection)
             {
                 if (buildingNewProjection)
@@ -31,7 +35,7 @@ namespace GVFS.Virtualization.Projection
                 }
                 else
                 {
-                    this.BackgroundTask_PathParts = new string[MaxParts];
+                    this.backgroundTaskRelativePathBuilder = new StringBuilder(MaxPathBufferSize);
                 }
             }
 
@@ -54,12 +58,6 @@ namespace GVFS.Virtualization.Projection
                 get; private set;
             }
 
-            // Only used when buildingNewProjection is false
-            public string[] BackgroundTask_PathParts
-            {
-                get; private set;
-            }
-
             public int NumParts
             {
                 get; private set;
@@ -73,10 +71,6 @@ namespace GVFS.Virtualization.Projection
             /// <summary>
             /// Parses the path using LazyUTF8Strings. It should only be called when building a new projection.
             /// </summary>
-            /// <remarks>
-            /// Code in this method has been fine-tuned for performance. None of it is shared with 
-            /// BackgroundTask_ParsePath to avoid overhead.
-            /// </remarks>
             public unsafe void BuildingProjection_ParsePath()
             {
                 this.PathBuffer[this.PathLength] = 0;
@@ -153,84 +147,55 @@ namespace GVFS.Virtualization.Projection
             }
 
             /// <summary>
-            /// Parses the path without using LazyUTF8Strings. It should only be called when running a background task.
+            /// Parses the path from the index as platform-specific relative path. 
+            /// It should only be called when running a background task.
             /// </summary>
-            /// <remarks>
-            /// Code in this method has been fine-tuned for performance. None of it is shared with 
-            /// BuildingProjection_ParsePath to avoid overhead.
-            /// </remarks>
             public unsafe void BackgroundTask_ParsePath()
             {
                 this.PathBuffer[this.PathLength] = 0;
 
-                // The index of that path part that is after the path separator
-                int currentPartStartIndex = 0;
-
-                // The index to start looking for the next path separator
-                // Because the previous final separator is stored and we know where the previous path will be replaced
-                // the code can use the previous final separator to start looking from that point instead of having to 
-                // run through the entire path to break it apart
-                /* Example:
-                 * Previous path = folder/where/previous/separator/is/used/file.txt
-                 * This path     = folder/where/previous/separator/is/used/file2.txt
-                 *                                                        ^    ^
-                 *                         this.previousFinalSeparatorIndex    |
-                 *                                                             this.ReplaceIndex
-                 *
-                 *   folder/where/previous/separator/is/used/file2.txt
-                 *                                           ^^
-                 *                       currentPartStartIndex|
-                 *                                            forLoopStartIndex
-                 */
-                int forLoopStartIndex = 0;
+                int loopStartIndex = 0;
+                if (this.backgroundTaskRelativePathBuilder.Length > 0)
+                {
+                    loopStartIndex = this.ReplaceIndex;
+                    this.backgroundTaskRelativePathBuilder.Length = this.ReplaceIndex;
+                }
 
                 fixed (byte* pathPtr = this.PathBuffer)
                 {
-                    if (this.previousFinalSeparatorIndex < this.ReplaceIndex &&
-                        !this.RangeContains(pathPtr + this.ReplaceIndex, this.PathLength - this.ReplaceIndex, PathSeparatorCode))
+                    byte* bufferPtrForLoop = pathPtr + loopStartIndex;
+                    while (loopStartIndex < this.PathLength)
                     {
-                        // Only need to parse the last part, because the rest of the string is unchanged
-
-                        // The logical thing to do would be to start the for loop at previousFinalSeparatorIndex+1, but two 
-                        // repeated / characters would make an invalid path, so we'll assume that git would not have stored that path
-                        forLoopStartIndex = this.previousFinalSeparatorIndex + 2;
-
-                        // we still do need to start the current part's index at the correct spot, so subtract one for that
-                        currentPartStartIndex = forLoopStartIndex - 1;
-
-                        this.NumParts--;
-
-                        this.HasSameParentAsLastEntry = true;
-                    }
-                    else
-                    {
-                        this.NumParts = 0;
-                        this.ClearLastParent();
-                    }
-
-                    int partIndex = this.NumParts;
-
-                    byte* forLoopPtr = pathPtr + forLoopStartIndex;
-                    for (int i = forLoopStartIndex; i < this.PathLength + 1; i++)
-                    {
-                        if (*forLoopPtr == PathSeparatorCode)
+                        if (*bufferPtrForLoop <= 127)
                         {
-                            this.BackgroundTask_PathParts[partIndex] = Encoding.UTF8.GetString(pathPtr + currentPartStartIndex, i - currentPartStartIndex);
+                            if (*bufferPtrForLoop == PathSeparatorCode)
+                            {
+                                this.backgroundTaskRelativePathBuilder.Append(GVFSPlatform.GVFSPlatformConstants.PathSeparator);
+                            }
+                            else
+                            {
+                                this.backgroundTaskRelativePathBuilder.Append(Convert.ToChar(*bufferPtrForLoop));
+                            }
+                        }
+                        else
+                        {
+                            // The string has non-ASCII characters in it, fall back to full parsing
+                            this.backgroundTaskRelativePath = Encoding.UTF8.GetString(pathPtr, this.PathLength);
+                            if (GVFSConstants.GitPathSeparator != GVFSPlatform.GVFSPlatformConstants.PathSeparator)
+                            {
+                                this.backgroundTaskRelativePath = this.backgroundTaskRelativePath.Replace(GVFSConstants.GitPathSeparator, GVFSPlatform.GVFSPlatformConstants.PathSeparator);
+                            }
 
-                            partIndex++;
-                            currentPartStartIndex = i + 1;
+                            this.backgroundTaskRelativePathBuilder.Clear();
 
-                            this.NumParts++;
-                            this.previousFinalSeparatorIndex = i;
+                            return;
                         }
 
-                        ++forLoopPtr;
+                        ++bufferPtrForLoop;
+                        ++loopStartIndex;
                     }
 
-                    // We unrolled the final part calculation to after the loop, to avoid having to do a 0-byte check inside the for loop
-                    this.BackgroundTask_PathParts[partIndex] = Encoding.UTF8.GetString(pathPtr + currentPartStartIndex, this.PathLength - currentPartStartIndex);
-
-                    this.NumParts++;
+                    this.backgroundTaskRelativePath = this.backgroundTaskRelativePathBuilder.ToString();
                 }
             }
 
@@ -253,7 +218,7 @@ namespace GVFS.Virtualization.Projection
 
             public string BackgroundTask_GetPlatformRelativePath()
             {
-                return string.Join(GVFSPlatform.GVFSPlatformConstants.PathSeparatorString, this.BackgroundTask_PathParts.Take(this.NumParts));
+                return this.backgroundTaskRelativePath;
             }
             
             private unsafe bool RangeContains(byte* bufferPtr, int count, byte value)

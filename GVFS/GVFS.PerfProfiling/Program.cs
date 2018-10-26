@@ -23,7 +23,7 @@ namespace GVFS.PerfProfiling
         static void Main(string[] args)
         {
             GVFSPlatformLoader.Initialize();
-            string enlistmentRootPath = @"M:\OS";
+            string enlistmentRootPath = @"E:\OS5";
             if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
             {
                 enlistmentRootPath = args[0];

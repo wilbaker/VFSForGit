@@ -190,11 +190,6 @@ namespace GVFS.UnitTests.Virtualization.Git
                     indexEntry.BuildingProjection_PathParts[i].ShouldNotBeNull();
                     indexEntry.BuildingProjection_PathParts[i].GetString().ShouldEqual(pathParts[i]);
                 }
-                else
-                {
-                    indexEntry.BackgroundTask_PathParts[i].ShouldNotBeNull();
-                    indexEntry.BackgroundTask_PathParts[i].ShouldEqual(pathParts[i]);
-                }
             }
 
             if (this.buildingNewProjection)
