@@ -16,9 +16,9 @@ namespace GVFS.UnitTests.Virtualization.Git
         private const int DefaultIndexEntryCount = 10;
         private bool buildingNewProjection;
 
-        public GitIndexEntryTests(bool shouldTestLazyPaths)
+        public GitIndexEntryTests(bool buildingNewProjection)
         {
-            this.buildingNewProjection = shouldTestLazyPaths;
+            this.buildingNewProjection = buildingNewProjection;
         }
 
         public static object[] BuildingNewProjection
@@ -147,12 +147,16 @@ namespace GVFS.UnitTests.Virtualization.Git
             this.TestPathParts(indexEntry, pathParts, hasSameParent: false);
 
             string[] pathParts2 = new[] { "folder", "one", "newfile.txt" };
-            this.ParsePathForIndexEntry(indexEntry, string.Join("/", pathParts2), replaceIndex: 12);
+            this.ParsePathForIndexEntry(indexEntry, string.Join("/", pathParts2), replaceIndex: 11);
             this.TestPathParts(indexEntry, pathParts2, hasSameParent: true);
-            indexEntry.LastParent = new FolderData();
-            indexEntry.ClearLastParent();
-            indexEntry.HasSameParentAsLastEntry.ShouldBeFalse();
-            indexEntry.LastParent.ShouldBeNull();
+
+            if (this.buildingNewProjection)
+            {
+                indexEntry.BuildingProjection_LastParent = new FolderData();
+                indexEntry.BuildingProjection_ClearLastParent();
+                indexEntry.BuildingProjection_HasSameParentAsLastEntry.ShouldBeFalse();
+                indexEntry.BuildingProjection_LastParent.ShouldBeNull();
+            }
         }
 
         private GitIndexEntry SetupIndexEntry(string path)
@@ -181,8 +185,12 @@ namespace GVFS.UnitTests.Virtualization.Git
 
         private void TestPathParts(GitIndexEntry indexEntry, string[] pathParts, bool hasSameParent)
         {
-            indexEntry.HasSameParentAsLastEntry.ShouldEqual(hasSameParent, nameof(indexEntry.HasSameParentAsLastEntry));
-            indexEntry.NumParts.ShouldEqual(pathParts.Length, nameof(indexEntry.NumParts));
+            if (this.buildingNewProjection)
+            {
+                indexEntry.BuildingProjection_HasSameParentAsLastEntry.ShouldEqual(hasSameParent, nameof(indexEntry.BuildingProjection_HasSameParentAsLastEntry));
+                indexEntry.BuildingProjection_NumParts.ShouldEqual(pathParts.Length, nameof(indexEntry.BuildingProjection_NumParts));
+            }
+
             for (int i = 0; i < pathParts.Length; i++)
             {
                 if (this.buildingNewProjection)

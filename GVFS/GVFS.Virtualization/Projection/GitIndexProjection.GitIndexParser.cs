@@ -147,7 +147,7 @@ namespace GVFS.Virtualization.Projection
                 }
                 else
                 {
-                    data.ClearLastParent();
+                    data.BuildingProjection_ClearLastParent();
                 }
 
                 return FileSystemTaskResult.Success;
@@ -191,8 +191,6 @@ namespace GVFS.Virtualization.Projection
                 }
                 else
                 {
-                    gitIndexEntry.ClearLastParent();
-
                     filePlaceholders.Remove(placeholderRelativePath);
                 }
 
@@ -246,7 +244,7 @@ namespace GVFS.Virtualization.Projection
                 SortedFolderEntries.InitializePools(tracer, entryCount);
                 LazyUTF8String.InitializePools(tracer, entryCount);
 
-                resuableParsedIndexEntry.ClearLastParent();
+                resuableParsedIndexEntry.BuildingProjection_ClearLastParent();
                 int previousPathLength = 0;
 
                 bool parseMode = GVFSPlatform.Instance.FileSystem.SupportsFileMode;

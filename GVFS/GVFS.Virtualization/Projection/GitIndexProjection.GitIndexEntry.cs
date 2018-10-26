@@ -1,6 +1,5 @@
 ﻿using GVFS.Common;
 using System;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -50,7 +49,7 @@ namespace GVFS.Virtualization.Projection
             /// </summary>
             public int PathLength { get; set; }
             public byte[] PathBuffer { get; } = new byte[MaxPathBufferSize];
-            public FolderData LastParent { get; set; }
+            public FolderData BuildingProjection_LastParent { get; set; }
 
             // Only used when buildingNewProjection is true
             public LazyUTF8String[] BuildingProjection_PathParts
@@ -58,12 +57,12 @@ namespace GVFS.Virtualization.Projection
                 get; private set;
             }
 
-            public int NumParts
+            public int BuildingProjection_NumParts
             {
                 get; private set;
             }
 
-            public bool HasSameParentAsLastEntry
+            public bool BuildingProjection_HasSameParentAsLastEntry
             {
                get; private set;
             }
@@ -110,17 +109,17 @@ namespace GVFS.Virtualization.Projection
                         // we still do need to start the current part's index at the correct spot, so subtract one for that
                         currentPartStartIndex = forLoopStartIndex - 1;
 
-                        this.NumParts--;
+                        this.BuildingProjection_NumParts--;
 
-                        this.HasSameParentAsLastEntry = true;
+                        this.BuildingProjection_HasSameParentAsLastEntry = true;
                     }
                     else
                     {
-                        this.NumParts = 0;
-                        this.ClearLastParent();
+                        this.BuildingProjection_NumParts = 0;
+                        this.BuildingProjection_ClearLastParent();
                     }
 
-                    int partIndex = this.NumParts;
+                    int partIndex = this.BuildingProjection_NumParts;
 
                     byte* forLoopPtr = pathPtr + forLoopStartIndex;
                     for (int i = forLoopStartIndex; i < this.PathLength + 1; i++)
@@ -132,7 +131,7 @@ namespace GVFS.Virtualization.Projection
                             partIndex++;
                             currentPartStartIndex = i + 1;
 
-                            this.NumParts++;
+                            this.BuildingProjection_NumParts++;
                             this.previousFinalSeparatorIndex = i;
                         }
 
@@ -142,7 +141,7 @@ namespace GVFS.Virtualization.Projection
                     // We unrolled the final part calculation to after the loop, to avoid having to do a 0-byte check inside the for loop
                     this.BuildingProjection_PathParts[partIndex] = LazyUTF8String.FromByteArray(pathPtr + currentPartStartIndex, this.PathLength - currentPartStartIndex);
 
-                    this.NumParts++;
+                    this.BuildingProjection_NumParts++;
                 }
             }
 
@@ -154,7 +153,11 @@ namespace GVFS.Virtualization.Projection
             {
                 this.PathBuffer[this.PathLength] = 0;
 
+                // The index in the buffer at which to start parsing
                 int loopStartIndex = 0;
+
+                // backgroundTaskRelativePathBuilder is reset to empty if the last index entry contained non-ASCII character(s)
+                // Only start from ReplaceIndex if the last entry contained *only* ASCII characters
                 if (this.backgroundTaskRelativePathBuilder.Length > 0)
                 {
                     loopStartIndex = this.ReplaceIndex;
@@ -186,6 +189,7 @@ namespace GVFS.Virtualization.Projection
                                 this.backgroundTaskRelativePath = this.backgroundTaskRelativePath.Replace(GVFSConstants.GitPathSeparator, GVFSPlatform.GVFSPlatformConstants.PathSeparator);
                             }
 
+                            // Record that this entry had non-ASCII characters by clearing backgroundTaskRelativePathBuilder
                             this.backgroundTaskRelativePathBuilder.Clear();
 
                             return;
@@ -199,21 +203,21 @@ namespace GVFS.Virtualization.Projection
                 }
             }
 
-            public void ClearLastParent()
+            public void BuildingProjection_ClearLastParent()
             {
                 this.previousFinalSeparatorIndex = int.MaxValue;
-                this.HasSameParentAsLastEntry = false;
-                this.LastParent = null;
+                this.BuildingProjection_HasSameParentAsLastEntry = false;
+                this.BuildingProjection_LastParent = null;
             }
 
             public LazyUTF8String BuildingProjection_GetChildName()
             {
-                return this.BuildingProjection_PathParts[this.NumParts - 1];
+                return this.BuildingProjection_PathParts[this.BuildingProjection_NumParts - 1];
             }
 
             public string BuildingProjection_GetGitRelativePath()
             {
-                return string.Join(GVFSConstants.GitPathSeparatorString, this.BuildingProjection_PathParts.Take(this.NumParts).Select(x => x.GetString()));
+                return string.Join(GVFSConstants.GitPathSeparatorString, this.BuildingProjection_PathParts.Take(this.BuildingProjection_NumParts).Select(x => x.GetString()));
             }
 
             public string BackgroundTask_GetPlatformRelativePath()
