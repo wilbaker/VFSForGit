@@ -92,7 +92,7 @@ namespace GVFS.CommandLine
                         {
                             // filter
                             this.FlushFilterLogBuffers();
-                            string kernelLogsFolderPath = GVFSPlatform.Instance.KernelDriver.LogsFolderPath;
+                            string kernelLogsFolderPath = GVFSPlatform.Instance.KernelDriver.KernelLogsFolderPath;
 
                             // This copy sometimes fails because the OS has an exclusive lock on the etl files. The error is not actionable
                             // for the user so we don't write the error message to stdout, just to our own log file.

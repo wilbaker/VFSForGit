@@ -47,7 +47,7 @@ namespace GVFS.Platform.Windows
 
         public bool EnumerationExpandsDirectories { get; } = false;
 
-        public string LogsFolderPath 
+        public string KernelLogsFolderPath 
         { 
             get
             {
