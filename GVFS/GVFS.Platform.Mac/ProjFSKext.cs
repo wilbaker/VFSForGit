@@ -12,7 +12,7 @@ namespace GVFS.Platform.Mac
     {
         public bool EnumerationExpandsDirectories { get; } = true;
 
-        public string LogsFolderPath => throw new NotImplementedException();
+        public string KernelLogsFolderPath => throw new NotImplementedException();
 
         public bool IsGVFSUpgradeSupported()
         {

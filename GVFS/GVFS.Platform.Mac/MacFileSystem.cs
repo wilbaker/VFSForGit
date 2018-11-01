@@ -42,17 +42,27 @@ namespace GVFS.Platform.Mac
         {
             return NativeFileReader.TryReadFirstByteOfFile(fileName, buffer);
         }
+
         public bool IsExecutable(string fileName)
         {
-            if (!File.Exists(fileName))
+            StatBuffer statBuffer = new StatBuffer();
+            if (Stat(fileName, out statBuffer) == 0)
             {
-                return false;
+                return true;
             }
+
+            return false;
         }
 
         public bool IsSocket(string fileName)
         {
-            
+            StatBuffer statBuffer = new StatBuffer();
+            if (Stat(fileName, out statBuffer) == 0)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         [DllImport("libc", EntryPoint = "chmod", SetLastError = true)]
@@ -61,7 +71,44 @@ namespace GVFS.Platform.Mac
         [DllImport("libc", EntryPoint = "rename", SetLastError = true)]
         private static extern int Rename(string oldPath, string newPath);
 
-        private class NativeFileReader
+        [DllImport("libc", EntryPoint = "stat", SetLastError = true)]
+        private static extern int Stat(string path, [Out] out StatBuffer statBuffer);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TimeSpec
+        {
+            public long Sec;
+            public long Nsec;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct StatBuffer
+        {
+            public int Dev;              /* ID of device containing file */
+            public ushort Mode;          /* Mode of file (see below) */
+            public ushort NLink;         /* Number of hard links */
+            public ulong Ino;            /* File serial number */
+            public uint UID;             /* User ID of the file */
+            public uint GID;             /* Group ID of the file */
+            public int RDev;             /* Device ID */
+
+            public TimeSpec ATimespec;     /* time of last access */
+            public TimeSpec MTimespec;     /* time of last data modification */
+            public TimeSpec CTimespec;     /* time of last status change */
+            public TimeSpec BirthTimespec; /* time of file creation(birth) */
+
+            public long Size;          /* file size, in bytes */
+            public long Blocks;        /* blocks allocated for file */
+            public int BlkSize;        /* optimal blocksize for I/O */
+            public uint Glags;         /* user defined flags for file */
+            public uint Gen;           /* file generation number */
+            public int LSpare;         /* RESERVED: DO NOT USE! */
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+            public long[] QSpare;     /* RESERVED: DO NOT USE! */
+        }
+
+        private static class NativeFileReader
         {
             private const int ReadOnly = 0x0000;
 
@@ -102,43 +149,6 @@ namespace GVFS.Platform.Mac
 
             [DllImport("libc", EntryPoint = "read", SetLastError = true)]
             private static extern int Read(int fd, [Out] byte[] buf, int count);
-
-            [DllImport("libc", EntryPoint = "stat", SetLastError = true)]
-            private static extern int Stat(string path, [Out] out StatBuffer statBuffer);
-
-            [StructLayout(LayoutKind.Sequential)]
-            private struct TimeSpec
-            {
-                public long tv_sec;
-                public long tv_nsec;
-            }
-
-            [StructLayout(LayoutKind.Sequential)]
-            private struct StatBuffer
-            { 
-                int st_dev;              /* ID of device containing file */
-                ushort st_mode;          /* Mode of file (see below) */
-                ushort st_nlink;         /* Number of hard links */
-                ulong st_ino;            /* File serial number */
-                uint st_uid;             /* User ID of the file */
-                uint st_gid;             /* Group ID of the file */
-                int st_rdev;             /* Device ID */
-
-                TimeSpec st_atimespec;     /* time of last access */
-                TimeSpec st_mtimespec;     /* time of last data modification */
-                TimeSpec st_ctimespec;     /* time of last status change */
-                TimeSpec st_birthtimespec; /* time of file creation(birth) */
-
-                long st_size;          /* file size, in bytes */
-                long st_blocks;        /* blocks allocated for file */
-                int st_blksize;        /* optimal blocksize for I/O */
-                uint st_flags;         /* user defined flags for file */
-                uint st_gen;           /* file generation number */
-                int st_lspare;         /* RESERVED: DO NOT USE! */
-
-                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
-                long[] st_qspare;     /* RESERVED: DO NOT USE! */
-            };
         }
     }
 }
