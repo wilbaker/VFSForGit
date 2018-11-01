@@ -46,10 +46,12 @@ namespace GVFS.Platform.Mac
 
         public bool IsExecutable(string fileName)
         {
-            NativeStat.StatBuffer statBuffer = new NativeStat.StatBuffer();
-            if (NativeStat.Stat(fileName, out statBuffer) == 0)
+            ProcessResult result = ProcessHelper.Run("stat", $"-L -f %p {fileName}", redirectOutput: true);
+            if (result.ExitCode == 0)
             {
-                return NativeStat.IsExecutable(statBuffer.Mode);
+                string octalMode = result.Output.Trim();
+                ushort mode = Convert.ToUInt16(octalMode, 8);
+            
             }
 
             return false;
@@ -60,7 +62,13 @@ namespace GVFS.Platform.Mac
             NativeStat.StatBuffer statBuffer = new NativeStat.StatBuffer();
             if (NativeStat.Stat(fileName, out statBuffer) == 0)
             {
+                Console.WriteLine($"IsExecutable stat: {fileName}: {statBuffer.Mode}");
+
                 return NativeStat.IsSock(statBuffer.Mode);
+            }
+            else
+            {
+                Console.WriteLine($"IsSocket failed: {Marshal.GetLastWin32Error()}");
             }
 
             return false;
