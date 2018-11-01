@@ -176,6 +176,8 @@ PrjFS_Result PrjFS_StartVirtualizationInstance(
     
     if (!s_virtualizationRootFullPath.empty())
     {
+        struct stat statTest;
+        statTest.
         return PrjFS_Result_EInvalidOperation;
     }
     

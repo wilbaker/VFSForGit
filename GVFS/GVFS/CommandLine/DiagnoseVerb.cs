@@ -393,12 +393,12 @@ namespace GVFS.CommandLine
                 string fileName = Path.GetFileName(filePath);
                 try
                 {
-                    string fileExtension = Path.GetExtension(fileName);
-                    if (!string.Equals(fileExtension, ".exe", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(fileName, "GVFS_NetCorePipe", StringComparison.OrdinalIgnoreCase))
+                    string sourceFilePath = Path.Combine(sourcePath, fileName);
+                    if (!GVFSPlatform.Instance.FileSystem.IsExecutable(sourceFilePath) &&
+                        !GVFSPlatform.Instance.FileSystem.IsSocket(sourceFilePath))
                     {
                         File.Copy(
-                            Path.Combine(sourcePath, fileName),
+                            sourceFilePath,
                             Path.Combine(targetPath, fileName));
                     }
                 }
