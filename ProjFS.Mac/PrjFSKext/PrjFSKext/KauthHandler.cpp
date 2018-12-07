@@ -350,6 +350,11 @@ static int HandleVnodeOperation(
         }
     }
 
+    if (ActionBitIsSet(action, KAUTH_VNODE_ACCESS))
+    {
+        goto CleanupAndReturn;
+    }
+
     if (!ShouldHandleVnodeOpEvent(
             &perfTracer,
             context,
