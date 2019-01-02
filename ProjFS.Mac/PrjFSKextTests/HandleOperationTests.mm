@@ -2,6 +2,8 @@
 #include "../PrjFSKext/VirtualizationRoots.hpp"
 #include "../PrjFSKext/PrjFSProviderUserClient.hpp"
 #include "../PrjFSKext/VirtualizationRootsTestable.hpp"
+#include "../PrjFSKext/VnodeCachePrivate.hpp"
+#include "../PrjFSKext/VnodeCacheTestable.hpp"
 #include "../PrjFSKext/PerformanceTracing.hpp"
 #include "../PrjFSKext/public/Message.h"
 #include "../PrjFSKext/ProviderMessaging.hpp"
@@ -55,6 +57,14 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
     context = vfs_context_create(NULL);
     dummyClientPid = 100;
 
+    // Initialize Vnode Cache
+    s_entriesCapacity = 100;
+    s_entries = new VnodeCacheEntry[s_entriesCapacity];
+    for (uint32_t i = 0; i < s_entriesCapacity; ++i)
+    {
+        memset(&(s_entries[i]), 0, sizeof(VnodeCacheEntry));
+    }
+
     // Create Vnode Tree
     repoPath = "/Users/test/code/Repo";
     filePath = "/Users/test/code/Repo/file";
@@ -76,6 +86,10 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
     repoRootVnode.reset();
     testFileVnode.reset();
     testDirVnode.reset();
+    
+    s_entriesCapacity = 0;
+    delete[] s_entries;
+    
     VirtualizationRoots_Cleanup();
     vfs_context_rele(context);
     MockVnodes_CheckAndClear();
