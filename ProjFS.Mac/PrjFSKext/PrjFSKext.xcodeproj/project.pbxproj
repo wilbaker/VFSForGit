@@ -32,6 +32,7 @@
 
 /* Begin PBXFileReference section */
 		263E066C21667C11005F756A /* FsidInode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FsidInode.h; sourceTree = "<group>"; };
+		26ECB3E921DD7F1900AFB601 /* VnodeCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VnodeCache.h; sourceTree = "<group>"; };
 		4A08829C20D80B8300E17FEE /* PrjFSXattrs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PrjFSXattrs.h; sourceTree = "<group>"; };
 		4A63CB0B20AB009000157B95 /* VnodeUtilities.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VnodeUtilities.cpp; sourceTree = "<group>"; };
 		4A63CB0C20AB009000157B95 /* VnodeUtilities.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeUtilities.hpp; sourceTree = "<group>"; };
@@ -149,6 +150,7 @@
 				4AC1D7C32091FBFC00786861 /* PrjFSLogUserClient.cpp */,
 				4A63CB0C20AB009000157B95 /* VnodeUtilities.hpp */,
 				4A63CB0B20AB009000157B95 /* VnodeUtilities.cpp */,
+				26ECB3E921DD7F1900AFB601 /* VnodeCache.h */,
 			);
 			path = PrjFSKext;
 			sourceTree = "<group>";
