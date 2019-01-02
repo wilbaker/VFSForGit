@@ -24,6 +24,11 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		264758C921EFBA8B0095B9F8 /* VnodeCache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */; };
+		264758CA21EFBA8B0095B9F8 /* VnodeCache.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 264758C821EFBA8B0095B9F8 /* VnodeCache.hpp */; };
+		264758CC21FA709B0095B9F8 /* VnodeCacheTestable.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */; };
+		264758CE21FA71140095B9F8 /* VnodeCacheTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 264758CD21FA71140095B9F8 /* VnodeCacheTests.mm */; };
+		264758CF21FA71E10095B9F8 /* VnodeCache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */; };
 		43057C5E21E439C700487681 /* prjfs-log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43057C5B21E439C700487681 /* prjfs-log.cpp */; };
 		43057C5F21E439C700487681 /* kext-perf-tracing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43057C5C21E439C700487681 /* kext-perf-tracing.cpp */; };
 		4391F8A821E42AC50008103C /* Locks.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 4391F88E21E42AC40008103C /* Locks.hpp */; };
@@ -141,6 +146,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		262DFF982230798E005CC5DD /* VnodeCachePrivate.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VnodeCachePrivate.hpp; sourceTree = "<group>"; };
+		264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VnodeCache.cpp; sourceTree = "<group>"; };
+		264758C821EFBA8B0095B9F8 /* VnodeCache.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCache.hpp; sourceTree = "<group>"; };
+		264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCacheTestable.hpp; sourceTree = "<group>"; };
+		264758CD21FA71140095B9F8 /* VnodeCacheTests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VnodeCacheTests.mm; sourceTree = "<group>"; };
 		43057C5B21E439C700487681 /* prjfs-log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "prjfs-log.cpp"; sourceTree = "<group>"; };
 		43057C5C21E439C700487681 /* kext-perf-tracing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "kext-perf-tracing.cpp"; sourceTree = "<group>"; };
 		43057C5D21E439C700487681 /* kext-perf-tracing.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = "kext-perf-tracing.hpp"; sourceTree = "<group>"; };
@@ -329,6 +339,10 @@
 				4391F89421E42AC40008103C /* VirtualizationRoots.hpp */,
 				4A781DB722299C5300DB7733 /* VirtualizationRootsTestable.hpp */,
 				4A781DA6222094C300DB7733 /* VirtualizationRootsPrivate.hpp */,
+				264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */,
+				264758C821EFBA8B0095B9F8 /* VnodeCache.hpp */,
+				262DFF982230798E005CC5DD /* VnodeCachePrivate.hpp */,
+				264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */,
 				4391F8A121E42AC50008103C /* VnodeUtilities.cpp */,
 				4391F8A221E42AC50008103C /* VnodeUtilities.hpp */,
 			);
@@ -375,6 +389,7 @@
 				4A781DAC2223374200DB7733 /* MockVnodeAndMount.cpp */,
 				4A781DB122233A1E00DB7733 /* TestLocks.cpp */,
 				4A781DB322233A4500DB7733 /* TestMemory.cpp */,
+				264758CD21FA71140095B9F8 /* VnodeCacheTests.mm */,
 				F5E39C7921F1118D006D65C2 /* KauthHandlerTests.mm */,
 				4A781DA42220946000DB7733 /* VirtualizationRootsTests.mm */,
 				F5E39C7B21F1118D006D65C2 /* Info.plist */,
@@ -401,6 +416,8 @@
 				4A558DBC22357AB000AFDE07 /* ProviderMessaging.hpp in Headers */,
 				4391F8B321E42AC50008103C /* PrjFSService.hpp in Headers */,
 				4391F8B721E42AC50008103C /* PrjFSClasses.hpp in Headers */,
+				264758CC21FA709B0095B9F8 /* VnodeCacheTestable.hpp in Headers */,
+				264758CA21EFBA8B0095B9F8 /* VnodeCache.hpp in Headers */,
 				4391F8BC21E42AC50008103C /* VnodeUtilities.hpp in Headers */,
 				4391F8BD21E42AC50008103C /* PerformanceTracing.hpp in Headers */,
 				4391F8B921E42AC50008103C /* PrjFSProviderUserClientPrivate.hpp in Headers */,
@@ -640,6 +657,7 @@
 				4A558DBA22357AB000AFDE07 /* ProviderMessaging.cpp in Sources */,
 				4391F8B621E42AC50008103C /* PrjFSKext.cpp in Sources */,
 				4391F8AB21E42AC50008103C /* KextLog.cpp in Sources */,
+				264758C921EFBA8B0095B9F8 /* VnodeCache.cpp in Sources */,
 				4391F8B421E42AC50008103C /* PrjFSService.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -679,6 +697,7 @@
 				4A558DBB22357AB000AFDE07 /* ProviderMessaging.cpp in Sources */,
 				4A781DA72220971E00DB7733 /* VirtualizationRoots.cpp in Sources */,
 				4A8C13A521F23F0200002878 /* KauthHandler.cpp in Sources */,
+				264758CF21FA71E10095B9F8 /* VnodeCache.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -693,6 +712,7 @@
 				F5E39C7A21F1118D006D65C2 /* KauthHandlerTests.mm in Sources */,
 				4A781DB222233A1E00DB7733 /* TestLocks.cpp in Sources */,
 				4A781DB02223391A00DB7733 /* KextLogMock.cpp in Sources */,
+				264758CE21FA71140095B9F8 /* VnodeCacheTests.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
