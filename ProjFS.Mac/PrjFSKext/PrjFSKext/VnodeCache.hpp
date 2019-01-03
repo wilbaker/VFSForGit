@@ -8,6 +8,8 @@ public:
     VnodeCache();
     ~VnodeCache();
     
+    VirtualizationRootHandle FindRootForVnode(vnode_t vnode);
+    
 private:
     VnodeCache(const VnodeCache&) = delete;
     VnodeCache& operator=(const VnodeCache&) = delete;
