@@ -1,5 +1,6 @@
 #pragma once
 
+#include "VirtualizationRoots.hpp"
 #include <sys/kernel_types.h>
 
 class VnodeCache
@@ -7,6 +8,8 @@ class VnodeCache
 public:
     VnodeCache();
     ~VnodeCache();
+    
+    bool TryInitialize();
     
     VirtualizationRootHandle FindRootForVnode(vnode_t vnode);
     
@@ -22,5 +25,6 @@ private:
         VirtualizationRootHandle virtualizationRoot;
     };
     
+    uint32_t capacity;
     VnodeCacheEntry* entries;
 };

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		26ECB3EB21DE61C700AFB601 /* VnodeCache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26ECB3EA21DE61C700AFB601 /* VnodeCache.cpp */; };
 		4A63CB0D20AB009000157B95 /* VnodeUtilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4A63CB0B20AB009000157B95 /* VnodeUtilities.cpp */; };
 		4A63CB0E20AB009000157B95 /* VnodeUtilities.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 4A63CB0C20AB009000157B95 /* VnodeUtilities.hpp */; };
 		4A9D139D208F675500376182 /* PrjFSService.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4A9D139B208F675500376182 /* PrjFSService.cpp */; };
@@ -33,6 +34,7 @@
 /* Begin PBXFileReference section */
 		263E066C21667C11005F756A /* FsidInode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FsidInode.h; sourceTree = "<group>"; };
 		26ECB3E921DD7F1900AFB601 /* VnodeCache.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VnodeCache.hpp; sourceTree = "<group>"; };
+		26ECB3EA21DE61C700AFB601 /* VnodeCache.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VnodeCache.cpp; sourceTree = "<group>"; };
 		4A08829C20D80B8300E17FEE /* PrjFSXattrs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PrjFSXattrs.h; sourceTree = "<group>"; };
 		4A63CB0B20AB009000157B95 /* VnodeUtilities.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VnodeUtilities.cpp; sourceTree = "<group>"; };
 		4A63CB0C20AB009000157B95 /* VnodeUtilities.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeUtilities.hpp; sourceTree = "<group>"; };
@@ -151,6 +153,7 @@
 				4A63CB0C20AB009000157B95 /* VnodeUtilities.hpp */,
 				4A63CB0B20AB009000157B95 /* VnodeUtilities.cpp */,
 				26ECB3E921DD7F1900AFB601 /* VnodeCache.hpp */,
+				26ECB3EA21DE61C700AFB601 /* VnodeCache.cpp */,
 			);
 			path = PrjFSKext;
 			sourceTree = "<group>";
@@ -272,6 +275,7 @@
 				4A63CB0D20AB009000157B95 /* VnodeUtilities.cpp in Sources */,
 				C6C780B4207FC67200E7E054 /* PrjFSKext.cpp in Sources */,
 				C6BDD37D208C5E5600CB7E58 /* Message_Kernel.cpp in Sources */,
+				26ECB3EB21DE61C700AFB601 /* VnodeCache.cpp in Sources */,
 				4AC1D7C02091FA0400786861 /* PrjFSProviderUserClient.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
