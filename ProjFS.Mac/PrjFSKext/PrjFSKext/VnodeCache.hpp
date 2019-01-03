@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sys/kernel_types.h>
+
 class VnodeCache
 {
 public:
@@ -12,6 +14,7 @@ private:
     
     struct VnodeCacheEntry
     {
+        vnode_t vnode;
     };
     
     VnodeCacheEntry* entries;

@@ -15,6 +15,7 @@
 #include "Locks.hpp"
 #include "PrjFSProviderUserClient.hpp"
 #include "PerformanceTracing.hpp"
+#include "VnodeCache.hpp"
 
 // Function prototypes
 static int HandleVnodeOperation(
