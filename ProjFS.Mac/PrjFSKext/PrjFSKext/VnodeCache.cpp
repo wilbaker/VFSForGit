@@ -167,7 +167,7 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
             else
             {
                 // We found an existing entry, ensure it's still valid
-                                if (vnodeVid != this->entries[index].vid)
+                if (vnodeVid != this->entries[index].vid)
                 {
                     // TODO(cache): Also check that the root's vrgid matches what's in the cache
                     FsidInode vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
