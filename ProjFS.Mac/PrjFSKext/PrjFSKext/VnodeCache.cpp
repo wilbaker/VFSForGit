@@ -27,13 +27,13 @@ bool VnodeCache::TryInitialize()
 {
     if (RWLock_IsValid(this->entriesLock))
     {
-        return KERN_FAILURE;
+        return false;
     }
     
     this->entriesLock = RWLock_Alloc();
     if (!RWLock_IsValid(this->entriesLock))
     {
-        return KERN_FAILURE;
+        return false;
     }
 
     this->capacity = desiredvnodes * 2;
