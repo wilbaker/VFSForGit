@@ -12,17 +12,6 @@ VnodeCache::VnodeCache()
 
 VnodeCache::~VnodeCache()
 {
-    if (RWLock_IsValid(this->entriesLock))
-    {
-        RWLock_FreeMemory(&this->entriesLock);
-    }
-
-    if (nullptr != this->entries)
-    {
-        Memory_FreeArray<VnodeCacheEntry>(this->entries, this->capacity);
-        this->entries = nullptr;
-        this->capacity = 0;
-    }
 }
 
 bool VnodeCache::TryInitialize()
@@ -54,6 +43,21 @@ bool VnodeCache::TryInitialize()
     memset(this->entries, 0, this->capacity * sizeof(VnodeCacheEntry));
     
     return true;
+}
+
+void VnodeCache::Cleanup()
+{
+    if (RWLock_IsValid(this->entriesLock))
+    {
+        RWLock_FreeMemory(&this->entriesLock);
+    }
+
+    if (nullptr != this->entries)
+    {
+        Memory_FreeArray<VnodeCacheEntry>(this->entries, this->capacity);
+        this->entries = nullptr;
+        this->capacity = 0;
+    }
 }
 
 // TODO(cache): Add _Nonnull where appropriate

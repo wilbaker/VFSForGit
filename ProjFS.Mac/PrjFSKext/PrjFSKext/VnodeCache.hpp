@@ -12,6 +12,7 @@ public:
     ~VnodeCache();
     
     bool TryInitialize();
+    void Cleanup();
     
     // TODO(cache): Also pass back fsid and inode
     VirtualizationRootHandle FindRootForVnode(
