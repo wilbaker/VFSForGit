@@ -19,7 +19,7 @@ VnodeCache::~VnodeCache()
 
     if (nullptr != this->entries)
     {
-        Memory_FreeArray(this->entries, this->capacity);
+        Memory_FreeArray<VnodeCacheEntry>(this->entries, this->capacity);
         this->entries = nullptr;
         this->capacity = 0;
     }
@@ -44,7 +44,7 @@ bool VnodeCache::TryInitialize()
         return false;
     }
     
-    this->entries = static_cast<VnodeCacheEntry*>(Memory_AllocArray<VnodeCacheEntry>(this->capacity));
+    this->entries = Memory_AllocArray<VnodeCacheEntry>(this->capacity);
     if (nullptr == this->entries)
     {
         this->capacity = 0;
