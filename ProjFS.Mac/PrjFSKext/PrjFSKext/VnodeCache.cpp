@@ -66,34 +66,24 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
     VirtualizationRootHandle rootHandle = RootHandle_None;
     uintptr_t startingIndex = this->HashVnode(vnode);
     
-    bool cacheUpdated = false;
+    bool lockElevatedToExclusive = false;
+    uint32_t vnodeVid = vnode_vid(vnode);
+    
     RWLock_AcquireShared(this->entriesLock);
     {
         uintptr_t index = this->FindVnodeIndex_Locked(vnode, startingIndex);
         if (vnode == this->entries[index].vnode)
         {
-            // We found the vnode we're looking for, check if it's still valid and update it if required
-            uint32_t vnodeVid = vnode_vid(vnode);
+            // TODO(cache): Also check that the root's vrgid matches what's in the cache
             if (vnodeVid != this->entries[index].vid)
             {
-                // TODO(cache): Also check that the root's vrgid matches what's in the cache
-                cacheUpdated = true;
                 if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
                 {
                     RWLock_AcquireExclusive(this->entriesLock);
                 }
                 
-                FsidInode vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-                
-                // TODO(cache): Add proper perf points
-                this->entries[index].virtualizationRoot = VirtualizationRoot_FindForVnode(
-                    perfTracer,
-                    PrjFSPerfCounter_VnodeOp_FindRoot,
-                    PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-                    vnode,
-                    vnodeFsidInode);
-                
-                this->entries[index].vid = vnodeVid;
+                lockElevatedToExclusive = true;
+                this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
             }
             
             rootHandle = this->entries[index].virtualizationRoot;
@@ -105,50 +95,20 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
         else
         {
             // We need to insert the vnode into the cache, upgrade to exclusive lock and add it to the cache
-            
-            cacheUpdated = true;
             if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
             {
                 RWLock_AcquireExclusive(this->entriesLock);
             }
             
+            lockElevatedToExclusive = true;
+            
             // 1. Find the insertion index
             // 2. Look up the virtualization root (if still required)
             
-            uintptr_t insertionIndex = index;
-            while (vnode != this->entries[insertionIndex].vnode)
-            {
-                if (NULLVP == this->entries[insertionIndex].vnode)
-                {
-                    break;
-                }
-            
-                insertionIndex = (insertionIndex + 1) % this->capacity;
-                if (insertionIndex == startingIndex)
-                {
-                    // Looped through the entire cache and didn't find an empty slot or the vnode
-                    break;
-                }
-            }
-            
-            uint32_t vnodeVid = vnode_vid(vnode);
-
+            uintptr_t insertionIndex = this->FindVnodeIndex_Locked(vnode, index, startingIndex);
             if (NULLVP == this->entries[insertionIndex].vnode)
             {
-                FsidInode vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-                
-                // TODO(cache): Add proper perf points
-                this->entries[index].virtualizationRoot = VirtualizationRoot_FindForVnode(
-                    perfTracer,
-                    PrjFSPerfCounter_VnodeOp_FindRoot,
-                    PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-                    vnode,
-                    vnodeFsidInode);
-            
-                this->entries[index].vid = vnodeVid;
-                
-                // TODO(cache): Also set the vrgid
-                
+                this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
                 rootHandle = this->entries[index].virtualizationRoot;
             }
             else if (insertionIndex == startingIndex)
@@ -158,20 +118,10 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
             else
             {
                 // We found an existing entry, ensure it's still valid
+                // TODO(cache): Also check that the root's vrgid matches what's in the cache
                 if (vnodeVid != this->entries[index].vid)
                 {
-                    // TODO(cache): Also check that the root's vrgid matches what's in the cache
-                    FsidInode vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-                    
-                    // TODO(cache): Add proper perf points
-                    this->entries[index].virtualizationRoot = VirtualizationRoot_FindForVnode(
-                        perfTracer,
-                        PrjFSPerfCounter_VnodeOp_FindRoot,
-                        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-                        vnode,
-                        vnodeFsidInode);
-                    
-                    this->entries[index].vid = vnodeVid;
+                    this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
                 }
                 
                 rootHandle = this->entries[index].virtualizationRoot;
@@ -179,7 +129,7 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
         }
     }
     
-    if (cacheUpdated)
+    if (lockElevatedToExclusive)
     {
         RWLock_ReleaseExclusive(this->entriesLock);
     }
@@ -199,10 +149,16 @@ uintptr_t VnodeCache::HashVnode(vnode_t vnode)
 
 uintptr_t VnodeCache::FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex)
 {
+    return this->FindVnodeIndex_Locked(vnode, startingIndex, startingIndex);
+}
+
+uintptr_t VnodeCache::FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex, uintptr_t stoppingIndex)
+{
     // Walk from the starting index until we find:
-    // -> The vnode
-    // -> A NULLVP entry
-    // -> The end of the array (at which point we need to start searching from the top)
+    //    -> The vnode
+    //    -> A NULLVP entry
+    //    -> The stopping index
+    // If we hit the end of the array, continue searching from the start
     uintptr_t index = startingIndex;
     while (vnode != this->entries[index].vnode)
     {
@@ -212,7 +168,7 @@ uintptr_t VnodeCache::FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingInd
         }
     
         index = (index + 1) % this->capacity;
-        if (index == startingIndex)
+        if (index == stoppingIndex)
         {
             // Looped through the entire cache and didn't find an empty slot or the vnode
             break;
@@ -220,4 +176,26 @@ uintptr_t VnodeCache::FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingInd
     }
     
     return index;
+}
+
+void VnodeCache::UpdateIndexEntryToLatest_Locked(
+    vfs_context_t context,
+    PerfTracer* perfTracer,
+    uintptr_t index,
+    vnode_t vnode,
+    uint32_t vnodeVid)
+{
+    FsidInode vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
+    
+    // TODO(cache): Add proper perf points
+    this->entries[index].virtualizationRoot = VirtualizationRoot_FindForVnode(
+        perfTracer,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        vnode,
+        vnodeFsidInode);
+
+    this->entries[index].vid = vnodeVid;
+
+    // TODO(cache): Also set the vrgid
 }

@@ -26,6 +26,13 @@ private:
     
     uintptr_t HashVnode(vnode_t vnode);
     uintptr_t FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex);
+    uintptr_t FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex, uintptr_t stoppingIndex);
+    void UpdateIndexEntryToLatest_Locked(
+        vfs_context_t context,
+        PerfTracer* perfTracer,
+        uintptr_t index,
+        vnode_t vnode,
+        uint32_t vnodeVid);
     
     struct VnodeCacheEntry
     {
