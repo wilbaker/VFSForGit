@@ -23,6 +23,9 @@ private:
     VnodeCache(const VnodeCache&) = delete;
     VnodeCache& operator=(const VnodeCache&) = delete;
     
+    uintptr_t HashVnode(vnode_t vnode);
+    uintptr_t FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex);
+    
     struct VnodeCacheEntry
     {
         vnode_t vnode;

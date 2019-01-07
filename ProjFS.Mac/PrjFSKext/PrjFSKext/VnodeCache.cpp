@@ -37,6 +37,11 @@ bool VnodeCache::TryInitialize()
     }
 
     this->capacity = desiredvnodes * 2;
+    if (this->capacity <= 0)
+    {
+        return false;
+    }
+    
     this->entries = static_cast<VnodeCacheEntry*>(Memory_Alloc(sizeof(VnodeCacheEntry) * this->capacity));
     if (nullptr == this->entries)
     {
@@ -51,34 +56,12 @@ bool VnodeCache::TryInitialize()
 VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vfs_context_t context, vnode_t vnode)
 {
     VirtualizationRootHandle rootHandle = RootHandle_None;
-    
-    uintptr_t vnodeAddress = reinterpret_cast<uintptr_t>(vnode);
-    uintptr_t startingIndex = vnodeAddress >> 3 % this->capacity;
+    uintptr_t startingIndex = this->HashVnode(vnode);
     
     bool cacheUpdated = false;
-    
     RWLock_AcquireShared(this->entriesLock);
     {
-        // Walk from the starting index until we find:
-        // -> The vnode
-        // -> A NULLVP entry
-        // -> The end of the array (at which point we need to start searching from the top)
-        uintptr_t index = startingIndex;
-        while (vnode != this->entries[index].vnode)
-        {
-            if (NULLVP == this->entries[index].vnode)
-            {
-                break;
-            }
-        
-            index = (index + 1) % this->capacity;
-            if (index == startingIndex)
-            {
-                // Looped through the entire cache and didn't find an empty slot or the vnode
-                break;
-            }
-        }
-        
+        uintptr_t index = this->FindVnodeIndex_Locked(vnode, startingIndex);
         if (vnode == this->entries[index].vnode)
         {
             // We found the vnode we're looking for, check if it's still valid and update it if required
@@ -198,4 +181,35 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
     }
     
     return rootHandle;
+}
+
+uintptr_t VnodeCache::HashVnode(vnode_t vnode)
+{
+    uintptr_t vnodeAddress = reinterpret_cast<uintptr_t>(vnode);
+    return vnodeAddress >> 3 % this->capacity;
+}
+
+uintptr_t VnodeCache::FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex)
+{
+    // Walk from the starting index until we find:
+    // -> The vnode
+    // -> A NULLVP entry
+    // -> The end of the array (at which point we need to start searching from the top)
+    uintptr_t index = startingIndex;
+    while (vnode != this->entries[index].vnode)
+    {
+        if (NULLVP == this->entries[index].vnode)
+        {
+            break;
+        }
+    
+        index = (index + 1) % this->capacity;
+        if (index == startingIndex)
+        {
+            // Looped through the entire cache and didn't find an empty slot or the vnode
+            break;
+        }
+    }
+    
+    return index;
 }
