@@ -51,10 +51,14 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(vnode_t vnode)
     uintptr_t vnodeAddress = reinterpret_cast<uintptr_t>(vnode);
     uintptr_t startingIndex = vnodeAddress >> 3 % this->capacity;
     
-    if (vnode == this->entries[startingIndex].vnode)
+    RWLock_AcquireShared(this->entriesLock);
     {
-        return 0;
+        if (vnode == this->entries[startingIndex].vnode)
+        {
+            return 0;
+        }
     }
+    RWLock_ReleaseShared(this->entriesLock);
     
     return 0;
 }
