@@ -1,7 +1,9 @@
 #pragma once
 
-#include "VirtualizationRoots.hpp"
 #include <sys/kernel_types.h>
+
+#include "VirtualizationRoots.hpp"
+#include "Locks.hpp"
 
 class VnodeCache
 {
@@ -25,6 +27,9 @@ private:
         VirtualizationRootHandle virtualizationRoot;
     };
     
+    // Number of VnodeCacheEntry that can be stored in entries
     uint32_t capacity;
+    
     VnodeCacheEntry* entries;
+    RWLock entriesLock;
 };
