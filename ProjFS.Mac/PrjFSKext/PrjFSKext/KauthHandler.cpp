@@ -122,6 +122,8 @@ static volatile int s_nextMessageId;
 static atomic_int s_numActiveKauthEvents;
 static volatile bool s_isShuttingDown;
 
+static VnodeCache vnodeCache;
+
 // Public functions
 kern_return_t KauthHandler_Init()
 {
@@ -142,6 +144,11 @@ kern_return_t KauthHandler_Init()
     }
         
     if (VirtualizationRoots_Init())
+    {
+        goto CleanupAndFail;
+    }
+    
+    if (!vnodeCache.TryInitialize())
     {
         goto CleanupAndFail;
     }
@@ -829,12 +836,7 @@ static bool TryGetVirtualizationRoot(
     PerfSample findRootSample(perfTracer, PrjFSPerfCounter_VnodeOp_GetVirtualizationRoot);
         
     *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-    *root = VirtualizationRoot_FindForVnode(
-        perfTracer,
-        PrjFSPerfCounter_VnodeOp_FindRoot,
-        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        vnode,
-        *vnodeFsidInode);
+    *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode);
 
     if (RootHandle_ProviderTemporaryDirectory == *root)
     {
@@ -909,12 +911,7 @@ static bool ShouldHandleFileOpEvent(
         PerfSample findRootSample(perfTracer, PrjFSPerfCounter_FileOp_ShouldHandle_FindVirtualizationRoot);
         
         *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-        *root = VirtualizationRoot_FindForVnode(
-            perfTracer,
-            PrjFSPerfCounter_FileOp_FindRoot,
-            PrjFSPerfCounter_FileOp_FindRoot_Iteration,
-            vnode,
-            *vnodeFsidInode);
+        *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode);
         
         if (!VirtualizationRoot_IsValidRootHandle(*root))
         {

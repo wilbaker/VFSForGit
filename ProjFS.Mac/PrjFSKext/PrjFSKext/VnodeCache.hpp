@@ -13,7 +13,11 @@ public:
     
     bool TryInitialize();
     
-    VirtualizationRootHandle FindRootForVnode(vnode_t vnode);
+    // TODO(cache): Also pass back fsid and inode
+    VirtualizationRootHandle FindRootForVnode(
+        PerfTracer* perfTracer,
+        vfs_context_t context,
+        vnode_t vnode);
     
 private:
     VnodeCache(const VnodeCache&) = delete;
@@ -23,7 +27,7 @@ private:
     {
         vnode_t vnode;
         uint32_t vid;   // vnode generation number
-        uint16_t vrgid; // virtualization root generation number
+        //uint16_t vrgid; // TODO(cache): virtualization root generation number
         VirtualizationRootHandle virtualizationRoot;
     };
     
