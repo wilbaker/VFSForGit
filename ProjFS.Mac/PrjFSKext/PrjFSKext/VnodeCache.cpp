@@ -1,3 +1,4 @@
+#include <string.h>
 #include "kernel-header-wrappers/vnode.h"
 #include "VnodeUtilities.hpp"
 #include "VnodeCache.hpp"
@@ -18,7 +19,8 @@ VnodeCache::~VnodeCache()
 
     if (nullptr != this->entries)
     {
-        Memory_Free(this->entries, sizeof(VnodeCacheEntry) * this->capacity);
+        Memory_FreeArray(this->entries, this->capacity);
+        this->entries = nullptr;
         this->capacity = 0;
     }
 }
@@ -42,12 +44,14 @@ bool VnodeCache::TryInitialize()
         return false;
     }
     
-    this->entries = static_cast<VnodeCacheEntry*>(Memory_Alloc(sizeof(VnodeCacheEntry) * this->capacity));
+    this->entries = static_cast<VnodeCacheEntry*>(Memory_AllocArray<VnodeCacheEntry>(this->capacity));
     if (nullptr == this->entries)
     {
         this->capacity = 0;
         return false;
     }
+    
+    memset(this->entries, 0, this->capacity * sizeof(VnodeCacheEntry));
     
     return true;
 }
@@ -186,7 +190,7 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
 uintptr_t VnodeCache::HashVnode(vnode_t vnode)
 {
     uintptr_t vnodeAddress = reinterpret_cast<uintptr_t>(vnode);
-    return vnodeAddress >> 3 % this->capacity;
+    return (vnodeAddress >> 3) % this->capacity;
 }
 
 uintptr_t VnodeCache::FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex)
