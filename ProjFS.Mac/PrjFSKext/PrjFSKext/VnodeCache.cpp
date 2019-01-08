@@ -71,61 +71,67 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
     
     RWLock_AcquireShared(this->entriesLock);
     {
-        uintptr_t index = this->FindVnodeIndex_Locked(vnode, startingIndex);
-        if (vnode == this->entries[index].vnode)
+        uintptr_t index;
+        if (this->TryFindVnodeIndex_Locked(vnode, startingIndex, /*out*/ index))
         {
-            // TODO(cache): Also check that the root's vrgid matches what's in the cache
-            if (vnodeVid != this->entries[index].vid)
+            if (vnode == this->entries[index].vnode)
             {
+                // TODO(cache): Also check that the root's vrgid matches what's in the cache
+                if (vnodeVid != this->entries[index].vid)
+                {
+                    if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
+                    {
+                        RWLock_AcquireExclusive(this->entriesLock);
+                    }
+                    
+                    lockElevatedToExclusive = true;
+                    this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
+                }
+                
+                rootHandle = this->entries[index].virtualizationRoot;
+            }
+            else
+            {
+                // We need to insert the vnode into the cache, upgrade to exclusive lock and add it to the cache
                 if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
                 {
                     RWLock_AcquireExclusive(this->entriesLock);
                 }
                 
                 lockElevatedToExclusive = true;
-                this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
+                
+                // 1. Find the insertion index
+                // 2. Look up the virtualization root (if still required)
+                
+                uintptr_t insertionIndex;
+                if (this->TryFindVnodeIndex_Locked(vnode, index, startingIndex, /*out*/ insertionIndex))
+                {
+                    if (NULLVP == this->entries[insertionIndex].vnode)
+                    {
+                        this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
+                        rootHandle = this->entries[index].virtualizationRoot;
+                    }
+                    else
+                    {
+                        // We found an existing entry, ensure it's still valid
+                        // TODO(cache): Also check that the root's vrgid matches what's in the cache
+                        if (vnodeVid != this->entries[index].vid)
+                        {
+                            this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
+                        }
+                        
+                        rootHandle = this->entries[index].virtualizationRoot;
+                    }
+                }
+                else
+                {
+                    // TODO(cache): We've run out of space in the cache
+                }
             }
-            
-            rootHandle = this->entries[index].virtualizationRoot;
-        }
-        else if (index == startingIndex)
-        {
-            // TODO(cache): Entry is not in the cache and there is no room
         }
         else
         {
-            // We need to insert the vnode into the cache, upgrade to exclusive lock and add it to the cache
-            if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
-            {
-                RWLock_AcquireExclusive(this->entriesLock);
-            }
-            
-            lockElevatedToExclusive = true;
-            
-            // 1. Find the insertion index
-            // 2. Look up the virtualization root (if still required)
-            
-            uintptr_t insertionIndex = this->FindVnodeIndex_Locked(vnode, index, startingIndex);
-            if (NULLVP == this->entries[insertionIndex].vnode)
-            {
-                this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
-                rootHandle = this->entries[index].virtualizationRoot;
-            }
-            else if (insertionIndex == startingIndex)
-            {
-                // TODO(cache): Entry is not in the cache and there is no room
-            }
-            else
-            {
-                // We found an existing entry, ensure it's still valid
-                // TODO(cache): Also check that the root's vrgid matches what's in the cache
-                if (vnodeVid != this->entries[index].vid)
-                {
-                    this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
-                }
-                
-                rootHandle = this->entries[index].virtualizationRoot;
-            }
+            // TODO(cache): We've run out of space in the cache
         }
     }
     
@@ -147,35 +153,35 @@ uintptr_t VnodeCache::HashVnode(vnode_t vnode)
     return (vnodeAddress >> 3) % this->capacity;
 }
 
-uintptr_t VnodeCache::FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex)
+bool VnodeCache::TryFindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex, /* out */  uintptr_t& cacheIndex)
 {
-    return this->FindVnodeIndex_Locked(vnode, startingIndex, startingIndex);
+    return this->TryFindVnodeIndex_Locked(vnode, startingIndex, startingIndex, cacheIndex);
 }
 
-uintptr_t VnodeCache::FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex, uintptr_t stoppingIndex)
+bool VnodeCache::TryFindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex, uintptr_t stoppingIndex, /* out */  uintptr_t& cacheIndex)
 {
     // Walk from the starting index until we find:
     //    -> The vnode
     //    -> A NULLVP entry
     //    -> The stopping index
     // If we hit the end of the array, continue searching from the start
-    uintptr_t index = startingIndex;
-    while (vnode != this->entries[index].vnode)
+    cacheIndex = startingIndex;
+    while (vnode != this->entries[cacheIndex].vnode)
     {
-        if (NULLVP == this->entries[index].vnode)
+        if (NULLVP == this->entries[cacheIndex].vnode)
         {
-            break;
+            return true;
         }
     
-        index = (index + 1) % this->capacity;
-        if (index == stoppingIndex)
+        cacheIndex = (cacheIndex + 1) % this->capacity;
+        if (cacheIndex == stoppingIndex)
         {
             // Looped through the entire cache and didn't find an empty slot or the vnode
-            break;
+            return false;
         }
     }
     
-    return index;
+    return true;
 }
 
 void VnodeCache::UpdateIndexEntryToLatest_Locked(

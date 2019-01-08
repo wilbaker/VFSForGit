@@ -25,8 +25,8 @@ private:
     VnodeCache& operator=(const VnodeCache&) = delete;
     
     uintptr_t HashVnode(vnode_t vnode);
-    uintptr_t FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex);
-    uintptr_t FindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex, uintptr_t stoppingIndex);
+    bool TryFindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex, /* out */  uintptr_t& cacheIndex);
+    bool TryFindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex, uintptr_t stoppingIndex, /* out */  uintptr_t& cacheIndex);
     void UpdateIndexEntryToLatest_Locked(
         vfs_context_t context,
         PerfTracer* perfTracer,
