@@ -3,6 +3,7 @@
 #include "VnodeUtilities.hpp"
 #include "VnodeCache.hpp"
 #include "Memory.hpp"
+#include "KextLog.hpp"
 
 VnodeCache::VnodeCache()
     : capacity(0)
@@ -79,6 +80,8 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
                 // TODO(cache): Also check that the root's vrgid matches what's in the cache
                 if (vnodeVid != this->entries[index].vid)
                 {
+                    KextLog_FileError(vnode, "vnode cache vid out of date");
+                
                     if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
                     {
                         RWLock_AcquireExclusive(this->entriesLock);
@@ -87,11 +90,17 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
                     lockElevatedToExclusive = true;
                     this->UpdateIndexEntryToLatest_Locked(context, perfTracer, index, vnode, vnodeVid);
                 }
+                else
+                {
+                    KextLog_FileError(vnode, "vnode cache hit");
+                }
                 
                 rootHandle = this->entries[index].virtualizationRoot;
             }
             else
             {
+                KextLog_FileError(vnode, "vnode miss, upgrading lock and re-walking cache");
+            
                 // We need to insert the vnode into the cache, upgrade to exclusive lock and add it to the cache
                 if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
                 {
@@ -125,12 +134,14 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
                 }
                 else
                 {
+                    KextLog_FileError(vnode, "vnode cache miss, and no room for additions after re-walk");
                     // TODO(cache): We've run out of space in the cache
                 }
             }
         }
         else
         {
+            KextLog_FileError(vnode, "vnode cache miss, and no room for additions");
             // TODO(cache): We've run out of space in the cache
         }
     }
