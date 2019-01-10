@@ -80,12 +80,12 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
                 // TODO(cache): Also check that the root's vrgid matches what's in the cache
                 if (vnodeVid != this->entries[cacheIndex].vid)
                 {
-                    KextLog_FileError(
-                        vnode,
-                        "vnode cache vid out of date (address: 0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu)",
-                        reinterpret_cast<uintptr_t>(vnode),
-                        startingIndex,
-                        cacheIndex);
+//                    KextLog_FileError(
+//                        vnode,
+//                        "vnode cache vid out of date (address: 0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu)",
+//                        reinterpret_cast<uintptr_t>(vnode),
+//                        startingIndex,
+//                        cacheIndex);
                 
                     if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
                     {
@@ -97,24 +97,24 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
                 }
                 else
                 {
-                    KextLog_FileError(
-                        vnode,
-                        "vnode cache hit (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu)",
-                        reinterpret_cast<uintptr_t>(vnode),
-                        startingIndex,
-                        cacheIndex);
+//                    KextLog_FileError(
+//                        vnode,
+//                        "vnode cache hit (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu)",
+//                        reinterpret_cast<uintptr_t>(vnode),
+//                        startingIndex,
+//                        cacheIndex);
                 }
                 
                 rootHandle = this->entries[cacheIndex].virtualizationRoot;
             }
             else
             {
-                KextLog_FileError(
-                        vnode,
-                        "vnode miss, upgrading lock and re-walking cache (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu)",
-                        reinterpret_cast<uintptr_t>(vnode),
-                        startingIndex,
-                        cacheIndex);
+//                KextLog_FileError(
+//                        vnode,
+//                        "vnode miss, upgrading lock and re-walking cache (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu)",
+//                        reinterpret_cast<uintptr_t>(vnode),
+//                        startingIndex,
+//                        cacheIndex);
             
                 // We need to insert the vnode into the cache, upgrade to exclusive lock and add it to the cache
                 if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
@@ -136,26 +136,26 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
                 {
                     if (NULLVP == this->entries[insertionIndex].vnode)
                     {
-                         KextLog_FileError(
-                            vnode,
-                            "Adding entry to NULL slot (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu, insertionIndex: 0x%lu)",
-                            reinterpret_cast<uintptr_t>(vnode),
-                            startingIndex,
-                            cacheIndex,
-                            insertionIndex);
+//                         KextLog_FileError(
+//                            vnode,
+//                            "Adding entry to NULL slot (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu, insertionIndex: 0x%lu)",
+//                            reinterpret_cast<uintptr_t>(vnode),
+//                            startingIndex,
+//                            cacheIndex,
+//                            insertionIndex);
                         
                         this->UpdateIndexEntryToLatest_Locked(context, perfTracer, insertionIndex, vnode, vnodeVid);
                         rootHandle = this->entries[insertionIndex].virtualizationRoot;
                     }
                     else
                     {
-                        KextLog_FileError(
-                                vnode,
-                                "Ensuring entry in slot is still valid (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu, insertionIndex: 0x%lu)",
-                                reinterpret_cast<uintptr_t>(vnode),
-                                startingIndex,
-                                cacheIndex,
-                                insertionIndex);
+//                        KextLog_FileError(
+//                                vnode,
+//                                "Ensuring entry in slot is still valid (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu, insertionIndex: 0x%lu)",
+//                                reinterpret_cast<uintptr_t>(vnode),
+//                                startingIndex,
+//                                cacheIndex,
+//                                insertionIndex);
                         
                         // We found an existing entry, ensure it's still valid
                         // TODO(cache): Also check that the root's vrgid matches what's in the cache
