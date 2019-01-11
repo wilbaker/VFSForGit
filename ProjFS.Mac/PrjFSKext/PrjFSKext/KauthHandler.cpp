@@ -80,6 +80,7 @@ static bool TryGetVirtualizationRoot(
     vfs_context_t _Nonnull context,
     const vnode_t vnode,
     int pid,
+    bool isDelete,
     
     // Out params:
     VirtualizationRootHandle* root,
@@ -381,7 +382,16 @@ static int HandleVnodeOperation(
     
     if (isDeleteAction)
     {
-        if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, &root, &vnodeFsidInode, &kauthResult, kauthError))
+        if (!TryGetVirtualizationRoot(
+                &perfTracer,
+                context,
+                currentVnode,
+                pid,
+                isDeleteAction,
+                &root,
+                &vnodeFsidInode,
+                &kauthResult,
+                kauthError))
         {
             goto CleanupAndReturn;
         }
@@ -419,7 +429,7 @@ static int HandleVnodeOperation(
             // Recursively expand directory on delete to ensure child placeholders are created before rename operations
             if (isDeleteAction)
             {
-                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, &root, &vnodeFsidInode, &kauthResult, kauthError))
+                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, isDeleteAction, &root, &vnodeFsidInode, &kauthResult, kauthError))
                 {
                     goto CleanupAndReturn;
                 }
@@ -442,7 +452,7 @@ static int HandleVnodeOperation(
             }
             else if (FileFlagsBitIsSet(currentVnodeFileFlags, FileFlags_IsEmpty))
             {
-                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, &root, &vnodeFsidInode, &kauthResult, kauthError))
+                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, isDeleteAction, &root, &vnodeFsidInode, &kauthResult, kauthError))
                 {
                     goto CleanupAndReturn;
                 }
@@ -480,7 +490,7 @@ static int HandleVnodeOperation(
         {
             if (FileFlagsBitIsSet(currentVnodeFileFlags, FileFlags_IsEmpty))
             {
-                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, &root, &vnodeFsidInode, &kauthResult, kauthError))
+                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, isDeleteAction, &root, &vnodeFsidInode, &kauthResult, kauthError))
                 {
                     goto CleanupAndReturn;
                 }
@@ -828,6 +838,7 @@ static bool TryGetVirtualizationRoot(
     vfs_context_t _Nonnull context,
     const vnode_t vnode,
     int pid,
+    bool isDelete,
     
     // Out params:
     VirtualizationRootHandle* root,
@@ -838,7 +849,10 @@ static bool TryGetVirtualizationRoot(
     PerfSample findRootSample(perfTracer, PrjFSPerfCounter_VnodeOp_GetVirtualizationRoot);
         
     *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-    *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode, /* invalidateEntry */ false);
+    
+    // Need to invalidate the entry on delete to handle renames performed as hardlink+delete, otherwise we'll find the old parent
+    // TODO(cache): Don't insert the entry into the cache when hardlinking
+    *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode, /* invalidateEntry */ isDelete);
 
     if (RootHandle_ProviderTemporaryDirectory == *root)
     {
