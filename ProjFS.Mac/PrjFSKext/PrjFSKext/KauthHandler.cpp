@@ -838,7 +838,7 @@ static bool TryGetVirtualizationRoot(
     PerfSample findRootSample(perfTracer, PrjFSPerfCounter_VnodeOp_GetVirtualizationRoot);
         
     *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-    *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode);
+    *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode, /* invalidateEntry */ false);
 
     if (RootHandle_ProviderTemporaryDirectory == *root)
     {
@@ -913,7 +913,9 @@ static bool ShouldHandleFileOpEvent(
         PerfSample findRootSample(perfTracer, PrjFSPerfCounter_FileOp_ShouldHandle_FindVirtualizationRoot);
         
         *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
-        *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode);
+        
+        bool invalidateCacheEntry = (action == KAUTH_FILEOP_LINK || action == KAUTH_FILEOP_RENAME);
+        *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode, invalidateCacheEntry);
         
         if (!VirtualizationRoot_IsValidRootHandle(*root))
         {

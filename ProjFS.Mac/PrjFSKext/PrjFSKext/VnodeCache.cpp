@@ -62,7 +62,11 @@ void VnodeCache::Cleanup()
 }
 
 // TODO(cache): Add _Nonnull where appropriate
-VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vfs_context_t context, vnode_t vnode)
+VirtualizationRootHandle VnodeCache::FindRootForVnode(
+    PerfTracer* perfTracer,
+    vfs_context_t context,
+    vnode_t vnode,
+    bool invalidateEntry)
 {
     VirtualizationRootHandle rootHandle = RootHandle_None;
     uintptr_t startingIndex = this->HashVnode(vnode);
@@ -78,7 +82,7 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
             if (vnode == this->entries[cacheIndex].vnode)
             {
                 // TODO(cache): Also check that the root's vrgid matches what's in the cache
-                if (vnodeVid != this->entries[cacheIndex].vid)
+                if (invalidateEntry || vnodeVid != this->entries[cacheIndex].vid)
                 {
 //                    KextLog_FileError(
 //                        vnode,
@@ -159,7 +163,7 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(PerfTracer* perfTracer, vf
                         
                         // We found an existing entry, ensure it's still valid
                         // TODO(cache): Also check that the root's vrgid matches what's in the cache
-                        if (vnodeVid != this->entries[insertionIndex].vid)
+                        if (invalidateEntry || vnodeVid != this->entries[insertionIndex].vid)
                         {
                             this->UpdateIndexEntryToLatest_Locked(context, perfTracer, insertionIndex, vnode, vnodeVid);
                         }

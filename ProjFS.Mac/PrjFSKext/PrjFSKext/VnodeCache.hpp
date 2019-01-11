@@ -18,7 +18,8 @@ public:
     VirtualizationRootHandle FindRootForVnode(
         PerfTracer* perfTracer,
         vfs_context_t context,
-        vnode_t vnode);
+        vnode_t vnode,
+        bool invalidateEntry);
     
 private:
     VnodeCache(const VnodeCache&) = delete;
