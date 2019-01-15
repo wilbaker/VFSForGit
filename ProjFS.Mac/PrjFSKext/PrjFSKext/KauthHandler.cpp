@@ -852,7 +852,15 @@ static bool TryGetVirtualizationRoot(
     
     // Need to invalidate the entry on delete to handle renames performed as hardlink+delete, otherwise we'll find the old parent
     // TODO(cache): Don't insert the entry into the cache when hardlinking
-    *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode, /* invalidateEntry */ isDelete);
+    *root = vnodeCache.FindRootForVnode(
+        perfTracer,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        context,
+        vnode,
+        /* invalidateEntry */ isDelete);
 
     if (RootHandle_ProviderTemporaryDirectory == *root)
     {
@@ -929,7 +937,15 @@ static bool ShouldHandleFileOpEvent(
         *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context);
         
         bool invalidateCacheEntry = (action == KAUTH_FILEOP_LINK || action == KAUTH_FILEOP_RENAME);
-        *root = vnodeCache.FindRootForVnode(perfTracer, context, vnode, invalidateCacheEntry);
+        *root = vnodeCache.FindRootForVnode(
+            perfTracer,
+            PrjFSPerfCounter_FileOp_Vnode_Cache_Hit,
+            PrjFSPerfCounter_FileOp_Vnode_Cache_Miss,
+            PrjFSPerfCounter_FileOp_FindRoot,
+            PrjFSPerfCounter_FileOp_FindRoot_Iteration,
+            context,
+            vnode,
+            invalidateCacheEntry);
         
         if (!VirtualizationRoot_IsValidRootHandle(*root))
         {

@@ -64,6 +64,10 @@ void VnodeCache::Cleanup()
 // TODO(cache): Add _Nonnull where appropriate
 VirtualizationRootHandle VnodeCache::FindRootForVnode(
     PerfTracer* perfTracer,
+    PrjFSPerfCounter cacheHitCounter,
+    PrjFSPerfCounter cacheMissCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     vfs_context_t context,
     vnode_t vnode,
     bool invalidateEntry)
@@ -97,7 +101,14 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(
                     }
                     
                     lockElevatedToExclusive = true;
-                    this->UpdateIndexEntryToLatest_Locked(context, perfTracer, cacheIndex, vnode, vnodeVid);
+                    this->UpdateIndexEntryToLatest_Locked(
+                        context,
+                        perfTracer,
+                        cacheMissFallbackFunctionCounter,
+                        cacheMissFallbackFunctionInnerLoopCounter,
+                        cacheIndex,
+                        vnode,
+                        vnodeVid);
                 }
                 else
                 {
@@ -148,7 +159,15 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(
 //                            cacheIndex,
 //                            insertionIndex);
                         
-                        this->UpdateIndexEntryToLatest_Locked(context, perfTracer, insertionIndex, vnode, vnodeVid);
+                        this->UpdateIndexEntryToLatest_Locked(
+                            context,
+                            perfTracer,
+                            cacheMissFallbackFunctionCounter,
+                            cacheMissFallbackFunctionInnerLoopCounter,
+                            insertionIndex,
+                            vnode,
+                            vnodeVid);
+                        
                         rootHandle = this->entries[insertionIndex].virtualizationRoot;
                     }
                     else
@@ -165,7 +184,14 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(
                         // TODO(cache): Also check that the root's vrgid matches what's in the cache
                         if (invalidateEntry || vnodeVid != this->entries[insertionIndex].vid)
                         {
-                            this->UpdateIndexEntryToLatest_Locked(context, perfTracer, insertionIndex, vnode, vnodeVid);
+                            this->UpdateIndexEntryToLatest_Locked(
+                                context,
+                                perfTracer,
+                                cacheMissFallbackFunctionCounter,
+                                cacheMissFallbackFunctionInnerLoopCounter,
+                                insertionIndex,
+                                vnode,
+                                vnodeVid);
                         }
                         
                         rootHandle = this->entries[insertionIndex].virtualizationRoot;
@@ -173,6 +199,7 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(
                 }
                 else
                 {
+                    // TODO(cache): We've run out of space in the cache
                     KextLog_FileError(
                         vnode,
                         "vnode cache miss, and no room for additions after re-walk (0x%lu, startingIndex: 0x%lu, cacheIndex: 0x%lu, insertionIndex: 0x%lu)",
@@ -180,18 +207,16 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(
                         startingIndex,
                         cacheIndex,
                         insertionIndex);
-
-                    // TODO(cache): We've run out of space in the cache
                 }
             }
         }
         else
         {
+            // TODO(cache): We've run out of space in the cache
             KextLog_FileError(
                         vnode,
                         "vnode cache miss, and no room for additions (0x%lu)",
                         reinterpret_cast<uintptr_t>(vnode));
-            // TODO(cache): We've run out of space in the cache
         }
     }
     
@@ -247,6 +272,8 @@ bool VnodeCache::TryFindVnodeIndex_Locked(vnode_t vnode, uintptr_t startingIndex
 void VnodeCache::UpdateIndexEntryToLatest_Locked(
     vfs_context_t context,
     PerfTracer* perfTracer,
+    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     uintptr_t index,
     vnode_t vnode,
     uint32_t vnodeVid)
@@ -259,8 +286,8 @@ void VnodeCache::UpdateIndexEntryToLatest_Locked(
     // TODO(cache): Add proper perf points
     this->entries[index].virtualizationRoot = VirtualizationRoot_FindForVnode(
         perfTracer,
-        PrjFSPerfCounter_VnodeOp_FindRoot,
-        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        cacheMissFallbackFunctionCounter,
+        cacheMissFallbackFunctionInnerLoopCounter,
         vnode,
         vnodeFsidInode);
 

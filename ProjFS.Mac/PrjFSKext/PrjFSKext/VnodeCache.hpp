@@ -15,8 +15,13 @@ public:
     void Cleanup();
     
     // TODO(cache): Also pass back fsid and inode
+    // TODO(cache): Add more perf counters to capture more accurate counts
     VirtualizationRootHandle FindRootForVnode(
         PerfTracer* perfTracer,
+        PrjFSPerfCounter cacheHitCounter,
+        PrjFSPerfCounter cacheMissCounter,
+        PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+        PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
         vfs_context_t context,
         vnode_t vnode,
         bool invalidateEntry);
@@ -31,6 +36,8 @@ private:
     void UpdateIndexEntryToLatest_Locked(
         vfs_context_t context,
         PerfTracer* perfTracer,
+        PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+        PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
         uintptr_t index,
         vnode_t vnode,
         uint32_t vnodeVid);
