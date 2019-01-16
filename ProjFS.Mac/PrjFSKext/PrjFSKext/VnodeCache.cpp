@@ -43,6 +43,8 @@ bool VnodeCache::TryInitialize()
     
     memset(this->entries, 0, this->capacity * sizeof(VnodeCacheEntry));
     
+    PerfTracing_RecordSample(PrjFSPerfCounter_CacheCapacity, 0, this->capacity);
+    
     return true;
 }
 
@@ -88,7 +90,7 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(
                 // TODO(cache): Also check that the root's vrgid matches what's in the cache
                 if (invalidateEntry || vnodeVid != this->entries[cacheIndex].vid)
                 {
-                    perfTracer->IncrementCount(cacheMissCounter);
+                    perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
                 
                     if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
                     {
@@ -107,14 +109,14 @@ VirtualizationRootHandle VnodeCache::FindRootForVnode(
                 }
                 else
                 {
-                    perfTracer->IncrementCount(cacheHitCounter);
+                    perfTracer->IncrementCount(cacheHitCounter, true /*ignoreSampling*/);
                 }
                 
                 rootHandle = this->entries[cacheIndex].virtualizationRoot;
             }
             else
             {
-                perfTracer->IncrementCount(cacheMissCounter);
+                perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
             
                 // We need to insert the vnode into the cache, upgrade to exclusive lock and add it to the cache
                 if (!RWLock_AcquireSharedToExclusive(this->entriesLock))
