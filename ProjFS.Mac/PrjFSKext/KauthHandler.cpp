@@ -875,6 +875,7 @@ static bool TryGetVirtualizationRoot(
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
         context,
         vnode,
+        *vnodeFsidInode,
         /* invalidateEntry */ isDelete);
 
     if (RootHandle_ProviderTemporaryDirectory == *root)
@@ -966,6 +967,7 @@ static bool ShouldHandleFileOpEvent(
             PrjFSPerfCounter_FileOp_FindRoot_Iteration,
             context,
             vnode,
+            *vnodeFsidInode,
             invalidateCacheEntry);
         
         if (!VirtualizationRoot_IsValidRootHandle(*root))
