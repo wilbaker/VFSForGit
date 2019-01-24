@@ -14,6 +14,25 @@ struct VnodeCacheEntry
     VirtualizationRootHandle virtualizationRoot;
 };
 
+static const VirtualizationRootHandle TestVirtualizationRootHandle = 3;
+
+VirtualizationRootHandle VirtualizationRoot_FindForVnode(
+    PerfTracer* _Nonnull perfTracer,
+    PrjFSPerfCounter functionCounter,
+    PrjFSPerfCounter innerLoopCounter,
+    vnode_t _Nonnull vnode,
+    const FsidInode& vnodeFsidInode);
+
+VirtualizationRootHandle VirtualizationRoot_FindForVnode(
+    PerfTracer* _Nonnull perfTracer,
+    PrjFSPerfCounter functionCounter,
+    PrjFSPerfCounter innerLoopCounter,
+    vnode_t _Nonnull vnode,
+    const FsidInode& vnodeFsidInode)
+{
+    return TestVirtualizationRootHandle;
+}
+
 - (void)testHashVnodeWithCapacityOfOne {
     s_entriesCapacity = 1;
     XCTAssertTrue(0 == HashVnode(reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1))));
@@ -60,5 +79,63 @@ struct VnodeCacheEntry
     free(s_entries);
 }
 
+- (void)testTryFindVnodeIndex_SharedLocked_WrapsToBeginningWhenResolvingCollisions {
+    s_entriesCapacity = 100;
+    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    uintptr_t emptyIndex = 2;
+    s_entries[emptyIndex].vnode = nullptr;
+    
+    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    uintptr_t startingIndex = 5;
+    uintptr_t cacheIndex;
+    XCTAssertTrue(TryFindVnodeIndex_SharedLocked(testVnode, startingIndex, startingIndex, /* out */ cacheIndex));
+    XCTAssertTrue(emptyIndex == cacheIndex);
+    
+    free(s_entries);
+}
+
+- (void)testTryFindVnodeIndex_SharedLocked_ReturnsLastIndexWhenEmptyAndResolvingCollisions {
+    s_entriesCapacity = 100;
+    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    uintptr_t emptyIndex = s_entriesCapacity - 1;
+    s_entries[emptyIndex].vnode = nullptr;
+    
+    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    uintptr_t startingIndex = 5;
+    uintptr_t cacheIndex;
+    XCTAssertTrue(TryFindVnodeIndex_SharedLocked(testVnode, startingIndex, startingIndex, /* out */ cacheIndex));
+    XCTAssertTrue(emptyIndex == cacheIndex);
+    
+    free(s_entries);
+}
+
+- (void)testUpdateCacheEntryToLatest_ExclusiveLocked {
+    s_entriesCapacity = 100;
+    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    
+    PerfTracer* dummyPerfTracerPointer = reinterpret_cast<PerfTracer*>(static_cast<uintptr_t>(1));
+    uintptr_t cacheIndex = 5;
+    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    uint32_t testVnodeVid = 7;
+    FsidInode testVnodeFsidInode;
+    
+    XCTAssertTrue(s_entries[cacheIndex].vnode == nullptr);
+    XCTAssertTrue(s_entries[cacheIndex].vid == 0);
+    
+    UpdateCacheEntryToLatest_ExclusiveLocked(
+        dummyPerfTracerPointer,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        cacheIndex,
+        testVnode,
+        testVnodeFsidInode,
+        testVnodeVid);
+    
+    XCTAssertTrue(s_entries[cacheIndex].vnode == testVnode);
+    XCTAssertTrue(s_entries[cacheIndex].vid == testVnodeVid);
+    XCTAssertTrue(s_entries[cacheIndex].virtualizationRoot == TestVirtualizationRootHandle);
+}
 
 @end

@@ -19,8 +19,7 @@ KEXT_STATIC bool TryFindVnodeIndex_SharedLocked(
     /* out parameters */
     uintptr_t& cacheIndex);
 
-static void UpdateCacheEntryToLatest_ExclusiveLocked(
-    vfs_context_t _Nonnull context,
+KEXT_STATIC void UpdateCacheEntryToLatest_ExclusiveLocked(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
@@ -144,7 +143,6 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
                     lockElevatedToExclusive = true;
                     
                     UpdateCacheEntryToLatest_ExclusiveLocked(
-                        context,
                         perfTracer,
                         cacheMissFallbackFunctionCounter,
                         cacheMissFallbackFunctionInnerLoopCounter,
@@ -289,8 +287,7 @@ KEXT_STATIC bool TryFindVnodeIndex_SharedLocked(
     return true;
 }
 
-static void UpdateCacheEntryToLatest_ExclusiveLocked(
-    vfs_context_t _Nonnull context,
+KEXT_STATIC void UpdateCacheEntryToLatest_ExclusiveLocked(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
@@ -333,7 +330,6 @@ static bool FindAndUpdateEntryToLatest_ExclusiveLocked(
         if (invalidateEntry || NULLVP == s_entries[insertionIndex].vnode || vnodeVid != s_entries[insertionIndex].vid)
         {
             UpdateCacheEntryToLatest_ExclusiveLocked(
-                context,
                 perfTracer,
                 cacheMissFallbackFunctionCounter,
                 cacheMissFallbackFunctionInnerLoopCounter,

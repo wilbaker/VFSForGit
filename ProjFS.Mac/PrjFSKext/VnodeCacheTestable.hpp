@@ -1,4 +1,6 @@
 #include "public/PrjFSCommon.h"
+#include "public/FsidInode.h"
+#include "public/PrjFSPerfCounter.h"
 #include <sys/kernel_types.h>
 
 #ifndef __cplusplus
@@ -8,6 +10,10 @@
 #ifndef KEXT_UNIT_TESTING
 #error This class should only be called for unit tests
 #endif
+
+// Forward declarations for unit testing
+class PerfTracer;
+struct VnodeCacheEntry;
 
 KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
 KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode);
@@ -19,7 +25,16 @@ KEXT_STATIC bool TryFindVnodeIndex_SharedLocked(
     /* out parameters */
     uintptr_t& cacheIndex);
 
-struct VnodeCacheEntry;
+KEXT_STATIC void UpdateCacheEntryToLatest_ExclusiveLocked(
+    PerfTracer* _Nonnull perfTracer,
+    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
+    uintptr_t index,
+    vnode_t _Nonnull vnode,
+    const FsidInode& vnodeFsidInode,
+    uint32_t vnodeVid);
+
+// Static variables used for maintaining Vnode cache state
 extern uint32_t s_entriesCapacity;
 extern VnodeCacheEntry* _Nullable s_entries;
 
