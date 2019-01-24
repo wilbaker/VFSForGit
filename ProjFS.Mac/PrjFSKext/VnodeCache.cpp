@@ -4,9 +4,13 @@
 #include "Memory.hpp"
 #include "KextLog.hpp"
 
+#ifdef KEXT_UNIT_TESTING
+#include "VnodeCacheTestable.hpp"
+#endif
+
 static inline void InvalidateCache_ExclusiveLocked();
 static inline void UpgradeToExclusiveLock(RWLock& lock);
-static inline uintptr_t HashVnode(vnode_t _Nonnull vnode);
+KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode);
 
 static bool TryFindVnodeIndex_SharedLocked(
     vnode_t _Nonnull vnode,
@@ -58,7 +62,7 @@ struct VnodeCacheEntry
     VirtualizationRootHandle virtualizationRoot;
 };
 
-static uint32_t s_entriesCapacity;
+KEXT_STATIC uint32_t s_entriesCapacity;
 static VnodeCacheEntry* s_entries;
 static RWLock s_entriesLock;
 static const uint32_t MinEntriesCapacity = 0x040000; //  4 MB (assuming 16 bytes per VnodeCacheEntry)
@@ -248,7 +252,7 @@ static inline void UpgradeToExclusiveLock(RWLock& lock)
     }
 }
 
-static inline uintptr_t HashVnode(vnode_t _Nonnull vnode)
+KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode)
 {
     uintptr_t vnodeAddress = reinterpret_cast<uintptr_t>(vnode);
     return (vnodeAddress >> 3) % s_entriesCapacity;
