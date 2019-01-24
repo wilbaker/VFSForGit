@@ -8,11 +8,11 @@
 #include "VnodeCacheTestable.hpp"
 #endif
 
-static inline void InvalidateCache_ExclusiveLocked();
+KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
 static inline void UpgradeToExclusiveLock(RWLock& lock);
 KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode);
 
-static bool TryFindVnodeIndex_SharedLocked(
+KEXT_STATIC bool TryFindVnodeIndex_SharedLocked(
     vnode_t _Nonnull vnode,
     uintptr_t startingIndex,
     uintptr_t stoppingIndex,
@@ -63,7 +63,7 @@ struct VnodeCacheEntry
 };
 
 KEXT_STATIC uint32_t s_entriesCapacity;
-static VnodeCacheEntry* s_entries;
+KEXT_STATIC VnodeCacheEntry* s_entries;
 static RWLock s_entriesLock;
 static const uint32_t MinEntriesCapacity = 0x040000; //  4 MB (assuming 16 bytes per VnodeCacheEntry)
 static const uint32_t MaxEntriesCapacity = 0x400000; // 64 MB (assuming 16 bytes per VnodeCacheEntry)
@@ -239,7 +239,7 @@ void VnodeCache_InvalidateCache(PerfTracer* _Nullable perfTracer)
     RWLock_ReleaseExclusive(s_entriesLock);
 }
 
-static inline void InvalidateCache_ExclusiveLocked()
+KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked()
 {
     memset(s_entries, 0, s_entriesCapacity * sizeof(VnodeCacheEntry));
 }
@@ -258,7 +258,7 @@ KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode)
     return (vnodeAddress >> 3) % s_entriesCapacity;
 }
 
-static bool TryFindVnodeIndex_SharedLocked(
+KEXT_STATIC bool TryFindVnodeIndex_SharedLocked(
     vnode_t _Nonnull vnode,
     uintptr_t startingIndex,
     uintptr_t stoppingIndex,

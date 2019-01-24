@@ -9,7 +9,17 @@
 #error This class should only be called for unit tests
 #endif
 
+KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
 KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode);
 
+KEXT_STATIC bool TryFindVnodeIndex_SharedLocked(
+    vnode_t _Nonnull vnode,
+    uintptr_t startingIndex,
+    uintptr_t stoppingIndex,
+    /* out parameters */
+    uintptr_t& cacheIndex);
+
+struct VnodeCacheEntry;
 extern uint32_t s_entriesCapacity;
+extern VnodeCacheEntry* _Nullable s_entries;
 
