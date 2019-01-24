@@ -19,7 +19,7 @@ struct VnodeCacheEntry
     XCTAssertTrue(0 == HashVnode(reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1))));
 }
 
-- (void)testInvalidateCache_ExclusiveLockedSetsMemoryToZeros {
+- (void)testInvalidateCache_ExclusiveLocked_SetsMemoryToZeros {
     s_entriesCapacity = 100;
     VnodeCacheEntry* emptyArray = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
     s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
@@ -33,5 +33,32 @@ struct VnodeCacheEntry
     free(s_entries);
     free(emptyArray);
 }
+
+- (void)testTryFindVnodeIndex_SharedLocked_ReturnsStartingIndexWhenNull {
+    s_entriesCapacity = 100;
+    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    
+    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    uintptr_t startingIndex = 5;
+    uintptr_t cacheIndex;
+    XCTAssertTrue(TryFindVnodeIndex_SharedLocked(testVnode, startingIndex, startingIndex, /* out */ cacheIndex));
+    XCTAssertTrue(cacheIndex == startingIndex);
+    
+    free(s_entries);
+}
+
+- (void)testTryFindVnodeIndex_SharedLocked_ReturnsFalseWhenCacheFull {
+    s_entriesCapacity = 100;
+    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    
+    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    uintptr_t startingIndex = 5;
+    uintptr_t cacheIndex;
+    XCTAssertFalse(TryFindVnodeIndex_SharedLocked(testVnode, startingIndex, startingIndex, /* out */ cacheIndex));
+    
+    free(s_entries);
+}
+
 
 @end
