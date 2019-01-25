@@ -875,7 +875,6 @@ static bool TryGetVirtualizationRoot(
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        context,
         vnode,
         *vnodeFsidInode,
         /* invalidateEntry */ isDelete);
@@ -967,7 +966,6 @@ static bool ShouldHandleFileOpEvent(
             PrjFSPerfCounter_FileOp_Vnode_Cache_Miss,
             PrjFSPerfCounter_FileOp_FindRoot,
             PrjFSPerfCounter_FileOp_FindRoot_Iteration,
-            context,
             vnode,
             *vnodeFsidInode,
             invalidateCacheEntry);

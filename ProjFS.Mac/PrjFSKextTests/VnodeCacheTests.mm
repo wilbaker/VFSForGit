@@ -1,4 +1,7 @@
 #import <XCTest/XCTest.h>
+
+typedef int16_t VirtualizationRootHandle;
+
 #include "../PrjFSKext/VnodeCacheTestable.hpp"
 
 @interface VnodeCacheTests : XCTestCase
@@ -111,7 +114,7 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     free(s_entries);
 }
 
-- (void)testUpdateCacheEntryToLatest_ExclusiveLocked {
+- (void)testUpdateCacheEntryToLatest_ExclusiveLocked_UpdatesCache {
     s_entriesCapacity = 100;
     s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
     
@@ -136,6 +139,37 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     XCTAssertTrue(s_entries[cacheIndex].vnode == testVnode);
     XCTAssertTrue(s_entries[cacheIndex].vid == testVnodeVid);
     XCTAssertTrue(s_entries[cacheIndex].virtualizationRoot == TestVirtualizationRootHandle);
+    
+    free(s_entries);
+}
+
+- (void)testFindAndUpdateEntryToLatest_ExclusiveLocked_ReturnsFalseWhenFull {
+    s_entriesCapacity = 100;
+    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    
+    PerfTracer* dummyPerfTracerPointer = reinterpret_cast<PerfTracer*>(static_cast<uintptr_t>(1));
+    uintptr_t indexFromHash = 5;
+    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    uint32_t testVnodeVid = 7;
+    FsidInode testVnodeFsidInode;
+    VirtualizationRootHandle rootHandle;
+    
+    XCTAssertFalse(
+        FindAndUpdateEntryToLatest_ExclusiveLocked(
+            dummyPerfTracerPointer,
+            PrjFSPerfCounter_VnodeOp_FindRoot,
+            PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+            testVnode,
+            testVnodeFsidInode,
+            indexFromHash,
+            indexFromHash,
+            testVnodeVid,
+            true, // invalidateEntry
+            /* out paramaeters */
+            rootHandle));
+    
+    free(s_entries);
 }
 
 @end

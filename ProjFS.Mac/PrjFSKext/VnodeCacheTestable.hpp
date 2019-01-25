@@ -34,6 +34,19 @@ KEXT_STATIC void UpdateCacheEntryToLatest_ExclusiveLocked(
     const FsidInode& vnodeFsidInode,
     uint32_t vnodeVid);
 
+KEXT_STATIC bool FindAndUpdateEntryToLatest_ExclusiveLocked(
+    PerfTracer* _Nonnull perfTracer,
+    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
+    vnode_t _Nonnull vnode,
+    const FsidInode& vnodeFsidInode,
+    uintptr_t startingIndex,
+    uintptr_t stoppingIndex,
+    uint32_t vnodeVid,
+    bool invalidateEntry,
+    /* out paramaeters */
+    VirtualizationRootHandle& rootHandle);
+
 // Static variables used for maintaining Vnode cache state
 extern uint32_t s_entriesCapacity;
 extern VnodeCacheEntry* _Nullable s_entries;
