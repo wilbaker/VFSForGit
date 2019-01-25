@@ -9,7 +9,6 @@ typedef int16_t VirtualizationRootHandle;
 
 @implementation VnodeCacheTests
 
-typedef int16_t VirtualizationRootHandle;
 struct VnodeCacheEntry
 {
     vnode_t vnode;
