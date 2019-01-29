@@ -40,6 +40,10 @@ namespace GVFS.Service
         {
             try
             {
+                EventMetadata metadata = new EventMetadata();
+                metadata.Add("Version", ProcessHelper.GetCurrentProcessVersion());
+                this.tracer.RelatedEvent(EventLevel.Informational, $"{nameof(GVFSService)}_{nameof(this.Run)}", metadata);
+
                 this.repoRegistry = new RepoRegistry(this.tracer, new PhysicalFileSystem(), this.serviceDataLocation);
                 this.repoRegistry.Upgrade();
                 this.productUpgradeTimer.Start();
@@ -152,12 +156,13 @@ namespace GVFS.Service
 
             this.serviceDataLocation = Paths.GetServiceDataRoot(this.serviceName);
             Directory.CreateDirectory(this.serviceDataLocation);
-            this.EnableAccessToAuthenticatedUsers(Path.GetDirectoryName(this.serviceDataLocation));
 
             this.tracer.AddLogFileEventListener(
                 GVFSEnlistment.GetNewGVFSLogFileName(Paths.GetServiceLogsPath(this.serviceName), GVFSConstants.LogFileTypes.Service),
                 EventLevel.Verbose,
                 Keywords.Any);
+
+            this.RemoveAccessForAuthenticatedUsersFromServiceDataRoot();
 
             try
             {
@@ -348,19 +353,32 @@ namespace GVFS.Service
             Environment.Exit((int)ReturnCode.GenericError);
         }
 
-        private void EnableAccessToAuthenticatedUsers(string rootDirectory)
+        private void RemoveAccessForAuthenticatedUsersFromServiceDataRoot()
         {
             // GVFS Config is written to a temporary file and then renamed to its final destination.
-            // For this rename operation to succeed, user needs to have delete permission on the
-            // destination file, in case it is pre-existing. If the pre-existing file was created
-            // by a different user, then the delete will fail.
-            // Reference: https://stackoverflow.com/questions/22107812/privileges-owner-issue-when-writing-in-c-programdata
-            // This work around allows safe write to succeed in C:\ProgramData directory.
+            // In previous versions of VFS4G we wanted to ensure that 'gvfs config' did not require
+            // elevation. To achieve that goal authenticated users were given full control of the
+            // service data root folder.
+            // (Reference: https://stackoverflow.com/questions/22107812/privileges-owner-issue-when-writing-in-c-programdata)
+            //
+            // After further discussion it was decided to require elevation and remove the full control ACL
 
-            DirectorySecurity security = Directory.GetAccessControl(Path.GetDirectoryName(this.serviceDataLocation));
+            string serviceDataRootPath = Path.GetDirectoryName(this.serviceDataLocation);
+
+            DirectorySecurity security = Directory.GetAccessControl(serviceDataRootPath);
             SecurityIdentifier authenticatedUsers = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
-            security.AddAccessRule(new FileSystemAccessRule(authenticatedUsers, FileSystemRights.FullControl, AccessControlType.Allow));
-            Directory.SetAccessControl(Path.GetDirectoryName(this.serviceDataLocation), security);
+            bool aclRemoved = security.RemoveAccessRule(new FileSystemAccessRule(authenticatedUsers, FileSystemRights.FullControl, AccessControlType.Allow));
+            if (aclRemoved)
+            {
+                Directory.SetAccessControl(serviceDataRootPath, security);
+            }
+
+            EventMetadata metadata = new EventMetadata();
+            metadata.Add(nameof(aclRemoved), aclRemoved);
+            this.tracer.RelatedEvent(
+                EventLevel.Informational,
+                nameof(this.RemoveAccessForAuthenticatedUsersFromServiceDataRoot),
+                metadata);
         }
     }
 }
