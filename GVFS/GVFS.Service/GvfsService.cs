@@ -157,13 +157,12 @@ namespace GVFS.Service
             this.serviceDataLocation = Paths.GetServiceDataRoot(this.serviceName);
             Directory.CreateDirectory(this.serviceDataLocation);
             Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(this.serviceDataLocation), "GVFS.Upgrade"));
+            this.RemoveAccessForAuthenticatedUsersFromServiceDataRoot();
 
             this.tracer.AddLogFileEventListener(
                 GVFSEnlistment.GetNewGVFSLogFileName(Paths.GetServiceLogsPath(this.serviceName), GVFSConstants.LogFileTypes.Service),
                 EventLevel.Verbose,
                 Keywords.Any);
-
-            this.RemoveAccessForAuthenticatedUsersFromServiceDataRoot();
 
             try
             {
