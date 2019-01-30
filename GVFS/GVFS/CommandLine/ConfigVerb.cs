@@ -75,6 +75,11 @@ namespace GVFS.CommandLine
             }
             else if (!string.IsNullOrEmpty(this.KeyToDelete))
             {
+                if (!GVFSPlatform.Instance.IsElevated())
+                {
+                    this.ReportErrorAndExit("When `gvfs config` is being used to delete settings it must be run from an elevated command prompt.");
+                }
+
                 if (!this.localConfig.TryRemoveConfig(this.KeyToDelete, out error))
                 {
                     this.ReportErrorAndExit(error);
@@ -85,6 +90,11 @@ namespace GVFS.CommandLine
                 bool valueSpecified = !string.IsNullOrEmpty(this.Value);
                 if (valueSpecified)
                 {
+                    if (!GVFSPlatform.Instance.IsElevated())
+                    {
+                        this.ReportErrorAndExit("When `gvfs config` is being used to set a value it must be run from an elevated command prompt.");
+                    }
+
                     if (!this.localConfig.TrySetConfig(this.Key, this.Value, out error))
                     {
                         this.ReportErrorAndExit(error);
