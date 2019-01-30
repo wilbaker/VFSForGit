@@ -92,7 +92,7 @@ namespace GVFS.CommandLine
                 {
                     if (!GVFSPlatform.Instance.IsElevated())
                     {
-                        this.ReportErrorAndExit("`gvfs config`must be run from an elevated command prompt when configuring settings.");
+                        this.ReportErrorAndExit("`gvfs config` must be run from an elevated command prompt when configuring settings.");
                     }
 
                     if (!this.localConfig.TrySetConfig(this.Key, this.Value, out error))
