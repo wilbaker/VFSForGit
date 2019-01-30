@@ -154,10 +154,7 @@ namespace GVFS.Service
                 this.serviceName = serviceName.Substring(ServiceNameArgPrefix.Length);
             }
 
-            this.serviceDataLocation = Paths.GetServiceDataRoot(this.serviceName);
-            Directory.CreateDirectory(this.serviceDataLocation);
-            Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(this.serviceDataLocation), "GVFS.Upgrade"));
-            this.RemoveAccessForAuthenticatedUsersFromServiceDataRoot();
+            this.CreateAndConfigureProgramDataDirectories();
 
             this.tracer.AddLogFileEventListener(
                 GVFSEnlistment.GetNewGVFSLogFileName(Paths.GetServiceLogsPath(this.serviceName), GVFSConstants.LogFileTypes.Service),
@@ -353,45 +350,25 @@ namespace GVFS.Service
             Environment.Exit((int)ReturnCode.GenericError);
         }
 
-        private void RemoveAccessForAuthenticatedUsersFromServiceDataRoot()
+        private void CreateAndConfigureProgramDataDirectories()
         {
-            // GVFS Config is written to a temporary file and then renamed to its final destination.
-            // In previous versions of VFS4G we wanted to ensure that 'gvfs config' did not require
-            // elevation. To achieve that goal authenticated users were given full control of the
-            // service data root folder.
-            // (Reference: https://stackoverflow.com/questions/22107812/privileges-owner-issue-when-writing-in-c-programdata)
-            //
-            // After further discussion it was decided to require elevation and remove the full control ACL
-
+            this.serviceDataLocation = Paths.GetServiceDataRoot(this.serviceName);
             string serviceDataRootPath = Path.GetDirectoryName(this.serviceDataLocation);
 
-            ////DirectorySecurity security = Directory.GetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Service"));
-            ////security.SetAccessRuleProtection(isProtected: true, preserveInheritance: true);
-            ////Directory.SetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Service"), security);
+            DirectorySecurity programDataSecurity = new DirectorySecurity();
+            programDataSecurity.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
 
-            ////DirectorySecurity security2 = Directory.GetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Upgrade"));
-            ////security2.SetAccessRuleProtection(isProtected: true, preserveInheritance: true);
-            ////Directory.SetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Upgrade"), security2);
-
-            DirectorySecurity security3 = Directory.GetAccessControl(serviceDataRootPath);
-            security3.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-            Directory.SetAccessControl(serviceDataRootPath, security3);
-
-            DirectorySecurity securityAdd = Directory.GetAccessControl(serviceDataRootPath);
             SecurityIdentifier authenticatedUsers = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
-            securityAdd.AddAccessRule(
+            programDataSecurity.AddAccessRule(
                 new FileSystemAccessRule(
                     authenticatedUsers,
                     FileSystemRights.Read,
                     InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
                     PropagationFlags.None,
                     AccessControlType.Allow));
-            Directory.SetAccessControl(serviceDataRootPath, securityAdd);
 
-            DirectorySecurity securityAddAdmin = Directory.GetAccessControl(serviceDataRootPath);
             SecurityIdentifier administratorUsers = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
-
-            securityAddAdmin.AddAccessRule(
+            programDataSecurity.AddAccessRule(
                 new FileSystemAccessRule(
                     administratorUsers,
                     FileSystemRights.ReadAndExecute | FileSystemRights.Modify | FileSystemRights.Delete,
@@ -399,14 +376,12 @@ namespace GVFS.Service
                     PropagationFlags.None,
                     AccessControlType.Allow));
 
-            Directory.SetAccessControl(serviceDataRootPath, securityAddAdmin);
+            Directory.CreateDirectory(serviceDataRootPath, programDataSecurity);
+            Directory.CreateDirectory(this.serviceDataLocation, programDataSecurity);
+            Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(this.serviceDataLocation), "GVFS.Upgrade"), programDataSecurity);
 
-            EventMetadata metadata = new EventMetadata();
-            metadata.Add("test", "tes32");
-            this.tracer.RelatedEvent(
-                EventLevel.Informational,
-                nameof(this.RemoveAccessForAuthenticatedUsersFromServiceDataRoot),
-                metadata);
+            // Ensure the ACLs are set correct on any files or directories that were already created
+            Directory.SetAccessControl(serviceDataRootPath, programDataSecurity);
         }
     }
 }
