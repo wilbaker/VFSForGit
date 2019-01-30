@@ -366,13 +366,13 @@ namespace GVFS.Service
 
             string serviceDataRootPath = Path.GetDirectoryName(this.serviceDataLocation);
 
-            DirectorySecurity security = Directory.GetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Service"));
-            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: true);
-            Directory.SetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Service"), security);
+            ////DirectorySecurity security = Directory.GetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Service"));
+            ////security.SetAccessRuleProtection(isProtected: true, preserveInheritance: true);
+            ////Directory.SetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Service"), security);
 
-            DirectorySecurity security2 = Directory.GetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Upgrade"));
-            security2.SetAccessRuleProtection(isProtected: true, preserveInheritance: true);
-            Directory.SetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Upgrade"), security2);
+            ////DirectorySecurity security2 = Directory.GetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Upgrade"));
+            ////security2.SetAccessRuleProtection(isProtected: true, preserveInheritance: true);
+            ////Directory.SetAccessControl(Path.Combine(serviceDataRootPath, "GVFS.Upgrade"), security2);
 
             DirectorySecurity security3 = Directory.GetAccessControl(serviceDataRootPath);
             security3.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
@@ -380,13 +380,27 @@ namespace GVFS.Service
 
             DirectorySecurity securityAdd = Directory.GetAccessControl(serviceDataRootPath);
             SecurityIdentifier authenticatedUsers = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
-            securityAdd.AddAccessRule(new FileSystemAccessRule(authenticatedUsers, FileSystemRights.Read, AccessControlType.Allow));
-
-            SecurityIdentifier administratorUsers = new SecurityIdentifier(WellKnownSidType.AccountAdministratorSid, null);
-            securityAdd.AddAccessRule(new FileSystemAccessRule(administratorUsers, FileSystemRights.CreateFiles, AccessControlType.Allow));
-            securityAdd.AddAccessRule(new FileSystemAccessRule(administratorUsers, FileSystemRights.Write, AccessControlType.Allow));
-            securityAdd.AddAccessRule(new FileSystemAccessRule(administratorUsers, FileSystemRights.ReadAndExecute, AccessControlType.Allow));
+            securityAdd.AddAccessRule(
+                new FileSystemAccessRule(
+                    authenticatedUsers,
+                    FileSystemRights.Read,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    PropagationFlags.None,
+                    AccessControlType.Allow));
             Directory.SetAccessControl(serviceDataRootPath, securityAdd);
+
+            DirectorySecurity securityAddAdmin = Directory.GetAccessControl(serviceDataRootPath);
+            SecurityIdentifier administratorUsers = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+
+            securityAddAdmin.AddAccessRule(
+                new FileSystemAccessRule(
+                    administratorUsers,
+                    FileSystemRights.ReadAndExecute | FileSystemRights.Modify | FileSystemRights.Delete,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    PropagationFlags.None,
+                    AccessControlType.Allow));
+
+            Directory.SetAccessControl(serviceDataRootPath, securityAddAdmin);
 
             EventMetadata metadata = new EventMetadata();
             metadata.Add("test", "tes32");
