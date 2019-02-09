@@ -14,6 +14,49 @@ namespace GVFS.Platform.Windows
     {
         public bool SupportsFileMode { get; } = false;
 
+        public static void SetAdminsAsDirectoryOwner(ITracer tracer, string directoryPath)
+        {
+            if (!Directory.Exists(directoryPath))
+            {
+                tracer.RelatedInfo($"{nameof(SetAdminsAsDirectoryOwner)}: Directory '{directoryPath}' does not exist");
+                return;
+            }
+
+            DirectorySecurity directorySecurity = new DirectorySecurity();
+            try
+            {
+                directorySecurity = Directory.GetAccessControl(directoryPath);
+                tracer.RelatedInfo($"{nameof(SetAdminsAsDirectoryOwner)}: Retrieved ACLs from '{directoryPath}'");
+            }
+            catch (Exception e)
+            {
+                directorySecurity = new DirectorySecurity();
+
+                EventMetadata metadata = new EventMetadata();
+                metadata.Add("Exception", e.ToString());
+                metadata.Add(nameof(directoryPath), directoryPath);
+                tracer.RelatedWarning(
+                    metadata,
+                    $"{nameof(SetAdminsAsDirectoryOwner)}: Caught exception while retreiving ACLs for directory",
+                    Keywords.Telemetry);
+            }
+
+            ////RemoveAllFileSystemAccessRulesFromDirectorySecurity(directorySecurity);
+
+            directorySecurity.AddAccessRule(
+                new FileSystemAccessRule(
+                     new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
+                    FileSystemRights.TakeOwnership,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    PropagationFlags.None,
+                    AccessControlType.Allow));
+
+            ////directorySecurity.SetOwner(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null));
+            Directory.SetAccessControl(directoryPath, directorySecurity);
+
+            tracer.RelatedInfo($"{nameof(SetAdminsAsDirectoryOwner)}: Set 'Administrators' as owner of '{directoryPath}'");
+        }
+
         /// <summary>
         /// Adds a new FileSystemAccessRule granting read (and optionally modify) access for all users.
         /// </summary>
@@ -126,6 +169,8 @@ namespace GVFS.Platform.Windows
         {
             try
             {
+                ////SetAdminsAsDirectoryOwner(tracer, directoryPath);
+
                 DirectorySecurity directorySecurity;
                 if (Directory.Exists(directoryPath))
                 {

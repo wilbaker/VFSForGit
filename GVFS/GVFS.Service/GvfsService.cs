@@ -155,15 +155,18 @@ namespace GVFS.Service
                 this.serviceName = serviceName.Substring(ServiceNameArgPrefix.Length);
             }
 
-            this.CreateAndConfigureProgramDataDirectories();
+            string serviceLogsDirectoryPath = Paths.GetServiceLogsPath(this.serviceName);
+
+            this.CreateServiceLogsDirectory(serviceLogsDirectoryPath);
 
             this.tracer.AddLogFileEventListener(
-                GVFSEnlistment.GetNewGVFSLogFileName(Paths.GetServiceLogsPath(this.serviceName), GVFSConstants.LogFileTypes.Service),
+                GVFSEnlistment.GetNewGVFSLogFileName(serviceLogsDirectoryPath, GVFSConstants.LogFileTypes.Service),
                 EventLevel.Verbose,
                 Keywords.Any);
 
             try
             {
+                this.CreateAndConfigureProgramDataDirectories();
                 this.Start();
             }
             catch (Exception e)
@@ -351,10 +354,24 @@ namespace GVFS.Service
             Environment.Exit((int)ReturnCode.GenericError);
         }
 
+        private void CreateServiceLogsDirectory(string directoryPath)
+        {
+            DirectorySecurity serviceDataRootSecurity = new DirectorySecurity();
+
+            // Protect the access rules from inheritance
+            serviceDataRootSecurity.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+            WindowsFileSystem.AddUsersAccessRulesToDirectorySecurity(serviceDataRootSecurity, grantUsersModifyPermissions: false);
+            WindowsFileSystem.AddAdminAccessRulesToDirectorySecurity(serviceDataRootSecurity);
+
+            Directory.CreateDirectory(directoryPath);
+        }
+
         private void CreateAndConfigureProgramDataDirectories()
         {
             this.serviceDataLocation = Paths.GetServiceDataRoot(this.serviceName);
             string serviceDataRootPath = Path.GetDirectoryName(this.serviceDataLocation);
+
+            ////WindowsFileSystem.SetAdminsAsDirectoryOwner(this.tracer, serviceDataRootPath);
 
             DirectorySecurity serviceDataRootSecurity;
             if (Directory.Exists(serviceDataRootPath))
@@ -388,6 +405,9 @@ namespace GVFS.Service
         {
             // Special rules for the upgrader logs, as non-elevated users need to be be able to write
             string upgradeLogsPath = ProductUpgraderInfo.GetLogDirectoryPath();
+
+            WindowsFileSystem.SetAdminsAsDirectoryOwner(this.tracer, upgradeLogsPath);
+
             DirectorySecurity upgradeLogsSecurity;
             if (Directory.Exists(upgradeLogsPath))
             {
