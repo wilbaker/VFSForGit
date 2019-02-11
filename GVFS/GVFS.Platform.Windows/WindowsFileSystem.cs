@@ -190,6 +190,114 @@ namespace GVFS.Platform.Windows
             string directoryPath,
             DirectorySecurity directorySecurity)
         {
+            using (TakeOwnershipPrivilegeGrantor ownershipPrivilegeGrantor = new TakeOwnershipPrivilegeGrantor(tracer))
+            {
+                DirectorySecurity newOwnerSecurity = new DirectorySecurity();
+                newOwnerSecurity.SetOwner(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null));
+                Directory.SetAccessControl(directoryPath, newOwnerSecurity);
+            }
+
+            Directory.SetAccessControl(directoryPath, directorySecurity);
+        }
+
+        private class TakeOwnershipPrivilegeGrantor : IDisposable
+        {
+            private const string SeTakeOwnershipName = "SeTakeOwnershipPrivilege";
+            private IntPtr processToken;
+
+            public TakeOwnershipPrivilegeGrantor(ITracer tracer)
+            {
+                // Open a handle to the access token for the calling process.
+                if (NativeMethods.OpenProcessToken(
+                        NativeMethods.GetCurrentProcess(),
+                        TOKEN_ADJUST_PRIVILEGES,
+                        &hToken))
+                {
+                    this.SetTakeOwnershipPrivilege(true);
+                }
+                else
+                {
+                    // TODO: Trace error
+                }
+            }
+
+            ~TakeOwnershipPrivilegeGrantor()
+            {
+                this.Dispose(false);
+            }
+
+            public void Dispose()
+            {
+                this.Dispose(true);
+                GC.SuppressFinalize(true);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (this.processToken != IntPtr.Zero)
+                {
+                    this.SetTakeOwnershipPrivilege(false);
+                    NativeMethods.CloseHandle(this.processToken);
+                    this.processToken = IntPtr.Zero;
+                }
+            }
+
+            private void SetTakeOwnershipPrivilege(bool enable)
+            {
+                TOKEN_PRIVILEGES tp;
+                LUID luid;
+
+                if (!LookupPrivilegeValue(
+                        NULL,            // lookup privilege on local system
+                        lpszPrivilege,   // privilege to lookup 
+                        &luid))        // receives LUID of privilege
+                {
+                    printf("LookupPrivilegeValue error: %u\n", GetLastError());
+                    return FALSE;
+                }
+
+                tp.PrivilegeCount = 1;
+                tp.Privileges[0].Luid = luid;
+                if (bEnablePrivilege)
+                    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+                else
+                    tp.Privileges[0].Attributes = 0;
+
+                // Enable the privilege or disable all privileges.
+
+                if (!AdjustTokenPrivileges(
+                       hToken,
+                       FALSE,
+                       &tp,
+                       sizeof(TOKEN_PRIVILEGES),
+                       (PTOKEN_PRIVILEGES)NULL,
+                       (PDWORD)NULL))
+                {
+                    printf("AdjustTokenPrivileges error: %u\n", GetLastError());
+                    return FALSE;
+                }
+
+                if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
+
+                {
+                    printf("The token does not have the specified privilege. \n");
+                    return FALSE;
+                }
+
+                return TRUE;
+            }
+
+            private class NativeMethods
+            {
+                [DllImportAttribute("advapi32.dll")]
+                private static extern bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr TokenHandle);
+
+                [DllImport("kernel32.dll", SetLastError = true)]
+                public static extern IntPtr GetCurrentProcess();
+
+                [DllImport("kernel32.dll")]
+                public static extern bool CloseHandle(IntPtr handle);
+            }
         }
 
         private class NativeFileReader
