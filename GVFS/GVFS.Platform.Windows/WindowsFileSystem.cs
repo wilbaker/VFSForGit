@@ -79,6 +79,28 @@ namespace GVFS.Platform.Windows
             }
         }
 
+        public static void SetDirectoryAccessControlAndOwershipIfNeeded(
+            ITracer tracer,
+            string directoryPath,
+            DirectorySecurity directorySecurity)
+        {
+            try
+            {
+                Directory.SetAccessControl(directoryPath, directorySecurity);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                EventMetadata metadata = new EventMetadata();
+                metadata.Add("Exception", e.ToString());
+                metadata.Add(
+                    TracingConstants.MessageKey.InfoMessage,
+                    $"{nameof(SetDirectoryAccessControlAndOwershipIfNeeded)}: {nameof(Directory.SetAccessControl)} failed, adjusting ownership and retrying");
+                tracer.RelatedEvent(EventLevel.Informational, $"{nameof(SetDirectoryAccessControlAndOwershipIfNeeded)}_Adjusting ownership", metadata);
+
+                SetDirectoryAccessControlAndAdminOwership(tracer, directoryPath, directorySecurity);
+            }
+        }
+
         public void FlushFileBuffers(string path)
         {
             NativeMethods.FlushFileBuffers(path);
@@ -147,7 +169,7 @@ namespace GVFS.Platform.Windows
                 Directory.CreateDirectory(directoryPath, directorySecurity);
 
                 // Ensure the ACLs are set correctly if the directory already existed
-                Directory.SetAccessControl(directoryPath, directorySecurity);
+                SetDirectoryAccessControlAndOwershipIfNeeded(tracer, directoryPath, directorySecurity);
             }
             catch (Exception e) when (e is IOException || e is SystemException)
             {
@@ -161,6 +183,13 @@ namespace GVFS.Platform.Windows
 
             error = null;
             return true;
+        }
+
+        private static void SetDirectoryAccessControlAndAdminOwership(
+            ITracer tracer,
+            string directoryPath,
+            DirectorySecurity directorySecurity)
+        {
         }
 
         private class NativeFileReader

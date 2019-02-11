@@ -166,7 +166,7 @@ namespace GVFS.Service
 
             try
             {
-                this.CreateAndConfigureProgramDataDirectories();
+                this.CreateAndConfigureProgramDataDirectories(this.tracer);
                 this.Start();
             }
             catch (Exception e)
@@ -366,7 +366,7 @@ namespace GVFS.Service
             Directory.CreateDirectory(directoryPath);
         }
 
-        private void CreateAndConfigureProgramDataDirectories()
+        private void CreateAndConfigureProgramDataDirectories(ITracer tracer)
         {
             this.serviceDataLocation = Paths.GetServiceDataRoot(this.serviceName);
             string serviceDataRootPath = Path.GetDirectoryName(this.serviceDataLocation);
@@ -394,12 +394,12 @@ namespace GVFS.Service
             Directory.CreateDirectory(ProductUpgraderInfo.GetUpgradesDirectoryPath(), serviceDataRootSecurity);
 
             // Ensure the ACLs are set correctly on any files or directories that were already created (e.g. after upgrading VFS4G)
-            Directory.SetAccessControl(serviceDataRootPath, serviceDataRootSecurity);
+            WindowsFileSystem.SetDirectoryAccessControlAndOwershipIfNeeded(tracer, serviceDataRootPath, serviceDataRootSecurity);
 
-            this.CreateAndConfigureUpgradeLogDirectory();
+            this.CreateAndConfigureUpgradeLogDirectory(tracer);
         }
 
-        private void CreateAndConfigureUpgradeLogDirectory()
+        private void CreateAndConfigureUpgradeLogDirectory(ITracer tracer)
         {
             // Special rules for the upgrader logs, as non-elevated users need to be be able to write
             string upgradeLogsPath = ProductUpgraderInfo.GetLogDirectoryPath();
@@ -424,7 +424,7 @@ namespace GVFS.Service
             Directory.CreateDirectory(upgradeLogsPath, upgradeLogsSecurity);
 
             // Ensure the ACLs are set correct on any files or directories that were already created (e.g. after upgrading VFS4G)
-            Directory.SetAccessControl(upgradeLogsPath, upgradeLogsSecurity);
+            WindowsFileSystem.SetDirectoryAccessControlAndOwershipIfNeeded(tracer, upgradeLogsPath, upgradeLogsSecurity);
         }
     }
 }
