@@ -16,6 +16,7 @@ namespace GVFS.CommandLine
     public class DiagnoseVerb : GVFSVerb.ForExistingEnlistment
     {
         private const string DiagnoseVerbName = "diagnose";
+        private const string DeprecatedUpgradeLogsDirectory = "Logs";
 
         private TextWriter diagnosticLogFileWriter;
 
@@ -133,9 +134,17 @@ namespace GVFS.CommandLine
                             this.CopyAllFiles(
                                 ProductUpgraderInfo.GetUpgradesDirectoryPath(),
                                 archiveFolderPath,
+                                DeprecatedUpgradeLogsDirectory,
+                                copySubFolders: true,
+                                targetFolderName: Path.Combine(ProductUpgraderInfo.UpgradeDirectoryName, DeprecatedUpgradeLogsDirectory));
+
+                            this.CopyAllFiles(
+                                ProductUpgraderInfo.GetUpgradesDirectoryPath(),
+                                archiveFolderPath,
                                 ProductUpgraderInfo.LogDirectory,
                                 copySubFolders: true,
-                                targetFolderName: ProductUpgraderInfo.UpgradeDirectoryName);
+                                targetFolderName: Path.Combine(ProductUpgraderInfo.UpgradeDirectoryName, ProductUpgraderInfo.LogDirectory));
+
                             this.LogDirectoryEnumeration(
                                 ProductUpgraderInfo.GetUpgradesDirectoryPath(),
                                 Path.Combine(archiveFolderPath, ProductUpgraderInfo.UpgradeDirectoryName),
