@@ -53,6 +53,8 @@ The design review process is as follows:
 - Check for null using == rather than is
 - Use nameof when appropriate
 
+- C++ declare static functions at the top of .cpp files
+
 ### Testing
 
 - ExceptionExpected category
