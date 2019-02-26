@@ -31,6 +31,7 @@ The design review process is as follows:
 
 - Log full exception stacks, and include information relevant to the exception
 - In GVFS.Mount, only log errors when the issue is non-retryable and will result in I/O failures or the VFS4G process shutting down
+- Logging errors vs warnings
 
 ### Background Threads
 
