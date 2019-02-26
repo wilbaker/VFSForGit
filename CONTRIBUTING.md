@@ -51,4 +51,4 @@ Thank you for taking the time to contribute!
 - Unit tests should not touch the real filesystem
 Functional tests are black-box tests, and should not consume any VFS4G product code
 
-For more details see [Authoring Tests](https://github.com/Microsoft/VFSForGit/blob/master/AuthoringTests.md)
+For more details on writing tests see [Authoring Tests](https://github.com/Microsoft/VFSForGit/blob/master/AuthoringTests.md)
