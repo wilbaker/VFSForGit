@@ -5,7 +5,7 @@ Thank you for taking the time to contribute!
 ### Guidelines
 
 * [Design Reviews](#design-reviews)
-* [Cross Platform Code](#cross-platform-code)
+* [Platform Specific Code](#platform-specific-code)
 * [Tracing and Logging](#tracing-and-logging)
 * [Background Threads](#background-threads)
 * [Error Handling](#error-handling)
@@ -22,16 +22,20 @@ The design review process is as follows:
 3. Once the design is approved create a new issue whose description includes the final design document.  Include a link to the pull request used for discussing the design.
 4. Close (without mergin!) the pull request used for the design discussion.
 
-### Cross Platform Code
+### Platform Specific Code
 
-- Platform specific code should go in GVFSPlatform
-- GVFSPlatform is only for platform specific code
+*Prefer cross-platform code to platform specific code*
+
+*Platform specific code, and only platform specific code, should go in `GVFSPlatform`*
 
 ### Tracing and Logging
 
-- Log full exception stacks, and include information relevant to the exception
-- In GVFS.Mount, only log errors when the issue is non-retryable and will result in I/O failures or the VFS4G process shutting down
-- Logging errors vs warnings
+*The "Error" logging level is reserved for non-retryable errors that result in I/O failures or the VFS4G process shutting down*
+
+*Do not display full exception stacks to the user*
+
+*Log full exception stacks, and include information relevant to the exception*
+
 
 ### Background Threads
 
@@ -53,8 +57,7 @@ The design review process is as follows:
 - Self-commenting code, avoid comments that do not add any additional details or context
 - Check for null using == rather than is
 - Use nameof when appropriate
-
-- C++ declare static functions at the top of .cpp files
+- C++: Declare static functions at the top of .cpp files
 
 ### Testing
 
