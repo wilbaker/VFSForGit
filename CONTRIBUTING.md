@@ -83,7 +83,10 @@ The design review process is as follows:
   
 - *Provide the user with user-actionable messages whenever possible*
 
-  
+  When a failures occur and there are well-known steps to fix the issue they should be provided to the user. 
+
+  [Example](https://github.com/Microsoft/VFSForGit/blob/9049ba48bafe30432ddb0453a23f097f85d065c7/GVFS/GVFS/CommandLine/PrefetchVerb.cs#L370):
+  > "You can only specify --hydrate if the repo is mounted. Run 'gvfs mount' and try again."
 
 ## Background Threads
 
