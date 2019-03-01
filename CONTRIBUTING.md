@@ -45,7 +45,7 @@ The design review process is as follows:
 
   Full exception stacks (i.e. `Exception.ToString`) provide more details than the exception message alone (`Exception.Message`) and make root causing issues easier.  
   
-- *Do not display full exception stacks to the user*
+- *Do not display full exception stacks to users*
 
   Exception call stacks are not usually actionable for the user, and they can lead users to the incorrect conclusion that VFS4G has crashed. As mentioned above, the full exception stacks *should* be included in VFS4G logs, but they should not be displayed as part of the error message provided to the user.
 
@@ -68,13 +68,58 @@ The design review process is as follows:
 ## Coding Conventions
 
 - *Most C# coding style rules are covered by StyleCop*
-- *Prefer explicit types (e.g. no var, prefer List to IList)*
+- *Prefer explicit types to interfaces (or implicitly typed variables)*
+  * var
+  * auto
+  * IList
+
 - *Include verbs in method names (e.g. "IsActive" rather than "Active")*
 - *Add new interfaces when it makes sense for the product, not simply for testing*
 - *Self-commenting code, avoid comments that do not add any additional details or context*
-- *Check for null using == rather than `is`*
-- *Use nameof when appropriate*
-- *C++: Declare static functions at the top of .cpp files*
+- *Check for `null` using the equality (`==`) and inequality (`!=`) operators rather than `is`*
+
+  A corollary to this guideline is that equality/inequality operators that break `null` checks should not be added (see [this post](https://stackoverflow.com/questions/40676426/what-is-the-difference-between-x-is-null-and-x-null) for an example).
+
+- *Use `nameof(...)` rather than hardcoded strings*
+
+### C/C++
+
+- *Prefer C++ casts to C casts*
+
+  C++ style casts (e.g. `static_cast<T>`) more clearly express the intent of the programmer and allow for better validation by the compiler.
+
+- *Declare static functions at the top of source files*
+  
+  This ensures that the functions can be called from anywhere inside the file.
+
+- *Do not use namespace `using` statements in header files*
+
+  `using` statements inside header files are picked up by all source files that include the headers, and can cause unexpected errors if there are name collisions.
+
+- *Prefer `using` to full namespaces in source files*
+
+  Example:
+  ```
+  // Inside MyFavSourceFile.cpps
+  
+  // Prefer using std::string
+  using std::string;
+  static string s_myString;
+
+  // To the full std::string namespace
+  std::string s_myString;
+  ```
+
+- *Use a meaningful prefix for "public" free functions*
+
+   Example:
+   ```
+   // Functions declared in VirtualizationRoots.h have "VirtualizationRoot_" prefix
+   bool VirtualizationRoot_IsOnline(VirtualizationRootHandle rootHandle);
+
+   // Static helper function in VirtualizationRoots.cpp has no prefix
+   static VirtualizationRootHandle FindOrDetectRootAtVnode(vnode_t vnode, const FsidInode& vnodeFsidInode);
+   ```
 
 ## Testing
 
