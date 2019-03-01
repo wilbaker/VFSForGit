@@ -21,7 +21,7 @@ The design review process is as follows:
 1. Create a pull request that contains a design document for the proposed change and assign the `design-doc` label to the pull request.
 2. Use the pull request for design feedback and for iterating on the design.
 3. Once the design is approved create a new issue whose description includes the final design document.  Include a link to the pull request used for discussing the design.
-4. Close (without mergin!) the pull request used for the design discussion.
+4. Close (without merging!) the pull request used for the design discussion.
 
 ## Platform Specific Code
 
