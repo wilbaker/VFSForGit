@@ -37,18 +37,27 @@ The design review process is as follows:
 
 - *The "Error" logging level is reserved for non-retryable errors that result in I/O failures or the VFS4G process shutting down*
 
-  
+  The expectation from our customers is that when VFS4G logs an error in its log file (at the "Error" level) then either:
+    * VFS4G had to shut down unexpectedly
+    * VFS4G encountered an issue severe enough that user-initiated I/O would fail.
 
-- *Log full exception stacks, and include information relevant to the exception*
+- *Log full exception stacks*
+
+  Full exception stacks (i.e. `Exception.ToString`) provide more details than the exception message alone (`Exception.Message`) and make root causing issues easier.  
+  
 - *Do not display full exception stacks to the user*
 
-  Exception call stacks are not typically actionable for the user, and they can lead users to the incorrect conclusion that VFS4G has crashed.
+  Exception call stacks are not usually actionable for the user, and they can lead users to the incorrect conclusion that VFS4G has crashed. As mentioned above, the full exception stacks *should* be included in VFS4G logs, but they should not be displayed as part of the error message provided to the user.
+
+- *Include all relevant details when logging exceptions*
+
+  
 
 ## Error Handling
 
-- *Do not catch exceptions that are indicative of a programming\logic error (e.g. ArgumentNullException)*
+- *Fail Fast: Errors/exceptions that are non-recoverable should shut down VFS4G immediately*
+- *Do not catch exceptions that are indicative of a programming/logic error (e.g. ArgumentNullException)*
 - *Do not use exceptions for control flow*
-- *Errors or exceptions that are non-recoverable should shut down VFS4G*
 - *Provide the user with user-actionable messages whenever possible*
 
 ## Background Threads
