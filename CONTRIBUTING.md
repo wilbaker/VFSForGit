@@ -51,7 +51,19 @@ The design review process is as follows:
 
 - *Include all relevant details when logging exceptions*
 
-  
+  Sometimes an exception callstack alone is not to root cause failures in VFS4G.  When catching (or throwing) exceptions, log relevant details that will help diagnose the issue.  As a general rule, the closer an exception is caught to where it's throw, the more relevant details there will be to log.
+
+  Example:
+  ```
+  catch (Exception e)
+  {
+    EventMetadata metadata = new EventMetadata();
+    metadata.Add("Area", "Mount");
+    metadata.Add(nameof(enlistmentHookPath), enlistmentHookPath);
+    metadata.Add(nameof(installedHookPath), installedHookPath);
+    metadata.Add("Exception", e.ToString());
+    context.Tracer.RelatedError(metadata, $"Failed to compare {hook.Name} version");
+  ```
 
 ## Error Handling
 
@@ -123,9 +135,23 @@ The design review process is as follows:
 
 ## Testing
 
-- *ExceptionExpected category*
+- *Add the `ExceptionExpected` attribute to unit tests that include thrown exceptions*
+
+  Example:
+  ```
+  [TestCase]
+  [Category(CategoryConstants.ExceptionExpected)]
+  public void ParseFromLsTreeLine_NullRepoRoot()
+  ```
+  
+  Unit tests tagged with `ExceptionExpected` are not executed when the unit tests are run with a debugger attached.  This attribute prevents developers from having to keep continuing the unit tests each time the debugger catches an expected exception.
+
 - *Add new unit & functional tests when making changes*
-- *Unit tests should not touch the real filesystem
-Functional tests are black-box tests, and should not consume any VFS4G product code*
+
+  Comprehensive utests are essential for maintaining the health and quality of the product.
+
+- *Unit tests should not touch the real files system*
+
+- *Functional tests are black-box tests, and should not consume any VFS4G product code*
 
 For more details on writing tests see [Authoring Tests](https://github.com/Microsoft/VFSForGit/blob/master/AuthoringTests.md)
