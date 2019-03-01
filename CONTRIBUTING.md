@@ -175,8 +175,12 @@ The design review process is as follows:
 
   Comprehensive tests are essential for maintaining the health and quality of the product.
 
-- *Unit tests should not touch the real files system*
+- *Use a `mock` prefix for absolute file system paths and URLs*
+
+  The unit tests should not touch the real file system nor should they reach out to any real URLs. By using  `mock:\\` and `mock://` for paths/URLs it ensures that any product code that is (incorrectly) not using a mock will not interact with the real file system or attempt to contact a real URL.
 
 - *Functional tests are black-box tests, and should not consume any VFS4G product code*
+
+  Keeping the code separate helps ensure that bugs in the product code do not compromise the integrity of the functional tests. 
 
 For more details on writing tests see [Authoring Tests](https://github.com/Microsoft/VFSForGit/blob/master/AuthoringTests.md)
