@@ -75,6 +75,8 @@ The design review process is as follows:
 
   Any exceptions that result from programmer error (e.g. `ArgumentNullException`) should be caught as early in the development process as possible.  Avoid `catch` statements that would hide these errors (e.g. `catch(Exception)`) and make them more difficult to during the development process.
 
+  The only exception to this rule is for [unhandled exceptions in background threads](#bgexceptions)
+
 - *Do not use exceptions for normal control flow*
 
   Prefer to write code that avoids exceptions being thrown (e.g. the `TryXXX` pattern). There are performance costs to using exceptions for control flow, and in VFS4G we most frequently need to address errors as soon as the happen (something that exceptions make easier to avoid).
@@ -86,7 +88,16 @@ The design review process is as follows:
 ## Background Threads
 
 - *Avoid using the thread pool (and avoid using async)*
-- *Catch all exceptions on background threads*
+
+  `HttpRequestor.SendRequest` makes a [blocking call](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Http/HttpRequestor.cs#L135) to `HttpClient.SendAsync` and that blocking call consumes a thread from the managed thread pool. Until that design changes the rest of VFS4G must avoid using the thread pool unless absolutely necessary.  If the thread pool is required, any long running tasks should be moved to a separate thread that's managed by VFS4G itself (see [GitMainteanceQueue](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Maintenance/GitMaintenanceQueue.cs#L19) for an example).
+
+  Testing has shown that if long-running (or blocking) work is scheduled for the managed thread pool it will have a detrimental effect on `HttpRequestor.SendRequest` and any operation that depends on it (e.g. downloading file sizes, downloading loose objects, hydrating files, etc.).
+
+- <a id="bgexceptions"></a>*Catch all exceptions on long-running tasks and background threads*
+
+  It's not safe to allow VFS4G to run continue to run after unhandled exceptions in long running tasks (`TaskCreationOptions.LongRunning`) and/or background threads have causes those tasks/threads to stop running.  A top level `try/catch(Exception)` should wrap the code that runs in the background thread, and any unhandled exceptions should be caught, logged, and force VFS4G to exit (`Environment.Exit`).
+
+  An example of this pattern can be seen [here](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Virtualization/Background/BackgroundFileSystemTaskRunner.cs#L233) in `BackgroundFileSystemTaskRunner.ProcessBackgroundTasks`.
 
 ## Coding Conventions
 
@@ -133,7 +144,7 @@ The design review process is as follows:
   std::string s_myString;
   ```
 
-- *Use a meaningful prefix for "public" free functions*
+- *Use a meaningful prefix for "public" free functions, and use the same prefix for all functions in a given header file*
 
    Example:
    ```
@@ -159,7 +170,7 @@ The design review process is as follows:
 
 - *Add new unit & functional tests when making changes*
 
-  Comprehensive utests are essential for maintaining the health and quality of the product.
+  Comprehensive tests are essential for maintaining the health and quality of the product.
 
 - *Unit tests should not touch the real files system*
 
