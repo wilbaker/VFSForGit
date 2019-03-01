@@ -20,7 +20,7 @@ The design review process is as follows:
 
 1. Create a pull request that contains a design document for the proposed change and assign the `design-doc` label to the pull request.
 2. Use the pull request for design feedback and for iterating on the design.
-3. Once the design is approved create a new issue whose description includes the final design document.  Include a link to the pull request used for discussing the design.
+3. Once the design is approved create a new issue whose description includes the final design document.  Include a link to the pull request that was used for discussion.
 4. Close (without merging!) the pull request used for the design discussion.
 
 ## Platform Specific Code
@@ -67,10 +67,21 @@ The design review process is as follows:
 
 ## Error Handling
 
-- *Fail Fast: Errors/exceptions that are non-recoverable should shut down VFS4G immediately*
-- *Do not catch exceptions that are indicative of a programming/logic error (e.g. ArgumentNullException)*
-- *Do not use exceptions for control flow*
+- *Fail Fast: Errors/exceptions that risk data loss or corruption should shut down VFS4G immediately*
+
+  Preventing data loss and repo corruption is critical.  If errors/exceptions occur that could lead to data loss it's better to shut down VFS4G than keep the repo mounted and risk corruption.
+
+- *Do not catch exceptions that are indicative of a programming/logic error (e.g. `ArgumentNullException`)*
+
+  Any exceptions that result from programmer error (e.g. `ArgumentNullException`) should be caught as early in the development process as possible.  Avoid `catch` statements that would hide these errors (e.g. `catch(Exception)`) and make them more difficult to during the development process.
+
+- *Do not use exceptions for normal control flow*
+
+  Prefer to write code that avoids exceptions being thrown (e.g. the `TryXXX` pattern). There are performance costs to using exceptions for control flow, and in VFS4G we most frequently need to address errors as soon as the happen (something that exceptions make easier to avoid).
+  
 - *Provide the user with user-actionable messages whenever possible*
+
+  
 
 ## Background Threads
 
