@@ -104,11 +104,20 @@ The design review process is as follows:
 
 ## Coding Conventions
 
-- *Most C# coding style rules are covered by StyleCop*
-- *Prefer explicit types to interfaces (or implicitly typed variables)*
-  * var
-  * auto
-  * IList
+- *Most C# coding style guidelines are covered by StyleCop*
+
+  When adding new projects to VFS4G, be sure that StyleCop is analyzing them as part of the build.
+
+- *Prefer explicit types to interfaces and implicitly typed variables*
+
+  Avoid the use of `var` and `auto` (C++), and prefer contrete/explicit types to interface (e.g. prefer `List` to `IList`).
+
+  We've taken this approach for several reasons in the VFS4G codebase:
+  
+    * Interfaces hide the performance charactertics of their underlying type.  For example, an `IDictionary` could be a `SortedList` or `Dictionary` (or several other data types).
+    * Interfaces hide the thread safety (or lack thereof) of their underlying type. For example, an `IDictionary` could be a `Dictionary` or `ConcurrentDictionary`.
+    * Explicit types make it makes it easier to identify the performance and thread safety concerns mentioned above when reviewing the code.
+    * VFS4G is not a public API and its components are always shipped together.  Breaking interface changes to public methods are not a concern.
 
 - *Include verbs in method names (e.g. "IsActive" rather than "Active")*
 - *Add new interfaces when it makes sense for the product, not simply for testing*
