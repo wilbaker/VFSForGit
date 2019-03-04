@@ -20,14 +20,14 @@ The design review process is as follows:
 
 1. Create a pull request that contains a design document for the proposed change and assign the `design-doc` label to the pull request.
 2. Use the pull request for design feedback and for iterating on the design.
-3. Once the design is approved create a new issue whose description includes the final design document.  Include a link to the pull request that was used for discussion.
+3. Once the design is approved, create a new issue with a description that includes the final design document.  Include a link to the pull request that was used for discussion.
 4. Close (without merging!) the pull request used for the design discussion.
 
 ## Platform Specific Code
 
 - *Prefer cross-platform code to platform specific code*
 
-  Cross-platform code is more easily re-used, and re-using code reduces the amount of code that we have to write, test, and maintain.
+  Cross-platform code is more easily reused, and reusing code reduces the amount of code that we have to write, test, and maintain.
 
 - *Platform specific code, and only platform specific code, should go in `GVFSPlatform`*
 
@@ -51,7 +51,7 @@ The design review process is as follows:
 
 - *Include all relevant details when logging exceptions*
 
-  Sometimes an exception callstack alone is not to root cause failures in VFS4G.  When catching (or throwing) exceptions, log relevant details that will help diagnose the issue.  As a general rule, the closer an exception is caught to where it's throw, the more relevant details there will be to log.
+  Sometimes an exception call stack alone is not enough to root cause failures in VFS4G.  When catching (or throwing) exceptions, log relevant details that will help diagnose the issue.  As a general rule, the closer an exception is caught to where it's thrown, the more relevant details there will be to log.
 
   Example:
   ```
@@ -73,17 +73,17 @@ The design review process is as follows:
 
 - *Do not catch exceptions that are indicative of a programming/logic error (e.g. `ArgumentNullException`)*
 
-  Any exceptions that result from programmer error (e.g. `ArgumentNullException`) should be caught as early in the development process as possible.  Avoid `catch` statements that would hide these errors (e.g. `catch(Exception)`) and make them more difficult to during the development process.
+  Any exceptions that result from programmer error (e.g. `ArgumentNullException`) should be caught as early in the development process as possible.  Avoid `catch` statements that would hide these errors (e.g. `catch(Exception)`) and make them more difficult to find during the development process.
 
   The only exception to this rule is for [unhandled exceptions in background threads](#bgexceptions)
 
 - *Do not use exceptions for normal control flow*
 
-  Prefer to write code that avoids exceptions being thrown (e.g. the `TryXXX` pattern). There are performance costs to using exceptions for control flow, and in VFS4G we most frequently need to address errors as soon as the happen (something that exceptions make easier to avoid).
+  Prefer to write code that avoids exceptions being thrown (e.g. the `TryXXX` pattern). There are performance costs to using exceptions for control flow, and in VFS4G we most frequently need to address errors as soon as they happen (something that exceptions make easier to avoid).
   
 - *Provide the user with user-actionable messages whenever possible*
 
-  When a failures occur and there are well-known steps to fix the issue they should be provided to the user. 
+  When a failure occurs and there are well-known steps to fix the issue the steps should be provided to the user. 
 
   [Example](https://github.com/Microsoft/VFSForGit/blob/9049ba48bafe30432ddb0453a23f097f85d065c7/GVFS/GVFS/CommandLine/PrefetchVerb.cs#L370):
   > "You can only specify --hydrate if the repo is mounted. Run 'gvfs mount' and try again."
@@ -92,13 +92,13 @@ The design review process is as follows:
 
 - *Avoid using the thread pool (and avoid using async)*
 
-  `HttpRequestor.SendRequest` makes a [blocking call](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Http/HttpRequestor.cs#L135) to `HttpClient.SendAsync` and that blocking call consumes a thread from the managed thread pool. Until that design changes the rest of VFS4G must avoid using the thread pool unless absolutely necessary.  If the thread pool is required, any long running tasks should be moved to a separate thread that's managed by VFS4G itself (see [GitMainteanceQueue](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Maintenance/GitMaintenanceQueue.cs#L19) for an example).
+  `HttpRequestor.SendRequest` makes a [blocking call](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Http/HttpRequestor.cs#L135) to `HttpClient.SendAsync` and that blocking call consumes a thread from the managed thread pool. Until that design changes, the rest of VFS4G must avoid using the thread pool unless absolutely necessary.  If the thread pool is required, any long running tasks should be moved to a separate thread that's managed by VFS4G itself (see [GitMaintenanceQueue](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Maintenance/GitMaintenanceQueue.cs#L19) for an example).
 
   Testing has shown that if long-running (or blocking) work is scheduled for the managed thread pool it will have a detrimental effect on `HttpRequestor.SendRequest` and any operation that depends on it (e.g. downloading file sizes, downloading loose objects, hydrating files, etc.).
 
 - <a id="bgexceptions"></a>*Catch all exceptions on long-running tasks and background threads*
 
-  It's not safe to allow VFS4G to run continue to run after unhandled exceptions in long running tasks (`TaskCreationOptions.LongRunning`) and/or background threads have causes those tasks/threads to stop running.  A top level `try/catch(Exception)` should wrap the code that runs in the background thread, and any unhandled exceptions should be caught, logged, and force VFS4G to exit (`Environment.Exit`).
+  It's not safe to allow VFS4G to continue to run after unhandled exceptions in long running tasks (`TaskCreationOptions.LongRunning`) and/or background threads have causesd those tasks/threads to stop running.  A top level `try/catch(Exception)` should wrap the code that runs in the background thread, and any unhandled exceptions should be caught, logged, and force VFS4G to exit (`Environment.Exit`).
 
   An example of this pattern can be seen [here](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Virtualization/Background/BackgroundFileSystemTaskRunner.cs#L233) in `BackgroundFileSystemTaskRunner.ProcessBackgroundTasks`.
 
@@ -110,18 +110,18 @@ The design review process is as follows:
 
 - *Prefer explicit types to interfaces and implicitly typed variables*
 
-  Avoid the use of `var` and `auto` (C++), and prefer contrete/explicit types to interface (e.g. prefer `List` to `IList`).
+  Avoid the use of `var` and `auto` (C++), and prefer concrete/explicit types to interface (e.g. prefer `List` to `IList`).
 
   We've taken this approach for several reasons in the VFS4G codebase:
-  
-    * Interfaces hide the performance charactertics of their underlying type.  For example, an `IDictionary` could be a `SortedList` or `Dictionary` (or several other data types).
+
+    * Interfaces hide the performance characteristics of their underlying type.  For example, an `IDictionary` could be a `SortedList` or `Dictionary` (or several other data types).
     * Interfaces hide the thread safety (or lack thereof) of their underlying type. For example, an `IDictionary` could be a `Dictionary` or `ConcurrentDictionary`.
     * Explicit types make it makes it easier to identify the performance and thread safety concerns mentioned above when reviewing the code.
-    * VFS4G is not a public API and its components are always shipped together.  Breaking interface changes to public methods are not a concern.
+    * VFS4G is not a public API and its components are always shipped together.  Breaking public interfaces is not a concern.
 
 - *Include verbs in method names (e.g. "IsActive" rather than "Active")*
 - *Add new interfaces when it makes sense for the product, not simply for testing*
-- *Self-commenting code, avoid comments that do not add any additional details or context*
+- *Self-commenting code; avoid comments that do not add any additional details or context*
 - *Check for `null` using the equality (`==`) and inequality (`!=`) operators rather than `is`*
 
   A corollary to this guideline is that equality/inequality operators that break `null` checks should not be added (see [this post](https://stackoverflow.com/questions/40676426/what-is-the-difference-between-x-is-null-and-x-null) for an example).
