@@ -114,9 +114,9 @@ The design review process is as follows:
 
   The VFS4G codebase uses this approach because:
 
-    * Interfaces hide the performance characteristics of their underlying type.  For example, an `IDictionary` could be a `SortedList` or `Dictionary` (or several other data types).
-    * Interfaces hide the thread safety (or lack thereof) of their underlying type. For example, an `IDictionary` could be a `Dictionary` or `ConcurrentDictionary`.
-    * Explicit types make it makes it easier to identify the performance and thread safety concerns mentioned above when reviewing the code.
+    * Interfaces hide the performance characteristics of their underlying type.  For example, an `IDictionary` could be a `SortedList` or a `Dictionary` (or several other data types).
+    * Interfaces hide the thread safety (or lack thereof) of their underlying type. For example, an `IDictionary` could be a `Dictionary` or a `ConcurrentDictionary`.
+    * Explicit types make it makes it easier to identify these performance and thread safety when reviewing code.
     * VFS4G is not a public API and its components are always shipped together.  Breaking public interfaces is not a concern.
 
 - *Include verbs in method names (e.g. "GetProjectedFolderEntryData" rather than "ProjectedFolderEntryData")*
