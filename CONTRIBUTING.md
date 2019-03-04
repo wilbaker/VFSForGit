@@ -14,11 +14,11 @@ Thank you for taking the time to contribute!
 
 ## Design Reviews
 
-Architectural changes and new features should start with a design review. It's easier and wastes less time to incorporate feedback at this stage.
+Architectural changes and new features should start with a design review.  It's easier and wastes less time to incorporate feedback at this stage.
 
 The design review process is as follows:
 
-1. Create a pull request that contains a design document for the proposed change. Assign the `design-doc` label to the pull request.
+1. Create a pull request that contains a design document for the proposed change.  Assign the `design-doc` label to the pull request.
 2. Use the pull request for design feedback and for iterating on the design.
 3. Once the design is approved, create a new issue with a description that includes the final design document.  Include a link to the pull request that was used for discussion.
 4. Close (without merging!) the pull request used for the design discussion.
@@ -27,7 +27,7 @@ The design review process is as follows:
 
 - *Prefer cross-platform code to platform-specific code*
 
-  Cross-platform code is more easily reused. Reusing code reduces the amount of code that must be written, tested, and maintained.
+  Cross-platform code is more easily reused.  Reusing code reduces the amount of code that must be written, tested, and maintained.
 
 - *Platform specific code, and only platform specific code, should go in `GVFSPlatform`*
 
@@ -47,7 +47,7 @@ The design review process is as follows:
   
 - *Do not display full exception stacks to users*
 
-  Exception call stacks are not usually actionable for the user. Users frequently (sometimes incorrectly) assume that VFS4G has crashed when shown a full stack. The full stack *should* be included in VFS4G logs, but *should not* be displayed as part of the error message provided to the user.
+  Exception call stacks are not usually actionable for the user.  Users frequently (sometimes incorrectly) assume that VFS4G has crashed when shown a full stack.  The full stack *should* be included in VFS4G logs, but *should not* be displayed as part of the error message provided to the user.
 
 - *Include relevant details when logging exceptions*
 
@@ -83,9 +83,9 @@ The design review process is as follows:
    
 - *Provide the user with user-actionable messages whenever possible*
 
-  Don't tell a user what went wrong. Help the user fix the problem.
+  Don't tell a user what went wrong.  Help the user fix the problem.
 
-  [Example](https://github.com/Microsoft/VFSForGit/blob/9049ba48bafe30432ddb0453a23f097f85d065c7/GVFS/GVFS/CommandLine/PrefetchVerb.cs#L370):
+  Example:
   > "You can only specify --hydrate if the repository is mounted. Run 'gvfs mount' and try again."
 
 ## Background Threads
@@ -94,11 +94,11 @@ The design review process is as follows:
 
   `HttpRequestor.SendRequest` makes a [blocking call](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Http/HttpRequestor.cs#L135) to `HttpClient.SendAsync`.  That blocking call consumes a thread from the managed thread pool.  Until that design changes, the rest of VFS4G must avoid using the thread pool unless absolutely necessary.  If the thread pool is required, any long running tasks should be moved to a separate thread managed by VFS4G itself (see [GitMaintenanceQueue](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Maintenance/GitMaintenanceQueue.cs#L19) for an example).
 
-  Long-running or blocking work scheduled on the managed thread pool can prevent the normal operation of VFS4G. For example, it could prevent downloading file sizes, loose objects, or file contents in a timely fashion.
+  Long-running or blocking work scheduled on the managed thread pool can prevent the normal operation of VFS4G.  For example, it could prevent downloading file sizes, loose objects, or file contents in a timely fashion.
 
 - <a id="bgexceptions"></a>*Catch all exceptions on long-running tasks and background threads*
 
-  Wrap all code that runs in the background thread in a top-level `try/catch(Exception)`. Any exceptions caught by this handler should be logged, and then force VFS4G to terminate with `Environment.Exit`. It's not saft to allow VFS4G to continue to run after an exception that would have been unhandled in a long-running task (created with `TaskCreationOption.LongRunning`) or in a background thread.
+  Wrap all code that runs in the background thread in a top-level `try/catch(Exception)`.  Any exceptions caught by this handler should be logged, and then force VFS4G to terminate with `Environment.Exit`.  It's not saft to allow VFS4G to continue to run after an exception that would have been unhandled in a long-running task (created with `TaskCreationOption.LongRunning`) or in a background thread.
 
   An example of this pattern can be seen [here](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Virtualization/Background/BackgroundFileSystemTaskRunner.cs#L233) in `BackgroundFileSystemTaskRunner.ProcessBackgroundTasks`.
 
@@ -116,7 +116,7 @@ The design review process is as follows:
 
     * Interfaces can hide the performance characteristics of their underlying type.  For example, an `IDictionary` could be a `SortedList` or a `Dictionary` (or several other data types).
     * Interfaces can hide the thread safety (or lack thereof) of their underlying type.  For example, an `IDictionary` could be a `Dictionary` or a `ConcurrentDictionary`.
-    * Explicit types make explit these performance and thread safety characteristics when reviewing code.
+    * Explicit types make these performance and thread safety characteristics explicit when reviewing code.
     * VFS4G is not a public API and its components are always shipped together.  Develoepers are free to make API changes to VFS4G's public methods.
 
 - *Method names start with a verb (e.g. "GetProjectedFolderEntryData" rather than "ProjectedFolderEntryData")*
@@ -159,7 +159,7 @@ The design review process is as follows:
 
 ### C/C++
 
-- *Do not use C-style casts. Use C++-style casts.*
+- *Do not use C-style casts.  Use C++-style casts.*
 
   C++ style casts (e.g. `static_cast<T>`) more clearly express the intent of the programmer, allow for better validation by the compiler, and are easier to search for in the codebase.
 
