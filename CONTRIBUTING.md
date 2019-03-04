@@ -94,7 +94,7 @@ The design review process is as follows:
 
   `HttpRequestor.SendRequest` makes a [blocking call](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Http/HttpRequestor.cs#L135) to `HttpClient.SendAsync` and that blocking call consumes a thread from the managed thread pool. Until that design changes, the rest of VFS4G must avoid using the thread pool unless absolutely necessary.  If the thread pool is required, any long running tasks should be moved to a separate thread that's managed by VFS4G itself (see [GitMaintenanceQueue](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Maintenance/GitMaintenanceQueue.cs#L19) for an example).
 
-  Testing has shown that if long-running (or blocking) work is scheduled for the managed thread pool it will have a detrimental effect on `HttpRequestor.SendRequest` and any operation that depends on it (e.g. downloading file sizes, downloading loose objects, hydrating files, etc.).
+  Testing has shown that if long-running (or blocking) work is scheduled on the managed thread pool it will have a detrimental effect on `HttpRequestor.SendRequest` and any operation that depends on it (e.g. downloading file sizes, downloading loose objects, hydrating files, etc.).
 
 - <a id="bgexceptions"></a>*Catch all exceptions on long-running tasks and background threads*
 
