@@ -112,7 +112,7 @@ The design review process is as follows:
 
   Avoid the use of `var` and `auto` (C++), and prefer concrete/explicit types to interface (e.g. prefer `List` to `IList`).
 
-  We've taken this approach for several reasons in the VFS4G codebase:
+  The VFS4G codebase uses this approach because:
 
     * Interfaces hide the performance characteristics of their underlying type.  For example, an `IDictionary` could be a `SortedList` or `Dictionary` (or several other data types).
     * Interfaces hide the thread safety (or lack thereof) of their underlying type. For example, an `IDictionary` could be a `Dictionary` or `ConcurrentDictionary`.
