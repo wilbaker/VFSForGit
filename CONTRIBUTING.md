@@ -206,7 +206,7 @@ The design review process is as follows:
 
 ### Unit Tests
 
-- *Add `ExceptionExpected` to unit tests that run code that throws exceptions*
+- *Add `ExceptionExpected` to unit tests that are expected to have exceptions*
 
   Example:
   ```
@@ -215,7 +215,7 @@ The design review process is as follows:
   public void ParseFromLsTreeLine_NullRepoRoot()
   ```
   
-  Unit tests tagged with `ExceptionExpected` are not executed when run with a debugger attached.  This attribute prevents developers from having to keep continuing the unit tests each time the debugger catches an exception.
+  Unit tests should be tagged with `ExceptionExpected` when either the test code or the product code will throw an exception during the test.  `ExceptionExpected` tests are not executed when the debugger is attached, and this prevents developers from having to keep continuing the tests each time exceptions are caught by the debugger.
 
 - *Use a `mock` prefix for absolute file system paths and URLs*
 
