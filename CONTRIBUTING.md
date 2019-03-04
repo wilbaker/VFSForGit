@@ -47,7 +47,7 @@ The design review process is as follows:
   
 - *Do not display full exception stacks to users*
 
-  Exception call stacks are not usually actionable for the user and users frequently (and incorrectly) assume that VFS4G has crashed. As mentioned above, the full exception stacks *should* be included in VFS4G logs, but they *should not* be displayed as part of the error message provided to the user.
+  Exception call stacks are not usually actionable for the user and users frequently (and incorrectly) assume that VFS4G has crashed.  As mentioned above, the full exception stacks *should* be included in VFS4G logs, but they *should not* be displayed as part of the error message provided to the user.
 
 - *Include all relevant details when logging exceptions*
 
@@ -79,11 +79,11 @@ The design review process is as follows:
 
 - *Do not use exceptions for normal control flow*
 
-  Prefer to write code that avoids exceptions being thrown (e.g. the `TryXXX` pattern). There are performance costs to using exceptions for control flow, and VFS4G code typically needs to handle errors where (and as soon as) they occur.
+  Prefer to write code that avoids exceptions being thrown (e.g. the `TryXXX` pattern).  There are performance costs to using exceptions for control flow, and VFS4G code typically needs to handle errors where (and as soon as) they occur.
    
 - *Provide the user with user-actionable messages whenever possible*
 
-  When a failure occurs and there are well-known steps to fix the issue the steps should be provided to the user. 
+  When a failure occurs and there are well-known steps to fix the issue the steps should be provided to the user.
 
   [Example](https://github.com/Microsoft/VFSForGit/blob/9049ba48bafe30432ddb0453a23f097f85d065c7/GVFS/GVFS/CommandLine/PrefetchVerb.cs#L370):
   > "You can only specify --hydrate if the repo is mounted. Run 'gvfs mount' and try again."
@@ -92,7 +92,7 @@ The design review process is as follows:
 
 - *Avoid using the thread pool (and avoid using async)*
 
-  `HttpRequestor.SendRequest` makes a [blocking call](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Http/HttpRequestor.cs#L135) to `HttpClient.SendAsync` and that blocking call consumes a thread from the managed thread pool. Until that design changes, the rest of VFS4G must avoid using the thread pool unless absolutely necessary.  If the thread pool is required, any long running tasks should be moved to a separate thread that's managed by VFS4G itself (see [GitMaintenanceQueue](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Maintenance/GitMaintenanceQueue.cs#L19) for an example).
+  `HttpRequestor.SendRequest` makes a [blocking call](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Http/HttpRequestor.cs#L135) to `HttpClient.SendAsync` and that blocking call consumes a thread from the managed thread pool.  Until that design changes, the rest of VFS4G must avoid using the thread pool unless absolutely necessary.  If the thread pool is required, any long running tasks should be moved to a separate thread that's managed by VFS4G itself (see [GitMaintenanceQueue](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Common/Maintenance/GitMaintenanceQueue.cs#L19) for an example).
 
   Testing has shown that if long-running (or blocking) work is scheduled on the managed thread pool it will have a detrimental effect on `HttpRequestor.SendRequest` and any operation that depends on it (e.g. downloading file sizes, downloading loose objects, hydrating files, etc.).
 
@@ -115,7 +115,7 @@ The design review process is as follows:
   The VFS4G codebase uses this approach because:
 
     * Interfaces hide the performance characteristics of their underlying type.  For example, an `IDictionary` could be a `SortedList` or a `Dictionary` (or several other data types).
-    * Interfaces hide the thread safety (or lack thereof) of their underlying type. For example, an `IDictionary` could be a `Dictionary` or a `ConcurrentDictionary`.
+    * Interfaces hide the thread safety (or lack thereof) of their underlying type.  For example, an `IDictionary` could be a `Dictionary` or a `ConcurrentDictionary`.
     * Explicit types make it easier to identify these performance and thread safety when reviewing code.
     * VFS4G is not a public API and its components are always shipped together.  Develoepers are free to make API changes to VFS4G's public methods.
 
@@ -202,7 +202,7 @@ The design review process is as follows:
 
 - *Functional tests are black-box tests and should not consume any VFS4G product code*
 
-  Keeping the code separate helps ensure that bugs in the product code do not compromise the integrity of the functional tests. 
+  Keeping the code separate helps ensure that bugs in the product code do not compromise the integrity of the functional tests.
 
 ### Unit Tests
 
@@ -219,4 +219,4 @@ The design review process is as follows:
 
 - *Use a `mock` prefix for absolute file system paths and URLs*
 
-  The unit tests should not touch the real file system nor should they reach out to any real URLs. Using  `mock:\\` and `mock://` ensures that any product code that was not properly mocked will not interact with the real file system or attempt to contact a real URL.
+  The unit tests should not touch the real file system nor should they reach out to any real URLs.  Using  `mock:\\` and `mock://` ensures that any product code that was not properly mocked will not interact with the real file system or attempt to contact a real URL.
