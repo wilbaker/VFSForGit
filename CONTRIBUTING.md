@@ -155,7 +155,7 @@ The design review process is as follows:
 
 - *Use `nameof(...)` rather than hardcoded strings*
 
-  Using `nameof` ensures that when methods/variables are renamed and logging that also uses those methods/variables will also be updated.
+  Using `nameof` ensures that when methods/variables are renamed the logging of those method/variable names will also be updated.
 
 ### C/C++
 
