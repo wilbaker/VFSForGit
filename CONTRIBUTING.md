@@ -147,7 +147,7 @@ The design review process is as follows:
 
 - *Add new interfaces when it makes sense for the product, not simply for unit testing*
 
-  When a class needs to be mocked (or have a subset of its behavior mocked), prefer using virtual methods to the addition new interfaces.  By using interfaces only where it makes sense from the perspective of the product code the intent of the interface is more clearly expressed. 
+  When a class needs to be mocked (or have a subset of its behavior mocked), prefer using virtual methods to the addition new interfaces.  By using interfaces where it makes sense for the product code the intent of using an interface is more clearly expressed.
 
 - *Check for `null` using the equality (`==`) and inequality (`!=`) operators rather than `is`*
 
