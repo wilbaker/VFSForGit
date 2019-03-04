@@ -219,4 +219,4 @@ The design review process is as follows:
 
 - *Use a `mock` prefix for absolute file system paths and URLs*
 
-  The unit tests should not touch the real file system nor should they reach out to any real URLs. By using  `mock:\\` and `mock://` for paths/URLs it ensures that any product code that was not properly mocked will not interact with the real file system or attempt to contact a real URL.
+  The unit tests should not touch the real file system nor should they reach out to any real URLs. Using  `mock:\\` and `mock://` ensures that any product code that was not properly mocked will not interact with the real file system or attempt to contact a real URL.
