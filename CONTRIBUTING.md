@@ -169,20 +169,21 @@ The design review process is as follows:
 
 - *Do not use namespace `using` statements in header files*
 
-  `using` statements inside header files are picked up by all source files that include the headers, and can cause unexpected errors if there are name collisions.
+  `using` statements inside header files are picked up by all source files that include the headers and can cause unexpected errors if there are name collisions.
 
 - *Prefer `using` to full namespaces in source files*
 
   Example:
   ```
-  // Inside MyFavSourceFile.cpps
-  
-  // Prefer using std::string
+  // Inside MyFavSourceFile.cpp
+
   using std::string;
+
+  // No "std::" required
   static string s_myString;
 
-  // To the full std::string namespace
-  std::string s_myString;
+  // This "std::" should be removed
+  std::string s_myStringWithFullNamespace;
   ```
 
 - *Use a meaningful prefix for "public" free functions, and use the same prefix for all functions in a given header file*
