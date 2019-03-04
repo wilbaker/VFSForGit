@@ -14,7 +14,7 @@ Thank you for taking the time to contribute!
 
 ## Design Reviews
 
-Large new features or architectural changes should start with a design review.  
+Architectural changes and large new features should start with a design review.  
 
 The design review process is as follows:
 
