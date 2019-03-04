@@ -47,7 +47,7 @@ The design review process is as follows:
   
 - *Do not display full exception stacks to users*
 
-  Exception call stacks are not usually actionable for the user, and they can lead users to the incorrect conclusion that VFS4G has crashed. As mentioned above, the full exception stacks *should* be included in VFS4G logs, but they should not be displayed as part of the error message provided to the user.
+  Exception call stacks are not usually actionable for the user and users frequently (and incorrectly) assume that VFS4G has crashed. As mentioned above, the full exception stacks *should* be included in VFS4G logs, but they *should not* be displayed as part of the error message provided to the user.
 
 - *Include all relevant details when logging exceptions*
 
