@@ -121,11 +121,11 @@ The design review process is as follows:
 
 - *Include verbs in method names (e.g. "GetProjectedFolderEntryData" rather than "ProjectedFolderEntryData")*
 
-  Including a verb in the name improves readability, and helps ensure consistency with the rest of the VFS4G codebase.
+  Including a verb in the name improves readability and helps ensure consistency with the rest of the VFS4G codebase.
 
-- *Code should be self commenting.  Only add comments when they provide additional details and/or context*
+- *Code should be self commenting.  Only add comments when they provide additional details and/or context.*
 
-  Example (helpful comment):
+  Example helpful comment:
 
   ```
   // Order the folders in descending order so that we walk the tree from bottom up.
@@ -138,14 +138,14 @@ The design review process is as follows:
   foreach (PlaceholderListDatabase.PlaceholderData folderPlaceholder in   placeholderFoldersListCopy.OrderByDescending(x => x.Path))
   ```
 
-  Example (unhelpful comment):
+  Example unhelpful comment:
 
   ```
   // Check if enumeration expands directories on the current platform
   if (GVFSPlatform.Instance.KernelDriver.EnumerationExpandsDirectories)
   ```
 
-- *Add new interfaces when it makes sense for the product, not simply for testing*
+- *Add new interfaces when it makes sense for the product, not simply for unit testing*
 
   When a class needs to be mocked (or have a subset of behavior mocked), prefer using virtual methods (in the class that needs to be mocked) over the addition new interfaces.  By using interfaces only where it makes sense from the perspective of the product code the intent of the interface is more clearly expressed. 
 
