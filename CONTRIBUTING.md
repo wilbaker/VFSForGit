@@ -179,7 +179,7 @@ The design review process is as follows:
 
   using std::string;
 
-  // Do not use `std::` namespace when using `string`
+  // Do not use `std::` namespace with `string`
   static string s_myString;
   ```
 
