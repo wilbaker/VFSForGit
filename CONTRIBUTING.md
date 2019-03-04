@@ -215,7 +215,7 @@ The design review process is as follows:
   public void ParseFromLsTreeLine_NullRepoRoot()
   ```
   
-  Unit tests should be tagged with `ExceptionExpected` when either the test code or the product code will throw an exception during the test.  `ExceptionExpected` tests are not executed when the debugger is attached, and this prevents developers from having to keep continuing the tests each time exceptions are caught by the debugger.
+  Unit tests should be tagged with `ExceptionExpected` when either the test code or the product code will throw an exception.  `ExceptionExpected` tests are not executed when the debugger is attached, and this prevents developers from having to keep continuing the tests each time exceptions are caught by the debugger.
 
 - *Use a `mock` prefix for absolute file system paths and URLs*
 
