@@ -79,7 +79,7 @@ The design review process is as follows:
 
 - *Do not use exceptions for normal control flow*
 
-  Prefer to write code that avoids exceptions being thrown (e.g. the `TryXXX` pattern). There are performance costs to using exceptions for control flow, and in VFS4G we typically need to handle errors where (and as soon as) they occur.
+  Prefer to write code that avoids exceptions being thrown (e.g. the `TryXXX` pattern). There are performance costs to using exceptions for control flow, and VFS4G code typically needs to handle errors where (and as soon as) they occur.
    
 - *Provide the user with user-actionable messages whenever possible*
 
