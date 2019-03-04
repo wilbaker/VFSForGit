@@ -198,7 +198,7 @@ The design review process is as follows:
 
 - *Add new unit & functional tests when making changes*
 
-  Comprehensive tests are essential for maintaining the health and quality of the product. For more details on writing tests see [Authoring Tests](https://github.com/Microsoft/VFSForGit/blob/master/AuthoringTests.md)
+  Comprehensive tests are essential for maintaining the health and quality of the product.  For more details on writing tests see [Authoring Tests](https://github.com/Microsoft/VFSForGit/blob/master/AuthoringTests.md).
 
 - *Functional tests are black-box tests, and should not consume any VFS4G product code*
 
