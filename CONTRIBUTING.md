@@ -119,14 +119,41 @@ The design review process is as follows:
     * Explicit types make it makes it easier to identify the performance and thread safety concerns mentioned above when reviewing the code.
     * VFS4G is not a public API and its components are always shipped together.  Breaking public interfaces is not a concern.
 
-- *Include verbs in method names (e.g. "IsActive" rather than "Active")*
+- *Include verbs in method names (e.g. "GetProjectedFolderEntryData" rather than "ProjectedFolderEntryData")*
+
+  Including a verb in the name improves readability, and helps ensure consistency with the rest of the VFS4G codebase.
+
+- *Code should be self commenting.  Only add comments when they provide additional details and/or context*
+
+  Example (helpful comment):
+
+  ```
+  // Order the folders in decscending order so that we walk the tree from bottom up.
+  // Traversing the folders in this order:
+  //  1. Ensures child folders are deleted before their parents
+  //  2. Ensures that folders that have been deleted by git 
+  //     (but are still in the projection) are found before their
+  //     parent folder is re-expanded (only applies on platforms 
+  //     where EnumerationExpandsDirectories is true)
+  foreach (PlaceholderListDatabase.PlaceholderData folderPlaceholder in   placeholderFoldersListCopy.OrderByDescending(x => x.Path))
+  ```
+
+  Example (unhelpful comment):
+
+  ```
+  // Check if enumeration expands directories on the current platform
+  if (GVFSPlatform.Instance.KernelDriver.EnumerationExpandsDirectories)
+  ```
+
 - *Add new interfaces when it makes sense for the product, not simply for testing*
-- *Self-commenting code; avoid comments that do not add any additional details or context*
+
 - *Check for `null` using the equality (`==`) and inequality (`!=`) operators rather than `is`*
 
   A corollary to this guideline is that equality/inequality operators that break `null` checks should not be added (see [this post](https://stackoverflow.com/questions/40676426/what-is-the-difference-between-x-is-null-and-x-null) for an example).
 
 - *Use `nameof(...)` rather than hardcoded strings*
+
+  Using `nameof` ensures that when methods/variables are renamed and logging that also uses those methods/variables will also be updated.
 
 ### C/C++
 
