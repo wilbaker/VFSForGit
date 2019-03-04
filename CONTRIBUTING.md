@@ -196,7 +196,7 @@ The design review process is as follows:
 
 ## Testing
 
-- *Add the `ExceptionExpected` attribute to unit tests that include thrown exceptions*
+- *Add `ExceptionExpected` to unit tests that run code that throws exceptions*
 
   Example:
   ```
