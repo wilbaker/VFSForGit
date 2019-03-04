@@ -37,7 +37,7 @@ The design review process is as follows:
 
 - *The "Error" logging level is reserved for non-retryable errors that result in I/O failures or the VFS4G process shutting down*
 
-  The expectation from our customers is that when VFS4G logs an error in its log file (at the "Error" level) then either:
+  The expectation from our customers is that when VFS4G logs an "Error" level message in its log file then either:
     * VFS4G had to shut down unexpectedly
     * VFS4G encountered an issue severe enough that user-initiated I/O would fail.
 
