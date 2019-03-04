@@ -27,7 +27,7 @@ The design review process is as follows:
 
 - *Prefer cross-platform code to platform specific code*
 
-  Cross-platform code is more easily reused, and reusing code reduces the amount of code that we have to write, test, and maintain.
+  Cross-platform code is more easily reused, and reusing code reduces the amount of code that must be written, tested, and maintained.
 
 - *Platform specific code, and only platform specific code, should go in `GVFSPlatform`*
 
@@ -98,7 +98,7 @@ The design review process is as follows:
 
 - <a id="bgexceptions"></a>*Catch all exceptions on long-running tasks and background threads*
 
-  It's not safe to allow VFS4G to continue to run after unhandled exceptions in long running tasks (`TaskCreationOptions.LongRunning`) and/or background threads have causesd those tasks/threads to stop running.  A top level `try/catch(Exception)` should wrap the code that runs in the background thread, and any unhandled exceptions should be caught, logged, and force VFS4G to exit (`Environment.Exit`).
+  It's not safe to allow VFS4G to continue to run after unhandled exceptions in long running tasks (`TaskCreationOptions.LongRunning`) and/or background threads have caused those tasks/threads to stop running.  A top level `try/catch(Exception)` should wrap the code that runs in the background thread, and any unhandled exceptions should be caught, logged, and force VFS4G to exit (`Environment.Exit`).
 
   An example of this pattern can be seen [here](https://github.com/Microsoft/VFSForGit/blob/4baa37df6bde2c9a9e1917fc7ce5debd653777c0/GVFS/GVFS.Virtualization/Background/BackgroundFileSystemTaskRunner.cs#L233) in `BackgroundFileSystemTaskRunner.ProcessBackgroundTasks`.
 
@@ -128,7 +128,7 @@ The design review process is as follows:
   Example (helpful comment):
 
   ```
-  // Order the folders in decscending order so that we walk the tree from bottom up.
+  // Order the folders in descending order so that we walk the tree from bottom up.
   // Traversing the folders in this order:
   //  1. Ensures child folders are deleted before their parents
   //  2. Ensures that folders that have been deleted by git 
@@ -147,7 +147,7 @@ The design review process is as follows:
 
 - *Add new interfaces when it makes sense for the product, not simply for testing*
 
-  When a class needs to be mocked (or have a subset of behavior mocked), prefer using virtual methods to creating a new interface.  By using interfaces only where it makes sense from the perspective of the product code the intent of the interface is more clearly expressed. 
+  When a class needs to be mocked (or have a subset of behavior mocked), prefer using virtual methods (in the class that needs to be mocked) over the addition new interfaces.  By using interfaces only where it makes sense from the perspective of the product code the intent of the interface is more clearly expressed. 
 
 - *Check for `null` using the equality (`==`) and inequality (`!=`) operators rather than `is`*
 
