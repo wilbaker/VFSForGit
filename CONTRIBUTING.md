@@ -196,6 +196,16 @@ The design review process is as follows:
 
 ## Testing
 
+- *Add new unit & functional tests when making changes*
+
+  Comprehensive tests are essential for maintaining the health and quality of the product. For more details on writing tests see [Authoring Tests](https://github.com/Microsoft/VFSForGit/blob/master/AuthoringTests.md)
+
+- *Functional tests are black-box tests, and should not consume any VFS4G product code*
+
+  Keeping the code separate helps ensure that bugs in the product code do not compromise the integrity of the functional tests. 
+
+### Unit Tests
+
 - *Add `ExceptionExpected` to unit tests that run code that throws exceptions*
 
   Example:
@@ -207,16 +217,6 @@ The design review process is as follows:
   
   Unit tests tagged with `ExceptionExpected` are not executed when run with a debugger attached.  This attribute prevents developers from having to keep continuing the unit tests each time the debugger catches an exception.
 
-- *Add new unit & functional tests when making changes*
-
-  Comprehensive tests are essential for maintaining the health and quality of the product.
-
 - *Use a `mock` prefix for absolute file system paths and URLs*
 
   The unit tests should not touch the real file system nor should they reach out to any real URLs. By using  `mock:\\` and `mock://` for paths/URLs it ensures that any product code that is (incorrectly) not using a mock will not interact with the real file system or attempt to contact a real URL.
-
-- *Functional tests are black-box tests, and should not consume any VFS4G product code*
-
-  Keeping the code separate helps ensure that bugs in the product code do not compromise the integrity of the functional tests. 
-
-For more details on writing tests see [Authoring Tests](https://github.com/Microsoft/VFSForGit/blob/master/AuthoringTests.md)
