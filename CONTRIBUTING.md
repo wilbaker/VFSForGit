@@ -205,7 +205,7 @@ The design review process is as follows:
   public void ParseFromLsTreeLine_NullRepoRoot()
   ```
   
-  Unit tests tagged with `ExceptionExpected` are not executed when the unit tests are run with a debugger attached.  This attribute prevents developers from having to keep continuing the unit tests each time the debugger catches an expected exception.
+  Unit tests tagged with `ExceptionExpected` are not executed when run with a debugger attached.  This attribute prevents developers from having to keep continuing the unit tests each time the debugger catches an exception.
 
 - *Add new unit & functional tests when making changes*
 
