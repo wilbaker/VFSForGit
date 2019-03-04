@@ -147,6 +147,8 @@ The design review process is as follows:
 
 - *Add new interfaces when it makes sense for the product, not simply for testing*
 
+  When a class needs to be mocked (or have a subset of behavior mocked), prefer using virtual methods to creating a new interface.  By using interfaces only where it makes sense from the perspective of the product code the intent of the interface is more clearly expressed. 
+
 - *Check for `null` using the equality (`==`) and inequality (`!=`) operators rather than `is`*
 
   A corollary to this guideline is that equality/inequality operators that break `null` checks should not be added (see [this post](https://stackoverflow.com/questions/40676426/what-is-the-difference-between-x-is-null-and-x-null) for an example).
