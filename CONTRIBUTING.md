@@ -179,11 +179,8 @@ The design review process is as follows:
 
   using std::string;
 
-  // No "std::" required
+  // Do not use `std::` namespace when using `string`
   static string s_myString;
-
-  // This "std::" should be removed
-  std::string s_myStringWithFullNamespace;
   ```
 
 - *Use a meaningful prefix for "public" free functions, and use the same prefix for all functions in a given header file*
