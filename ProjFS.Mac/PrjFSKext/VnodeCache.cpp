@@ -3,6 +3,7 @@
 #include "VnodeCache.hpp"
 #include "Memory.hpp"
 #include "KextLog.hpp"
+#include "../PrjFSKext/public/PrjFSCommon.h"
 
 #ifdef KEXT_UNIT_TESTING
 #include "VnodeCacheTestable.hpp"
@@ -78,8 +79,7 @@ kern_return_t VnodeCache_Init()
         return KERN_FAILURE;
     }
 
-    s_entriesCapacity = MAX(MinEntriesCapacity, desiredvnodes * 2);
-    s_entriesCapacity = MIN(MaxEntriesCapacity, s_entriesCapacity);
+    s_entriesCapacity = Clamp(static_cast<uint32_t>(desiredvnodes) * 2, MinEntriesCapacity, MaxEntriesCapacity);
     
     s_entries = Memory_AllocArray<VnodeCacheEntry>(s_entriesCapacity);
     if (nullptr == s_entries)
