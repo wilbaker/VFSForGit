@@ -135,6 +135,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		262DFF982230798E005CC5DD /* VnodeCachePrivate.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VnodeCachePrivate.hpp; sourceTree = "<group>"; };
 		264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VnodeCache.cpp; sourceTree = "<group>"; };
 		264758C821EFBA8B0095B9F8 /* VnodeCache.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCache.hpp; sourceTree = "<group>"; };
 		264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCacheTestable.hpp; sourceTree = "<group>"; };
@@ -284,9 +285,6 @@
 		4391F88D21E42AA70008103C /* PrjFSKext */ = {
 			isa = PBXGroup;
 			children = (
-				264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */,
-				264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */,
-				264758C821EFBA8B0095B9F8 /* VnodeCache.hpp */,
 				4391F88F21E42AC40008103C /* Info.plist */,
 				4391F89321E42AC40008103C /* KauthHandler.cpp */,
 				4391F8A421E42AC50008103C /* KauthHandler.hpp */,
@@ -312,6 +310,10 @@
 				4391F89621E42AC40008103C /* public */,
 				4391F8A721E42AC50008103C /* VirtualizationRoots.cpp */,
 				4391F89421E42AC40008103C /* VirtualizationRoots.hpp */,
+				264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */,
+				264758C821EFBA8B0095B9F8 /* VnodeCache.hpp */,
+				262DFF982230798E005CC5DD /* VnodeCachePrivate.hpp */,
+				264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */,
 				4391F8A121E42AC50008103C /* VnodeUtilities.cpp */,
 				4391F8A221E42AC50008103C /* VnodeUtilities.hpp */,
 			);
