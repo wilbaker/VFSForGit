@@ -3,25 +3,30 @@
 typedef int16_t VirtualizationRootHandle;
 
 #include "../PrjFSKext/VnodeCacheTestable.hpp"
+#include "../PrjFSKext/VnodeCachePrivate.hpp"
 
 @interface VnodeCacheTests : XCTestCase
 @end
 
 @implementation VnodeCacheTests
 
-struct VnodeCacheEntry
-{
-    vnode_t vnode;
-    uint32_t vid;   // vnode generation number
-    VirtualizationRootHandle virtualizationRoot;
-};
-
 // Dummy vfs_context implementation for vfs_context_t
 struct vfs_context
 {
 };
 
+// Dummy vnode implementation for vnode_t
+struct vnode
+{
+};
+
+// Dummy PerfTracer implementation for PerfTracer*
+class PerfTracer
+{
+};
+
 static const VirtualizationRootHandle TestVirtualizationRootHandle = 3;
+static vnode TestVnode;
 
 VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     PerfTracer* _Nonnull perfTracer,
@@ -42,7 +47,7 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
 
 - (void)testHashVnodeWithCapacityOfOne {
     s_entriesCapacity = 1;
-    XCTAssertTrue(0 == HashVnode(reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1))));
+    XCTAssertTrue(0 == HashVnode(&TestVnode));
 }
 
 - (void)testInvalidateCache_ExclusiveLocked_SetsMemoryToZeros {
@@ -64,7 +69,7 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     s_entriesCapacity = 100;
     s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
     
-    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
     XCTAssertTrue(TryFindVnodeIndex_SharedLocked(testVnode, startingIndex, startingIndex, /* out */ cacheIndex));
@@ -78,7 +83,7 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
     memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
     
-    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
     XCTAssertFalse(TryFindVnodeIndex_SharedLocked(testVnode, startingIndex, startingIndex, /* out */ cacheIndex));
@@ -93,7 +98,7 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     uintptr_t emptyIndex = 2;
     s_entries[emptyIndex].vnode = nullptr;
     
-    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
     XCTAssertTrue(TryFindVnodeIndex_SharedLocked(testVnode, startingIndex, startingIndex, /* out */ cacheIndex));
@@ -109,7 +114,7 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     uintptr_t emptyIndex = s_entriesCapacity - 1;
     s_entries[emptyIndex].vnode = nullptr;
     
-    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
     XCTAssertTrue(TryFindVnodeIndex_SharedLocked(testVnode, startingIndex, startingIndex, /* out */ cacheIndex));
@@ -123,16 +128,16 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
     
     vfs_context dummyContext;
-    PerfTracer* dummyPerfTracerPointer = reinterpret_cast<PerfTracer*>(static_cast<uintptr_t>(1));
+    PerfTracer dummyPerfTracerPointer;
     uintptr_t cacheIndex = 5;
-    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    vnode_t testVnode = &TestVnode;
     uint32_t testVnodeVid = 7;
     
     XCTAssertTrue(s_entries[cacheIndex].vnode == nullptr);
     XCTAssertTrue(s_entries[cacheIndex].vid == 0);
     
     UpdateCacheEntryToLatest_ExclusiveLocked(
-        dummyPerfTracerPointer,
+        &dummyPerfTracerPointer,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
         cacheIndex,
@@ -153,15 +158,15 @@ VirtualizationRootHandle VirtualizationRoot_FindForVnode(
     memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
     
     vfs_context dummyContext;
-    PerfTracer* dummyPerfTracerPointer = reinterpret_cast<PerfTracer*>(static_cast<uintptr_t>(1));
+    PerfTracer dummyPerfTracerPointer;
     uintptr_t indexFromHash = 5;
-    vnode_t testVnode = reinterpret_cast<vnode_t>(static_cast<uintptr_t>(1));
+    vnode_t testVnode = &TestVnode;
     uint32_t testVnodeVid = 7;
     VirtualizationRootHandle rootHandle;
     
     XCTAssertFalse(
         FindAndUpdateEntryToLatest_ExclusiveLocked(
-            dummyPerfTracerPointer,
+            &dummyPerfTracerPointer,
             PrjFSPerfCounter_VnodeOp_FindRoot,
             PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
             testVnode,

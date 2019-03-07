@@ -5,6 +5,8 @@
 #include "KextLog.hpp"
 #include "../PrjFSKext/public/PrjFSCommon.h"
 
+#include "VnodeCachePrivate.hpp"
+
 #ifdef KEXT_UNIT_TESTING
 #include "VnodeCacheTestable.hpp"
 #endif
@@ -52,13 +54,6 @@ static void ClearCacheAndInsertEntry_ExclusiveLocked(
     uint32_t vnodeVid,
     /* out paramaeters */
     VirtualizationRootHandle& rootHandle);
-
-struct VnodeCacheEntry
-{
-    vnode_t vnode;
-    uint32_t vid;   // vnode generation number
-    VirtualizationRootHandle virtualizationRoot;
-};
 
 KEXT_STATIC uint32_t s_entriesCapacity;
 KEXT_STATIC VnodeCacheEntry* s_entries;
@@ -219,7 +214,7 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
 
 void VnodeCache_InvalidateCache(PerfTracer* _Nullable perfTracer)
 {
-    if (perfTracer)
+    if (nullptr != perfTracer)
     {
         perfTracer->IncrementCount(PrjFSPerfCounter_CacheInvalidateCount, true /*ignoreSampling*/);
     }
