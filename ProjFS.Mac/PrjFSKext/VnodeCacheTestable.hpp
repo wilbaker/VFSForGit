@@ -18,33 +18,22 @@ struct VnodeCacheEntry;
 KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
 KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode);
 
-KEXT_STATIC bool TryFindVnodeIndex_SharedLocked(
+KEXT_STATIC bool TryFindVnodeIndex_Locked(
     vnode_t _Nonnull vnode,
-    uintptr_t startingIndex,
-    uintptr_t stoppingIndex,
+    uintptr_t vnodeHash,
     /* out parameters */
-    uintptr_t& cacheIndex);
+    uintptr_t& vnodeIndex);
 
-KEXT_STATIC void UpdateCacheEntryToLatest_ExclusiveLocked(
-    PerfTracer* _Nonnull perfTracer,
-    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
-    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
-    uintptr_t index,
-    vnode_t _Nonnull vnode,
-    vfs_context_t _Nonnull context,
-    uint32_t vnodeVid);
-
-KEXT_STATIC bool FindAndUpdateEntryToLatest_ExclusiveLocked(
+KEXT_STATIC bool TryUpdateEntryToLatest_ExclusiveLocked(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     vnode_t _Nonnull vnode,
     vfs_context_t _Nonnull context,
-    uintptr_t startingIndex,
-    uintptr_t stoppingIndex,
+    uintptr_t vnodeHash,
     uint32_t vnodeVid,
     bool invalidateEntry,
-    /* out paramaeters */
+    /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
 // Static variables used for maintaining Vnode cache state

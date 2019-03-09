@@ -216,7 +216,7 @@ KEXT_STATIC void UpdateCacheForVnode(
                 invalidateEntry,
                 /* out */ rootHandle))
         {
-            // TryFindAndUpdateEntryToLatest_ExclusiveLocked can only fail if the cache is full
+            // TryUpdateEntryToLatest_ExclusiveLocked can only fail if the cache is full
             
             perfTracer->IncrementCount(PrjFSPerfCounter_CacheFullCount, true /*ignoreSampling*/);
         

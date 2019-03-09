@@ -9,6 +9,10 @@ RWLock RWLock_Alloc()
     return RWLock{ new __lck_rw_t__{} };
 }
 
+void RWLock_AcquireShared(RWLock& lock)
+{
+}
+
 void RWLock_AcquireExclusive(RWLock& lock)
 {
 }
