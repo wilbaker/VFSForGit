@@ -1,9 +1,32 @@
 #include "../PrjFSKext/kernel-header-wrappers/vnode.h"
 #import <XCTest/XCTest.h>
 #include "../PrjFSKext/KauthHandlerTestable.hpp"
+#include "../PrjFSKext/PerformanceTracing.hpp"
 #include "MockVnodeAndMount.hpp"
 
 using std::shared_ptr;
+
+#define KAUTH_RESULT_ALLOW    (1)
+#define KAUTH_RESULT_DENY     (2)
+#define KAUTH_RESULT_DEFER    (3)
+
+proc_t vfs_context_proc(vfs_context_t ctx)
+{
+    return NULL;
+}
+
+extern "C" int proc_pid(proc_t);
+int proc_pid(proc_t)
+{
+    return 1;
+}
+
+extern "C" void proc_name(int pid, char * buf, int size);
+char * procname;
+void proc_name(int pid, char * buf, int size)
+{
+    buf = procname;
+}
 
 @interface KauthHandlerTests : XCTestCase
 @end
@@ -81,6 +104,156 @@ using std::shared_ptr;
 
     testVnode->errors.getattr = EBADF;
     XCTAssertFalse(TryGetFileIsFlaggedAsInRoot(testVnode.get(), NULL, &fileFlaggedInRoot));
+}
+
+- (void)testShouldHandleVnodeOpEvent {
+    // In Parameters
+    shared_ptr<mount> testMount = mount::Create();
+    shared_ptr<vnode> testVnode = vnode::Create(testMount, "/foo");
+    testVnode->values.getattr = FileFlags_IsInVirtualizationRoot;
+    PerfTracer perfTracer;
+    vfs_context_t _Nonnull context = vfs_context_create(NULL);
+    kauth_action_t action = KAUTH_VNODE_READ_DATA;
+    
+    // Out Parameters
+    vtype vnodeType;
+    uint32_t vnodeFileFlags;
+    int pid;
+    char procname[MAXCOMLEN + 1] = "";
+    int kauthResult;
+    int kauthError;
+
+    
+    // Test Success Case
+    XCTAssertTrue(ShouldHandleVnodeOpEvent(
+                                            &perfTracer,
+                                            context,
+                                            testVnode.get(),
+                                            action,
+                                            &vnodeType,
+                                            &vnodeFileFlags,
+                                            &pid,
+                                            procname,
+                                            &kauthResult,
+                                            &kauthError));
+    XCTAssertEqual(kauthResult, KAUTH_RESULT_DEFER);
+    
+    
+    // Test Invalid Action Bit
+    XCTAssertFalse(ShouldHandleVnodeOpEvent(
+                                           &perfTracer,
+                                           context,
+                                           testVnode.get(),
+                                           KAUTH_VNODE_ACCESS,
+                                           &vnodeType,
+                                           &vnodeFileFlags,
+                                           &pid,
+                                           procname,
+                                           &kauthResult,
+                                           &kauthError));
+    XCTAssertEqual(kauthResult, KAUTH_RESULT_DEFER);
+
+    
+    // Test invalid File System
+    shared_ptr<mount> testMountHfs = mount::Create("hfs", fsid_t{}, 0);
+    shared_ptr<vnode> testVnodeHfs = vnode::Create(testMountHfs, "/hfs");
+    XCTAssertFalse(ShouldHandleVnodeOpEvent(
+                                            &perfTracer,
+                                            context,
+                                            testVnodeHfs.get(),
+                                            action,
+                                            &vnodeType,
+                                            &vnodeFileFlags,
+                                            &pid,
+                                            procname,
+                                            &kauthResult,
+                                            &kauthError));
+    XCTAssertEqual(kauthResult, KAUTH_RESULT_DEFER);
+    
+    
+    // Test invalid VNODE Type
+    shared_ptr<vnode> testVnodeInvalidType = vnode::Create(testMount, "/foo2", VNON);
+    XCTAssertFalse(ShouldHandleVnodeOpEvent(
+                                            &perfTracer,
+                                            context,
+                                            testVnodeInvalidType.get(),
+                                            KAUTH_VNODE_ACCESS,
+                                            &vnodeType,
+                                            &vnodeFileFlags,
+                                            &pid,
+                                            procname,
+                                            &kauthResult,
+                                            &kauthError));
+    XCTAssertEqual(kauthResult, KAUTH_RESULT_DEFER);
+
+    
+    // Test failure reading attr
+    testVnode->errors.getattr = EBADF;
+    XCTAssertFalse(ShouldHandleVnodeOpEvent(
+                                            &perfTracer,
+                                            context,
+                                            testVnode.get(),
+                                            action,
+                                            &vnodeType,
+                                            &vnodeFileFlags,
+                                            &pid,
+                                            procname,
+                                            &kauthResult,
+                                            &kauthError));
+    XCTAssertEqual(kauthResult, KAUTH_RESULT_DENY);
+    // reset to valid value
+    testVnode->errors.getattr = 0;
+
+    
+    // Test invalid file flag
+    testVnode->values.getattr = FileFlags_IsEmpty;
+    XCTAssertFalse(ShouldHandleVnodeOpEvent(
+                                            &perfTracer,
+                                            context,
+                                            testVnode.get(),
+                                            action,
+                                            &vnodeType,
+                                            &vnodeFileFlags,
+                                            &pid,
+                                            procname,
+                                            &kauthResult,
+                                            &kauthError));
+    XCTAssertEqual(kauthResult, KAUTH_RESULT_DEFER);
+    // reset to valid value
+    testVnode->values.getattr = FileFlags_IsInVirtualizationRoot;
+    
+
+    // Test with file crawler trying to populate an empty file
+    testVnode->values.getattr = FileFlags_IsEmpty | FileFlags_IsInVirtualizationRoot;
+    strcpy(procname, "mds");
+    XCTAssertFalse(ShouldHandleVnodeOpEvent(
+                                            &perfTracer,
+                                            context,
+                                            testVnode.get(),
+                                            action,
+                                            &vnodeType,
+                                            &vnodeFileFlags,
+                                            &pid,
+                                            procname,
+                                            &kauthResult,
+                                            &kauthError));
+    XCTAssertEqual(kauthResult, KAUTH_RESULT_DENY);
+
+    
+    // Test with finder trying to populate an empty file
+    strcpy(procname, "finder");
+    XCTAssertTrue(ShouldHandleVnodeOpEvent(
+                                            &perfTracer,
+                                            context,
+                                            testVnode.get(),
+                                            action,
+                                            &vnodeType,
+                                            &vnodeFileFlags,
+                                            &pid,
+                                            procname,
+                                            &kauthResult,
+                                            &kauthError));
+    XCTAssertEqual(kauthResult, KAUTH_RESULT_DEFER);
 }
 
 @end

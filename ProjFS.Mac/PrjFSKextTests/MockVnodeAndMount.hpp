@@ -97,7 +97,6 @@ public:
 private:
     bool isRecycling = false;
     vtype type = VREG;
-
     uint64_t inode;
     uint32_t vid;
     int32_t ioCount = 0;
