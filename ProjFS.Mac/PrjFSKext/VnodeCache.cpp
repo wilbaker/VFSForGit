@@ -70,7 +70,7 @@ kern_return_t VnodeCache_Init()
         return KERN_FAILURE;
     }
 
-    s_entriesCapacity = Clamp(static_cast<uint32_t>(desiredvnodes) * 2, MinEntriesCapacity, MaxEntriesCapacity);
+    s_entriesCapacity = Clamp(desiredvnodes * 2u, MinEntriesCapacity, MaxEntriesCapacity);
     
     s_entries = Memory_AllocArray<VnodeCacheEntry>(s_entriesCapacity);
     if (nullptr == s_entries)
