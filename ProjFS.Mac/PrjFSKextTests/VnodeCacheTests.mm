@@ -18,6 +18,7 @@ struct vfs_context
 // Dummy vnode implementation for vnode_t
 struct vnode
 {
+    int dummyData;
 };
 
 // Dummy PerfTracer implementation for PerfTracer*
@@ -29,7 +30,12 @@ static vnode TestVnode;
 
 - (void)testHashVnodeWithCapacityOfOne {
     s_entriesCapacity = 1;
+    vnode testVnode2;
+    vnode testVnode3;
+    
     XCTAssertTrue(0 == HashVnode(&TestVnode));
+    XCTAssertTrue(0 == HashVnode(&testVnode2));
+    XCTAssertTrue(0 == HashVnode(&testVnode3));
 }
 
 - (void)testInvalidateCache_ExclusiveLocked_SetsMemoryToZeros {
