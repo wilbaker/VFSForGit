@@ -79,7 +79,7 @@ kern_return_t VnodeCache_Init()
         return KERN_RESOURCE_SHORTAGE;
     }
     
-    VnodeCache_InvalidateCache(nullptr);
+    memset(s_entries, 0, s_entriesCapacity * sizeof(VnodeCacheEntry));
     
     PerfTracing_RecordSample(PrjFSPerfCounter_CacheCapacity, 0, s_entriesCapacity);
     
