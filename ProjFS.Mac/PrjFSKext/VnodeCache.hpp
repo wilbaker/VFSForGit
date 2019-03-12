@@ -5,7 +5,7 @@
 
 kern_return_t VnodeCache_Init();
 
-void VnodeCache_Cleanup();
+kern_return_t VnodeCache_Cleanup();
 
 VirtualizationRootHandle VnodeCache_FindRootForVnode(
         PerfTracer* _Nonnull perfTracer,

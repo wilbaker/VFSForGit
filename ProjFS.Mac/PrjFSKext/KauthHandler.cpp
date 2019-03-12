@@ -205,7 +205,10 @@ kern_return_t KauthHandler_Cleanup()
     // Then, ensure there are no more callbacks in flight.
     AbortAllOutstandingEvents();
 
-    VnodeCache_Cleanup();
+    if (VnodeCache_Cleanup())
+    {
+        result = KERN_FAILURE;
+    }
 
     if (VirtualizationRoots_Cleanup())
     {

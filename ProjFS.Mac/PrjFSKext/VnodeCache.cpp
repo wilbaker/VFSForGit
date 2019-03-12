@@ -86,7 +86,7 @@ kern_return_t VnodeCache_Init()
     return KERN_SUCCESS;
 }
 
-void VnodeCache_Cleanup()
+kern_return_t VnodeCache_Cleanup()
 {
     if (nullptr != s_entries)
     {
@@ -98,7 +98,10 @@ void VnodeCache_Cleanup()
     if (RWLock_IsValid(s_entriesLock))
     {
         RWLock_FreeMemory(&s_entriesLock);
+        return KERN_SUCCESS;
     }
+    
+    return KERN_FAILURE;
 }
 
 VirtualizationRootHandle VnodeCache_FindRootForVnode(
