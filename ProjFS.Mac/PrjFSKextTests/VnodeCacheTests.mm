@@ -28,14 +28,14 @@ class PerfTracer
 
 static vnode TestVnode;
 
-- (void)testHashVnodeWithCapacityOfOne {
+- (void)testComputeVnodeHashKeyWithCapacityOfOne {
     s_entriesCapacity = 1;
     vnode testVnode2;
     vnode testVnode3;
     
-    XCTAssertTrue(0 == HashVnode(&TestVnode));
-    XCTAssertTrue(0 == HashVnode(&testVnode2));
-    XCTAssertTrue(0 == HashVnode(&testVnode3));
+    XCTAssertTrue(0 == ComputeVnodeHashKey(&TestVnode));
+    XCTAssertTrue(0 == ComputeVnodeHashKey(&testVnode2));
+    XCTAssertTrue(0 == ComputeVnodeHashKey(&testVnode3));
 }
 
 - (void)testInvalidateCache_ExclusiveLocked_SetsMemoryToZeros {

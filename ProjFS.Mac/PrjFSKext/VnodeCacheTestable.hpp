@@ -16,7 +16,7 @@ class PerfTracer;
 struct VnodeCacheEntry;
 
 KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
-KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode);
+KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashKey(vnode_t _Nonnull vnode);
 
 KEXT_STATIC bool TryFindVnodeIndex_Locked(
     vnode_t _Nonnull vnode,

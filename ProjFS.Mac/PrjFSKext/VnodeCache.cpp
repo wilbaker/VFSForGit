@@ -12,7 +12,7 @@
 #endif
 
 KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
-KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode);
+KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashKey(vnode_t _Nonnull vnode);
 
 KEXT_STATIC bool TryGetVnodeRootFromCache(
     vnode_t _Nonnull vnode,
@@ -115,7 +115,7 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
     bool invalidateEntry)
 {
     VirtualizationRootHandle rootHandle = RootHandle_None;
-    uintptr_t vnodeHash = HashVnode(vnode);
+    uintptr_t vnodeHash = ComputeVnodeHashKey(vnode);
     uint32_t vnodeVid = vnode_vid(vnode);
     
     if (!invalidateEntry)
@@ -161,7 +161,7 @@ KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked()
     memset(s_entries, 0, s_entriesCapacity * sizeof(VnodeCacheEntry));
 }
 
-KEXT_STATIC_INLINE uintptr_t HashVnode(vnode_t _Nonnull vnode)
+KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashKey(vnode_t _Nonnull vnode)
 {
     uintptr_t vnodeAddress = reinterpret_cast<uintptr_t>(vnode);
     return (vnodeAddress >> 3) % s_entriesCapacity;
