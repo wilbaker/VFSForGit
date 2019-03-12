@@ -654,7 +654,7 @@ static int HandleFileOpOperation(
                                      context,
                                      currentVnode,
                                      action,
-                                     false /* isDictionary */,
+                                     false /* isDirectory */,
                                      &root,
                                      &vnodeFsidInode,
                                      &pid))
