@@ -40,16 +40,11 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
     uintptr_t& vnodeIndex);
 
 KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
-    PerfTracer* _Nonnull perfTracer,
-    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
-    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     vnode_t _Nonnull vnode,
-    vfs_context_t _Nonnull context,
     uintptr_t vnodeHash,
     uint32_t vnodeVid,
     bool invalidateEntry,
-    /* out parameters */
-    VirtualizationRootHandle& rootHandle);
+    VirtualizationRootHandle rootHandle);
 
 KEXT_STATIC uint32_t s_entriesCapacity;
 KEXT_STATIC VnodeCacheEntry* s_entries;
@@ -206,18 +201,21 @@ KEXT_STATIC void UpdateCacheForVnode(
     /* out parameters */
     VirtualizationRootHandle& rootHandle)
 {
+    rootHandle = VirtualizationRoot_FindForVnode(
+        perfTracer,
+        cacheMissFallbackFunctionCounter,
+        cacheMissFallbackFunctionInnerLoopCounter,
+        vnode,
+        context);
+
     RWLock_AcquireExclusive(s_entriesLock);
     {
         if (!TryInsertOrUpdateEntry_ExclusiveLocked(
-                perfTracer,
-                cacheMissFallbackFunctionCounter,
-                cacheMissFallbackFunctionInnerLoopCounter,
                 vnode,
-                context,
                 vnodeHash,
                 vnodeVid,
                 invalidateEntry,
-                /* out */ rootHandle))
+                rootHandle))
         {
             // TryInsertOrUpdateEntry_ExclusiveLocked can only fail if the cache is full
             
@@ -225,27 +223,16 @@ KEXT_STATIC void UpdateCacheForVnode(
         
             InvalidateCache_ExclusiveLocked();
             if (!TryInsertOrUpdateEntry_ExclusiveLocked(
-                        perfTracer,
-                        cacheMissFallbackFunctionCounter,
-                        cacheMissFallbackFunctionInnerLoopCounter,
                         vnode,
-                        context,
                         vnodeHash,
                         vnodeVid,
                         true, // invalidateEntry
-                        /* out */ rootHandle))
+                        rootHandle))
             {
                 KextLog_FileError(
                     vnode,
                     "UpdateCacheForVnode: failed to insert vnode (%p:%u) after emptying cache",
                     KextLog_Unslide(vnode), vnodeVid);
-                
-                rootHandle = VirtualizationRoot_FindForVnode(
-                    perfTracer,
-                    cacheMissFallbackFunctionCounter,
-                    cacheMissFallbackFunctionInnerLoopCounter,
-                    vnode,
-                    context);
             }
         }
     }
@@ -278,16 +265,11 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
 }
 
 KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
-    PerfTracer* _Nonnull perfTracer,
-    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
-    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     vnode_t _Nonnull vnode,
-    vfs_context_t _Nonnull context,
     uintptr_t vnodeHash,
     uint32_t vnodeVid,
     bool invalidateEntry,
-    /* out parameters */
-    VirtualizationRootHandle& rootHandle)
+    VirtualizationRootHandle rootHandle)
 {
     uintptr_t vnodeIndex;
     if (TryFindVnodeIndex_Locked(vnode, vnodeHash, /*out*/ vnodeIndex))
@@ -296,15 +278,21 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
         {
             s_entries[vnodeIndex].vnode = vnode;
             s_entries[vnodeIndex].vid = vnodeVid;
-            s_entries[vnodeIndex].virtualizationRoot = VirtualizationRoot_FindForVnode(
-                perfTracer,
-                cacheMissFallbackFunctionCounter,
-                cacheMissFallbackFunctionInnerLoopCounter,
-                vnode,
-                context);
+            s_entries[vnodeIndex].virtualizationRoot = rootHandle;
         }
-        
-        rootHandle = s_entries[vnodeIndex].virtualizationRoot;
+        else
+        {
+            if (rootHandle != s_entries[vnodeIndex].virtualizationRoot)
+            {
+                KextLog_FileError(
+                    vnode,
+                    "TryInsertOrUpdateEntry_ExclusiveLocked: vnode (%p:%u) has different root in cache:%hu than was found walking tree: %hu",
+                    KextLog_Unslide(vnode),
+                    vnodeVid,
+                    s_entries[vnodeIndex].virtualizationRoot,
+                    rootHandle);
+            }
+        }
         
         return true;
     }

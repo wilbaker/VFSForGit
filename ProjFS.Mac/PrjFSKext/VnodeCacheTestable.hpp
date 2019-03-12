@@ -25,16 +25,11 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
     uintptr_t& vnodeIndex);
 
 KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
-    PerfTracer* _Nonnull perfTracer,
-    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
-    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     vnode_t _Nonnull vnode,
-    vfs_context_t _Nonnull context,
     uintptr_t vnodeHash,
     uint32_t vnodeVid,
     bool invalidateEntry,
-    /* out parameters */
-    VirtualizationRootHandle& rootHandle);
+    VirtualizationRootHandle rootHandle);
 
 // Static variables used for maintaining Vnode cache state
 extern uint32_t s_entriesCapacity;

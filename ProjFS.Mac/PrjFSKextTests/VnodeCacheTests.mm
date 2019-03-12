@@ -27,6 +27,7 @@ class PerfTracer
 };
 
 static vnode TestVnode;
+static const VirtualizationRootHandle TestRootHandle = 1;
 
 - (void)testComputeVnodeHashKeyWithCapacityOfOne {
     s_entriesCapacity = 1;
@@ -111,33 +112,24 @@ static vnode TestVnode;
     free(s_entries);
 }
 
-// TODO: Fix up all the VirtualizationRoot related linker errors
-//- (void)testTTryInsertOrUpdateEntry_ExclusiveLocked_ReturnsFalseWhenFull {
-//    s_entriesCapacity = 100;
-//    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
-//    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
-//
-//    vfs_context dummyContext;
-//    PerfTracer dummyPerfTracerPointer;
-//    uintptr_t indexFromHash = 5;
-//    vnode_t testVnode = &TestVnode;
-//    uint32_t testVnodeVid = 7;
-//    VirtualizationRootHandle rootHandle;
-//
-//    XCTAssertFalse(
-//        TryInsertOrUpdateEntry_ExclusiveLocked(
-//            &dummyPerfTracerPointer,
-//            PrjFSPerfCounter_VnodeOp_FindRoot,
-//            PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-//            testVnode,
-//            &dummyContext,
-//            indexFromHash,
-//            testVnodeVid,
-//            true, // invalidateEntry
-//            /* out paramaeters */
-//            rootHandle));
-//
-//    free(s_entries);
-//}
+- (void)testTryInsertOrUpdateEntry_ExclusiveLocked_ReturnsFalseWhenFull {
+    s_entriesCapacity = 100;
+    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+
+    uintptr_t indexFromHash = 5;
+    vnode_t testVnode = &TestVnode;
+    uint32_t testVnodeVid = 7;
+
+    XCTAssertFalse(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testVnode,
+            indexFromHash,
+            testVnodeVid,
+            true, // invalidateEntry
+            TestRootHandle));
+
+    free(s_entries);
+}
 
 @end
