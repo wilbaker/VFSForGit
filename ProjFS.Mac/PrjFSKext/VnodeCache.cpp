@@ -39,7 +39,7 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
     /* out parameters */
     uintptr_t& vnodeIndex);
 
-KEXT_STATIC bool TryUpdateEntryToLatest_ExclusiveLocked(
+KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
@@ -208,7 +208,7 @@ KEXT_STATIC void UpdateCacheForVnode(
 {
     RWLock_AcquireExclusive(s_entriesLock);
     {
-        if (!TryUpdateEntryToLatest_ExclusiveLocked(
+        if (!TryInsertOrUpdateEntry_ExclusiveLocked(
                 perfTracer,
                 cacheMissFallbackFunctionCounter,
                 cacheMissFallbackFunctionInnerLoopCounter,
@@ -219,12 +219,12 @@ KEXT_STATIC void UpdateCacheForVnode(
                 invalidateEntry,
                 /* out */ rootHandle))
         {
-            // TryUpdateEntryToLatest_ExclusiveLocked can only fail if the cache is full
+            // TryInsertOrUpdateEntry_ExclusiveLocked can only fail if the cache is full
             
             perfTracer->IncrementCount(PrjFSPerfCounter_CacheFullCount, true /*ignoreSampling*/);
         
             InvalidateCache_ExclusiveLocked();
-            if (!TryUpdateEntryToLatest_ExclusiveLocked(
+            if (!TryInsertOrUpdateEntry_ExclusiveLocked(
                         perfTracer,
                         cacheMissFallbackFunctionCounter,
                         cacheMissFallbackFunctionInnerLoopCounter,
@@ -237,7 +237,7 @@ KEXT_STATIC void UpdateCacheForVnode(
             {
                 KextLog_FileError(
                     vnode,
-                    "ClearCacheAndInsertEntry: failed to insert vnode (%p:%u) after emptying cache",
+                    "UpdateCacheForVnode: failed to insert vnode (%p:%u) after emptying cache",
                     KextLog_Unslide(vnode), vnodeVid);
                 
                 rootHandle = VirtualizationRoot_FindForVnode(
@@ -277,7 +277,7 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
     return true;
 }
 
-KEXT_STATIC bool TryUpdateEntryToLatest_ExclusiveLocked(
+KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
@@ -290,10 +290,7 @@ KEXT_STATIC bool TryUpdateEntryToLatest_ExclusiveLocked(
     VirtualizationRootHandle& rootHandle)
 {
     uintptr_t vnodeIndex;
-    if (TryFindVnodeIndex_Locked(
-            vnode,
-            vnodeHash,
-            /*out*/ vnodeIndex))
+    if (TryFindVnodeIndex_Locked(vnode, vnodeHash, /*out*/ vnodeIndex))
     {
         if (invalidateEntry || NULLVP == s_entries[vnodeIndex].vnode || vnodeVid != s_entries[vnodeIndex].vid)
         {

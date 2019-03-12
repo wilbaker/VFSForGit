@@ -112,7 +112,7 @@ static vnode TestVnode;
 }
 
 // TODO: Fix up all the VirtualizationRoot related linker errors
-//- (void)testTryUpdateEntryToLatest_ExclusiveLocked_ReturnsFalseWhenFull {
+//- (void)testTTryInsertOrUpdateEntry_ExclusiveLocked_ReturnsFalseWhenFull {
 //    s_entriesCapacity = 100;
 //    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
 //    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
@@ -125,7 +125,7 @@ static vnode TestVnode;
 //    VirtualizationRootHandle rootHandle;
 //
 //    XCTAssertFalse(
-//        TryUpdateEntryToLatest_ExclusiveLocked(
+//        TryInsertOrUpdateEntry_ExclusiveLocked(
 //            &dummyPerfTracerPointer,
 //            PrjFSPerfCounter_VnodeOp_FindRoot,
 //            PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,

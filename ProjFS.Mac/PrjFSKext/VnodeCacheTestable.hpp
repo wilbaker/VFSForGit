@@ -24,7 +24,7 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
     /* out parameters */
     uintptr_t& vnodeIndex);
 
-KEXT_STATIC bool TryUpdateEntryToLatest_ExclusiveLocked(
+KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
