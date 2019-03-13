@@ -86,9 +86,14 @@ static void FreeCacheEntries()
     free(s_entries);
 }
 
+static void ShouldBeTrue(bool expression)
+{
+    should->BeTrue(expression);
+}
+
 static void MarkEntryAsFree(VnodeCacheTests* testCase, uintptr_t entryIndex)
 {
-    should->BeTrue(entryIndex < s_entriesCapacity);
+    ShouldBeTrue(entryIndex < s_entriesCapacity);
     s_entries[entryIndex].vnode = nullptr;
 }
 
