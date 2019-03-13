@@ -12,11 +12,11 @@
 #endif
 
 KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
-KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashKey(vnode_t _Nonnull vnode);
+KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashIndex(vnode_t _Nonnull vnode);
 
 KEXT_STATIC bool TryGetVnodeRootFromCache(
     vnode_t _Nonnull vnode,
-    uintptr_t vnodeHash,
+    uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
@@ -27,21 +27,21 @@ KEXT_STATIC void UpdateCacheForVnode(
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     vfs_context_t _Nonnull context,
     vnode_t _Nonnull vnode,
-    uintptr_t vnodeHash,
+    uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
-    bool invalidateEntry,
+    bool forceRefreshEntry,
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
 KEXT_STATIC bool TryFindVnodeIndex_Locked(
     vnode_t _Nonnull vnode,
-    uintptr_t vnodeHash,
+    uintptr_t vnodeHashIndex,
     /* out parameters */
     uintptr_t& vnodeIndex);
 
 KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     vnode_t _Nonnull vnode,
-    uintptr_t vnodeHash,
+    uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
     bool invalidateEntry,
     VirtualizationRootHandle rootHandle);
@@ -106,20 +106,16 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     vnode_t _Nonnull vnode,
-    vfs_context_t _Nonnull context,
-    bool invalidateEntry)
+    vfs_context_t _Nonnull context)
 {
     VirtualizationRootHandle rootHandle = RootHandle_None;
-    uintptr_t vnodeHash = ComputeVnodeHashKey(vnode);
+    uintptr_t vnodeHashIndex = ComputeVnodeHashIndex(vnode);
     uint32_t vnodeVid = vnode_vid(vnode);
     
-    if (!invalidateEntry)
+    if (TryGetVnodeRootFromCache(vnode, vnodeHashIndex, vnodeVid, rootHandle))
     {
-        if (TryGetVnodeRootFromCache(vnode, vnodeHash, vnodeVid, rootHandle))
-        {
-            perfTracer->IncrementCount(cacheHitCounter, true /*ignoreSampling*/);
-            return rootHandle;
-        }
+        perfTracer->IncrementCount(cacheHitCounter, true /*ignoreSampling*/);
+        return rootHandle;
     }
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
@@ -129,9 +125,37 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
         cacheMissFallbackFunctionInnerLoopCounter,
         context,
         vnode,
-        vnodeHash,
+        vnodeHashIndex,
         vnodeVid,
-        invalidateEntry,
+        false, // forceRefreshEntry
+        rootHandle);
+    
+    return rootHandle;
+}
+
+VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
+    PerfTracer* _Nonnull perfTracer,
+    PrjFSPerfCounter cacheHitCounter,
+    PrjFSPerfCounter cacheMissCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
+    vnode_t _Nonnull vnode,
+    vfs_context_t _Nonnull context)
+{
+    VirtualizationRootHandle rootHandle = RootHandle_None;
+    uintptr_t vnodeHashIndex = ComputeVnodeHashIndex(vnode);
+    uint32_t vnodeVid = vnode_vid(vnode);
+    
+    perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
+    UpdateCacheForVnode(
+        perfTracer,
+        cacheMissFallbackFunctionCounter,
+        cacheMissFallbackFunctionInnerLoopCounter,
+        context,
+        vnode,
+        vnodeHashIndex,
+        vnodeVid,
+        true, // forceRefreshEntry
         rootHandle);
     
     return rootHandle;
@@ -156,7 +180,7 @@ KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked()
     memset(s_entries, 0, s_entriesCapacity * sizeof(VnodeCacheEntry));
 }
 
-KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashKey(vnode_t _Nonnull vnode)
+KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashIndex(vnode_t _Nonnull vnode)
 {
     uintptr_t vnodeAddress = reinterpret_cast<uintptr_t>(vnode);
     return (vnodeAddress >> 3) % s_entriesCapacity;
@@ -164,7 +188,7 @@ KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashKey(vnode_t _Nonnull vnode)
 
 KEXT_STATIC bool TryGetVnodeRootFromCache(
     vnode_t _Nonnull vnode,
-    uintptr_t vnodeHash,
+    uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
     /* out parameters */
     VirtualizationRootHandle& rootHandle)
@@ -175,7 +199,7 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
     RWLock_AcquireShared(s_entriesLock);
     {
         uintptr_t vnodeIndex;
-        if (TryFindVnodeIndex_Locked(vnode, vnodeHash, /*out*/ vnodeIndex))
+        if (TryFindVnodeIndex_Locked(vnode, vnodeHashIndex, /*out*/ vnodeIndex))
         {
             if (vnode == s_entries[vnodeIndex].vnode && vnodeVid == s_entries[vnodeIndex].vid)
             {
@@ -195,9 +219,9 @@ KEXT_STATIC void UpdateCacheForVnode(
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
     vfs_context_t _Nonnull context,
     vnode_t _Nonnull vnode,
-    uintptr_t vnodeHash,
+    uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
-    bool invalidateEntry,
+    bool forceRefreshEntry,
     /* out parameters */
     VirtualizationRootHandle& rootHandle)
 {
@@ -212,9 +236,9 @@ KEXT_STATIC void UpdateCacheForVnode(
     {
         if (!TryInsertOrUpdateEntry_ExclusiveLocked(
                 vnode,
-                vnodeHash,
+                vnodeHashIndex,
                 vnodeVid,
-                invalidateEntry,
+                forceRefreshEntry,
                 rootHandle))
         {
             // TryInsertOrUpdateEntry_ExclusiveLocked can only fail if the cache is full
@@ -224,7 +248,7 @@ KEXT_STATIC void UpdateCacheForVnode(
             InvalidateCache_ExclusiveLocked();
             if (!TryInsertOrUpdateEntry_ExclusiveLocked(
                         vnode,
-                        vnodeHash,
+                        vnodeHashIndex,
                         vnodeVid,
                         true, // invalidateEntry
                         rootHandle))
@@ -241,7 +265,7 @@ KEXT_STATIC void UpdateCacheForVnode(
 
 KEXT_STATIC bool TryFindVnodeIndex_Locked(
     vnode_t _Nonnull vnode,
-    uintptr_t vnodeHash,
+    uintptr_t vnodeHashIndex,
     /* out parameters */
     uintptr_t& vnodeIndex)
 {
@@ -249,12 +273,12 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
     //    -> Find the vnode
     //    -> Find where the vnode should be inserted (i.e. NULLVP)
     //    -> Have looped all the way back to where we started
-    vnodeIndex = vnodeHash;
+    vnodeIndex = vnodeHashIndex;
     while (vnode != s_entries[vnodeIndex].vnode && NULLVP != s_entries[vnodeIndex].vnode)
     {
         vnodeIndex = (vnodeIndex + 1) % s_entriesCapacity;
         
-        if (vnodeIndex == vnodeHash)
+        if (vnodeIndex == vnodeHashIndex)
         {
             // Looped through the entire cache and didn't find an empty slot or the vnode
             return false;
@@ -266,15 +290,15 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
 
 KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     vnode_t _Nonnull vnode,
-    uintptr_t vnodeHash,
+    uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
-    bool invalidateEntry,
+    bool forceRefreshEntry,
     VirtualizationRootHandle rootHandle)
 {
     uintptr_t vnodeIndex;
-    if (TryFindVnodeIndex_Locked(vnode, vnodeHash, /*out*/ vnodeIndex))
+    if (TryFindVnodeIndex_Locked(vnode, vnodeHashIndex, /*out*/ vnodeIndex))
     {
-        if (invalidateEntry || NULLVP == s_entries[vnodeIndex].vnode || vnodeVid != s_entries[vnodeIndex].vid)
+        if (forceRefreshEntry || NULLVP == s_entries[vnodeIndex].vnode || vnodeVid != s_entries[vnodeIndex].vid)
         {
             s_entries[vnodeIndex].vnode = vnode;
             s_entries[vnodeIndex].vid = vnodeVid;
