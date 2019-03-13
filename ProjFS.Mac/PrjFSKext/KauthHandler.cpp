@@ -642,7 +642,7 @@ KEXT_STATIC bool ShouldHandleVnodeOpEvent(
     char procname[MAXCOMLEN + 1],
     int* kauthResult,
     int* kauthError)
-   {
+{
     PerfSample handleVnodeSample(perfTracer, PrjFSPerfCounter_VnodeOp_ShouldHandle);
 
     *kauthResult = KAUTH_RESULT_DEFER;

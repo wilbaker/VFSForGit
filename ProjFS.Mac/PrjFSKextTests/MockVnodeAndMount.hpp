@@ -78,11 +78,6 @@ struct VnodeMockErrors
     errno_t getattr = 0;
 };
 
-struct VnodeMockValues
-{
-    int getattr = 0;
-};
-
 struct vnode
 {
 private:
@@ -117,7 +112,7 @@ public:
     ~vnode();
 
     VnodeMockErrors errors;
-    VnodeMockValues values;
+    vnode_attr attrValues;
     
     uint64_t GetInode() const          { return this->inode; }
     uint32_t GetVid() const            { return this->vid; }
