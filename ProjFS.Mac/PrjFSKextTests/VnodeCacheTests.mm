@@ -2,6 +2,7 @@
 
 typedef int16_t VirtualizationRootHandle;
 
+#include "../PrjFSKext/VnodeCache.hpp"
 #include "../PrjFSKext/VnodeCacheTestable.hpp"
 #include "../PrjFSKext/VnodeCachePrivate.hpp"
 
@@ -21,42 +22,49 @@ struct vnode
     int dummyData;
 };
 
-// Dummy PerfTracer implementation for PerfTracer*
-class PerfTracer
-{
-};
-
 static vnode TestVnode;
 static const VirtualizationRootHandle TestRootHandle = 1;
+
+static void AllocateCacheEntries(uint32_t capacity, bool fillCache);
+static void FreeCacheEntries();
+static void MarkEntryAsFree(uintptr_t entryIndex);
 
 - (void)testComputeVnodeHashKeyWithCapacityOfOne {
     s_entriesCapacity = 1;
     vnode testVnode2;
     vnode testVnode3;
     
-    XCTAssertTrue(0 == ComputeVnodeHashKey(&TestVnode));
-    XCTAssertTrue(0 == ComputeVnodeHashKey(&testVnode2));
-    XCTAssertTrue(0 == ComputeVnodeHashKey(&testVnode3));
+    XCTAssertTrue(0 == ComputeVnodeHashIndex(&TestVnode));
+    XCTAssertTrue(0 == ComputeVnodeHashIndex(&testVnode2));
+    XCTAssertTrue(0 == ComputeVnodeHashIndex(&testVnode3));
+}
+
+- (void)testVnodeCache_InvalidateCache_SetsMemoryToZeros {
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
+    VnodeCacheEntry* emptyArray = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    XCTAssertTrue(0 != memcmp(emptyArray, s_entries, sizeof(VnodeCacheEntry) * s_entriesCapacity));
+    
+    VnodeCache_InvalidateCache(nullptr);
+    XCTAssertTrue(0 == memcmp(emptyArray, s_entries, sizeof(VnodeCacheEntry)*s_entriesCapacity));
+    
+    free(emptyArray);
+    FreeCacheEntries();
 }
 
 - (void)testInvalidateCache_ExclusiveLocked_SetsMemoryToZeros {
-    s_entriesCapacity = 100;
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
     VnodeCacheEntry* emptyArray = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
-    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
-    
-    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
     XCTAssertTrue(0 != memcmp(emptyArray, s_entries, sizeof(VnodeCacheEntry) * s_entriesCapacity));
     
     InvalidateCache_ExclusiveLocked();
     XCTAssertTrue(0 == memcmp(emptyArray, s_entries, sizeof(VnodeCacheEntry)*s_entriesCapacity));
     
-    free(s_entries);
     free(emptyArray);
+    FreeCacheEntries();
 }
 
 - (void)testTryFindVnodeIndex_SharedLocked_ReturnsStartingIndexWhenNull {
-    s_entriesCapacity = 100;
-    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
     
     vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
@@ -64,28 +72,25 @@ static const VirtualizationRootHandle TestRootHandle = 1;
     XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode, startingIndex, /* out */ cacheIndex));
     XCTAssertTrue(cacheIndex == startingIndex);
     
-    free(s_entries);
+    FreeCacheEntries();
 }
 
 - (void)testTryFindVnodeIndex_SharedLocked_ReturnsFalseWhenCacheFull {
-    s_entriesCapacity = 100;
-    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
-    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
     
     vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
     XCTAssertFalse(TryFindVnodeIndex_Locked(testVnode, startingIndex, /* out */ cacheIndex));
     
-    free(s_entries);
+    FreeCacheEntries();
 }
 
 - (void)testTryFindVnodeIndex_SharedLocked_WrapsToBeginningWhenResolvingCollisions {
-    s_entriesCapacity = 100;
-    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
-    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
+    
     uintptr_t emptyIndex = 2;
-    s_entries[emptyIndex].vnode = nullptr;
+    MarkEntryAsFree(emptyIndex);
     
     vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
@@ -93,15 +98,13 @@ static const VirtualizationRootHandle TestRootHandle = 1;
     XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode, startingIndex, /* out */ cacheIndex));
     XCTAssertTrue(emptyIndex == cacheIndex);
     
-    free(s_entries);
+    FreeCacheEntries();
 }
 
 - (void)testTryFindVnodeIndex_SharedLocked_ReturnsLastIndexWhenEmptyAndResolvingCollisions {
-    s_entriesCapacity = 100;
-    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
-    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
     uintptr_t emptyIndex = s_entriesCapacity - 1;
-    s_entries[emptyIndex].vnode = nullptr;
+    MarkEntryAsFree(emptyIndex);
     
     vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
@@ -109,13 +112,11 @@ static const VirtualizationRootHandle TestRootHandle = 1;
     XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode, startingIndex, /* out */ cacheIndex));
     XCTAssertTrue(emptyIndex == cacheIndex);
     
-    free(s_entries);
+    FreeCacheEntries();
 }
 
 - (void)testTryInsertOrUpdateEntry_ExclusiveLocked_ReturnsFalseWhenFull {
-    s_entriesCapacity = 100;
-    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
-    memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
 
     uintptr_t indexFromHash = 5;
     vnode_t testVnode = &TestVnode;
@@ -129,7 +130,31 @@ static const VirtualizationRootHandle TestRootHandle = 1;
             true, // invalidateEntry
             TestRootHandle));
 
+    FreeCacheEntries();
+}
+
+static void AllocateCacheEntries(uint32_t capacity, bool fillCache)
+{
+    s_entriesCapacity = capacity;
+    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    
+    if (fillCache)
+    {
+        // memsetting a value of 1 across the entire array ensure there's will be no VnodeCacheEntrys with
+        // a null vnode entry
+        memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    }
+}
+
+static void FreeCacheEntries()
+{
+    s_entriesCapacity = 0;
     free(s_entries);
+}
+
+static void MarkEntryAsFree(uintptr_t entryIndex)
+{
+    s_entries[entryIndex].vnode = nullptr;
 }
 
 @end
