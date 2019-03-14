@@ -9,4 +9,6 @@ enum
 
 extern "C" int proc_pid(proc_t);
 extern "C" void proc_name(int pid, char * buf, int size);
-void SetProcName(char* procName);
+extern "C" proc_t vfs_context_proc(vfs_context_t ctx);
+
+void SetProcName(const char* procName);

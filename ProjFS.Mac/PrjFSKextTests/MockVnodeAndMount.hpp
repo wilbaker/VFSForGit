@@ -33,8 +33,8 @@ private:
     std::weak_ptr<vnode> rootVnode;
 
 public:
-    static std::shared_ptr<mount> Create(const char* fileSystemTypeName, fsid_t fsid, uint64_t initialInode);
-    
+    static std::shared_ptr<mount> Create(const char* fileSystemTypeName = "hfs", fsid_t fsid = fsid_t{}, uint64_t initialInode = 0);
+
     std::shared_ptr<vnode> CreateVnodeTree(const std::string& path, vtype vnodeType = VREG);
     // By default, CreateVnode() will create a regular file with an
     // auto-assigned inode and no existing parent vnode.

@@ -7,11 +7,6 @@
 
 using std::shared_ptr;
 
-proc_t vfs_context_proc(vfs_context_t ctx)
-{
-    return NULL;
-}
-
 @interface KauthHandlerTests : XCTestCase
 @end
 
@@ -141,13 +136,13 @@ proc_t vfs_context_proc(vfs_context_t ctx)
 
     
     // Test invalid File System
-    shared_ptr<mount> testMountHfs = mount::Create("hfs", fsid_t{}, 0);
-    shared_ptr<vnode> testVnodeHfs = vnode::Create(testMountHfs, "/hfs");
+    shared_ptr<mount> testMountNone = mount::Create("none", fsid_t{}, 0);
+    shared_ptr<vnode> testVnodeNone = vnode::Create(testMountNone, "/none");
     XCTAssertFalse(
         ShouldHandleVnodeOpEvent(
             &perfTracer,
             context,
-            testVnodeHfs.get(),
+            testVnodeNone.get(),
             action,
             &vnodeType,
             &vnodeFileFlags,
@@ -215,8 +210,7 @@ proc_t vfs_context_proc(vfs_context_t ctx)
 
     // Test with file crawler trying to populate an empty file
     testVnode->attrValues.va_flags = FileFlags_IsEmpty | FileFlags_IsInVirtualizationRoot;
-    char mds[] = "mds";
-    SetProcName(mds);
+    SetProcName("mds");
     XCTAssertFalse(
         ShouldHandleVnodeOpEvent(
             &perfTracer,
@@ -233,8 +227,7 @@ proc_t vfs_context_proc(vfs_context_t ctx)
 
     
     // Test with finder trying to populate an empty file
-    char finder[] = "Finder";
-    SetProcName(finder);
+    SetProcName("Finder");
     XCTAssertTrue(
         ShouldHandleVnodeOpEvent(
             &perfTracer,
