@@ -936,6 +936,14 @@ static bool ShouldHandleFileOpEvent(
         {
             if (KAUTH_FILEOP_RENAME == action)
             {
+                // Directory renames into (or out) of virtualization roots require invalidating all of the entries
+                // within the directory being renamed (because all of those entires now have a new virtualzation root).
+                // Rather than trying to find all vnodes in the cache that are children of the directory being renamed
+                // we simply invalidate the entire cache.
+                //
+                // Potential future optimizations include:
+                //   - Only invalidate the cache if the rename moves a directory in or out of a directory
+                //   - Keeping a per-root generation ID in the cache to allow invalidating a subset of the cache
                 VnodeCache_InvalidateCache(perfTracer);
             }
             
@@ -951,7 +959,8 @@ static bool ShouldHandleFileOpEvent(
         else
         {
             // TODO(Mac): Once all hardlink paths are delivered to the appropriate root(s)
-            // check if `KAUTH_FILEOP_LINK == action` can be removed
+            // check if `KAUTH_FILEOP_LINK == action` can be removed.  For now the check is required to make
+            // sure we're looking up the most up-to-date parent information for the vnode
             if (KAUTH_FILEOP_LINK == action || KAUTH_FILEOP_RENAME == action)
             {
                 *root = VnodeCache_RefreshRootForVnode(
