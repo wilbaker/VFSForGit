@@ -21,7 +21,7 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
-KEXT_STATIC void UpdateCacheForVnode(
+KEXT_STATIC void LookupVnodeRootAndUpdateCache(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
@@ -119,7 +119,7 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
     }
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
-    UpdateCacheForVnode(
+    LookupVnodeRootAndUpdateCache(
         perfTracer,
         cacheMissFallbackFunctionCounter,
         cacheMissFallbackFunctionInnerLoopCounter,
@@ -147,7 +147,7 @@ VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
     uint32_t vnodeVid = vnode_vid(vnode);
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
-    UpdateCacheForVnode(
+    LookupVnodeRootAndUpdateCache(
         perfTracer,
         cacheMissFallbackFunctionCounter,
         cacheMissFallbackFunctionInnerLoopCounter,
@@ -213,7 +213,7 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
     return rootFound;
 }
 
-KEXT_STATIC void UpdateCacheForVnode(
+KEXT_STATIC void LookupVnodeRootAndUpdateCache(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
@@ -255,7 +255,7 @@ KEXT_STATIC void UpdateCacheForVnode(
             {
                 KextLog_FileError(
                     vnode,
-                    "UpdateCacheForVnode: failed to insert vnode (%p:%u) after emptying cache",
+                    "LookupVnodeRootAndUpdateCache: failed to insert vnode (%p:%u) after emptying cache",
                     KextLog_Unslide(vnode), vnodeVid);
             }
         }
