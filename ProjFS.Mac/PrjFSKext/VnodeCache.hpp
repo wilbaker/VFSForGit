@@ -25,4 +25,4 @@ VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
         vnode_t _Nonnull vnode,
         vfs_context_t _Nonnull context);
 
-void VnodeCache_InvalidateCache(PerfTracer* _Nullable perfTracer);
+void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer);

@@ -44,7 +44,8 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     VnodeCacheEntry* emptyArray = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
     XCTAssertTrue(0 != memcmp(emptyArray, s_entries, sizeof(VnodeCacheEntry) * s_entriesCapacity));
     
-    VnodeCache_InvalidateCache(nullptr);
+    PerfTracer dummyPerfTracer;
+    VnodeCache_InvalidateCache(&dummyPerfTracer);
     XCTAssertTrue(0 == memcmp(emptyArray, s_entries, sizeof(VnodeCacheEntry)*s_entriesCapacity));
     
     free(emptyArray);

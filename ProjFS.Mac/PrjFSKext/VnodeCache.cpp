@@ -161,12 +161,9 @@ VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
     return rootHandle;
 }
 
-void VnodeCache_InvalidateCache(PerfTracer* _Nullable perfTracer)
+void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer)
 {
-    if (nullptr != perfTracer)
-    {
-        perfTracer->IncrementCount(PrjFSPerfCounter_CacheInvalidateCount, true /*ignoreSampling*/);
-    }
+    perfTracer->IncrementCount(PrjFSPerfCounter_CacheInvalidateCount, true /*ignoreSampling*/);
 
     RWLock_AcquireExclusive(s_entriesLock);
     {
