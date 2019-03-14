@@ -136,20 +136,26 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 static void AllocateCacheEntries(uint32_t capacity, bool fillCache)
 {
     s_entriesCapacity = capacity;
-    s_entries = static_cast<VnodeCacheEntry*>(calloc(s_entriesCapacity, sizeof(VnodeCacheEntry)));
+    s_entries = new VnodeCacheEntry[s_entriesCapacity];
     
-    if (fillCache)
+    vnode dummyNode;
+    for (uint32_t i = 0; i < s_entriesCapacity; ++i)
     {
-        // memsetting a value of 1 across the entire array ensure there's will be no VnodeCacheEntrys with
-        // a null vnode entry
-        memset(s_entries, 1, s_entriesCapacity * sizeof(VnodeCacheEntry));
+        if (fillCache)
+        {
+            s_entries[i].vnode = &dummyNode;
+        }
+        else
+        {
+            memset(&(s_entries[i]), 0, sizeof(VnodeCacheEntry));
+        }
     }
 }
 
 static void FreeCacheEntries()
 {
     s_entriesCapacity = 0;
-    free(s_entries);
+    delete[] s_entries;
 }
 
 static void MarkEntryAsFree(uintptr_t entryIndex)
