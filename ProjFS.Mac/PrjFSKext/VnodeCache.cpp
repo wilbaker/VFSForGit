@@ -1,4 +1,5 @@
 #include <string.h>
+#include "ArrayUtilities.hpp"
 #include "Locks.hpp"
 #include "VnodeCache.hpp"
 #include "Memory.hpp"
@@ -13,6 +14,7 @@
 
 KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
 KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashIndex(vnode_t _Nonnull vnode);
+KEXT_STATIC_INLINE uint32_t ComputePow2CacheCapacity(int expectedVnodeCount);
 
 KEXT_STATIC bool TryGetVnodeRootFromCache(
     vnode_t _Nonnull vnode,
@@ -48,9 +50,12 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
 
 KEXT_STATIC uint32_t s_entriesCapacity;
 KEXT_STATIC VnodeCacheEntry* s_entries;
+
+// s_entriesCapacity will always be a power of 2, and so we can compute the modulo
+// using (value & s_ModBitmask) rather than (value % s_entriesCapacity);
+KEXT_STATIC uintptr_t s_ModBitmask;
+
 static RWLock s_entriesLock;
-static const uint32_t MinEntriesCapacity = 0x040000; //  4 MB (assuming 16 bytes per VnodeCacheEntry)
-static const uint32_t MaxEntriesCapacity = 0x400000; // 64 MB (assuming 16 bytes per VnodeCacheEntry)
 
 kern_return_t VnodeCache_Init()
 {
@@ -65,7 +70,8 @@ kern_return_t VnodeCache_Init()
         return KERN_FAILURE;
     }
 
-    s_entriesCapacity = Clamp(desiredvnodes * 2u, MinEntriesCapacity, MaxEntriesCapacity);
+    s_entriesCapacity = ComputePow2CacheCapacity(desiredvnodes);
+    s_ModBitmask = s_entriesCapacity - 1;
     
     s_entries = Memory_AllocArray<VnodeCacheEntry>(s_entriesCapacity);
     if (nullptr == s_entries)
@@ -177,10 +183,26 @@ KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked()
     memset(s_entries, 0, s_entriesCapacity * sizeof(VnodeCacheEntry));
 }
 
+KEXT_STATIC_INLINE uint32_t ComputePow2CacheCapacity(int expectedVnodeCount)
+{
+    uint32_t idealCacheSize = expectedVnodeCount * 2;
+    size_t index = 0;
+    uint32_t capacity;
+    
+    do
+    {
+        capacity = AllowedPow2CacheCapacities[index];
+        ++index;
+    }
+    while (capacity < idealCacheSize && index < Array_Size(AllowedPow2CacheCapacities));
+    
+    return capacity;
+}
+
 KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashIndex(vnode_t _Nonnull vnode)
 {
     uintptr_t vnodeAddress = reinterpret_cast<uintptr_t>(vnode);
-    return (vnodeAddress >> 3) % s_entriesCapacity;
+    return (vnodeAddress >> 3) & s_ModBitmask;
 }
 
 KEXT_STATIC bool TryGetVnodeRootFromCache(
