@@ -276,7 +276,11 @@ KEXT_STATIC bool TryFindVnodeIndex_Locked(
     vnodeIndex = vnodeHashIndex;
     while (vnode != s_entries[vnodeIndex].vnode && NULLVP != s_entries[vnodeIndex].vnode)
     {
-        vnodeIndex = (vnodeIndex + 1) % s_entriesCapacity;
+        ++vnodeIndex;
+        if (vnodeIndex == s_entriesCapacity)
+        {
+            vnodeIndex = 0;
+        }
         
         if (vnodeIndex == vnodeHashIndex)
         {
