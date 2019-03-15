@@ -23,6 +23,10 @@ struct vnode
     int dummyData;
 };
 
+void PerfTracing_RecordSample(PrjFSPerfCounter counter, uint64_t startTime, uint64_t endTime)
+{
+}
+
 static vnode TestVnode;
 static const VirtualizationRootHandle TestRootHandle = 1;
 
