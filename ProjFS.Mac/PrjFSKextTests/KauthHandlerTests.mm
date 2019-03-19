@@ -29,20 +29,19 @@ bool ProviderMessaging_TrySendRequestAndWaitForResponse(
     int* kauthResult,
     int* kauthError)
 {
-/*
-   MockCalls::RecordFunctionCall(
-      ProviderMessaging_TrySendRequestAndWaitForResponse,
-      root,
-      messageType,
-      vnode,
-      vnodeFsidInode,
-      vnodePath,
-      pid,
-      procname,
-      kauthResult,
-      kauthError);
-      */
-   return true;
+    MockCalls::RecordFunctionCall(
+        ProviderMessaging_TrySendRequestAndWaitForResponse,
+        root,
+        messageType,
+        vnode,
+        vnodeFsidInode,
+        vnodePath,
+        pid,
+        procname,
+        kauthResult,
+        kauthError);
+      
+    return true;
 }
 
 @interface KauthHandlerTests : XCTestCase

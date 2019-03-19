@@ -68,6 +68,22 @@ public:
         SpecificFunctionCallRecorder<R, ARGS...>::functionTypeRegister.RecordFunctionCall(fn, singleton.nextCallSequenceNumber++);
     }
     
+    template <typename R, typename... ARGS>
+        static void RecordFunctionCall(R (*fn)(ARGS...))
+    {
+        singleton.functionTypeCallRecorders.insert(&SpecificFunctionCallRecorder<R, ARGS...>::functionTypeRegister);
+        
+        SpecificFunctionCallRecorder<R, ARGS...>::functionTypeRegister.RecordFunctionCall(fn, singleton.nextCallSequenceNumber++);
+    }
+
+    template <typename R, typename... ARGS, typename... ACTUAL_ARGS>
+        static void RecordFunctionCall(R (*fn)(ARGS...), ACTUAL_ARGS... args)
+    {
+        singleton.functionTypeCallRecorders.insert(&SpecificFunctionCallRecorder<R, ARGS...>::functionTypeRegister);
+        
+        SpecificFunctionCallRecorder<R, ARGS...>::functionTypeRegister.RecordFunctionCall(fn, singleton.nextCallSequenceNumber++);
+    }
+
     static void Clear();
     
     template <typename R, typename... ARGS>
