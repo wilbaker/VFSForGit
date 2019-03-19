@@ -1,11 +1,49 @@
 #include "../PrjFSKext/kernel-header-wrappers/vnode.h"
 #include "../PrjFSKext/KauthHandlerTestable.hpp"
+#include "../PrjFSKext/VirtualizationRoots.hpp"
+#include "../PrjFSKext/PrjFSProviderUserClient.hpp"
+#include "../PrjFSKext/VirtualizationRootsTestable.hpp"
 #include "../PrjFSKext/PerformanceTracing.hpp"
+#include "../PrjFSKext/public/Message.h"
+#include "../PrjFSKext/ProviderMessaging.hpp"
+#include "../PrjFSKext/public/PrjFSXattrs.h"
 #import <XCTest/XCTest.h>
+#include "KextMockUtilities.hpp"
 #include "MockVnodeAndMount.hpp"
 #include "MockProc.hpp"
 
 using std::shared_ptr;
+
+class PrjFSProviderUserClient
+{
+};
+
+bool ProviderMessaging_TrySendRequestAndWaitForResponse(
+    VirtualizationRootHandle root,
+    MessageType messageType,
+    const vnode_t vnode,
+    const FsidInode& vnodeFsidInode,
+    const char* vnodePath,
+    int pid,
+    const char* procname,
+    int* kauthResult,
+    int* kauthError)
+{
+/*
+   MockCalls::RecordFunctionCall(
+      ProviderMessaging_TrySendRequestAndWaitForResponse,
+      root,
+      messageType,
+      vnode,
+      vnodeFsidInode,
+      vnodePath,
+      pid,
+      procname,
+      kauthResult,
+      kauthError);
+      */
+   return true;
+}
 
 @interface KauthHandlerTests : XCTestCase
 @end
@@ -242,5 +280,54 @@ using std::shared_ptr;
             &kauthError));
     XCTAssertEqual(kauthResult, KAUTH_RESULT_DEFER);
 }
+
+/*
+KEXT_STATIC int HandleVnodeOperation(
+    kauth_cred_t    credential,
+    void*           idata,
+    kauth_action_t  action,
+    uintptr_t       arg0,
+    uintptr_t       arg1,
+    uintptr_t       arg2,
+    uintptr_t       arg3);
+*/
+- (void)testHandleVnodeOpEvent {
+    // Setup
+    kern_return_t initResult = VirtualizationRoots_Init();
+    XCTAssertEqual(initResult, KERN_SUCCESS);
+
+    // Parameters
+    const char* repoPath = "/Users/test/code/Repo";
+    const char* filePath = "/Users/test/code/Repo/file";
+    vfs_context_t _Nonnull context = vfs_context_create(NULL);
+    PerfTracer perfTracer;
+    PrjFSProviderUserClient dummyClient;
+    pid_t dummyClientPid=100;
+
+    // Create Vnode Tree
+    shared_ptr<mount> testMount = mount::Create();
+    shared_ptr<vnode> repoRootVnode = testMount->CreateVnodeTree(repoPath, VDIR);
+    shared_ptr<vnode> testFileVnode = testMount->CreateVnodeTree(filePath);
+
+    // Register provider for the repository path (Simulate a mount)
+    VirtualizationRootResult result = VirtualizationRoot_RegisterProviderForPath(&dummyClient, dummyClientPid, repoPath);
+    XCTAssertEqual(result.error, 0);
+    vnode_put(s_virtualizationRoots[result.root].rootVNode);
+    
+    // Read a file that has not been hydrated yet
+    testFileVnode->attrValues.va_flags = FileFlags_IsEmpty | FileFlags_IsInVirtualizationRoot;
+    HandleVnodeOperation(
+        nullptr,
+        nullptr,
+        KAUTH_VNODE_READ_DATA,
+        reinterpret_cast<uintptr_t>(context),
+        reinterpret_cast<uintptr_t>(testFileVnode.get()),
+        0,
+        0);
+
+    // Teardown
+    VirtualizationRoots_Cleanup();
+}
+
 
 @end

@@ -29,7 +29,7 @@ enum ProviderCallbackPolicy
 };
 
 // Function prototypes
-static int HandleVnodeOperation(
+KEXT_STATIC int HandleVnodeOperation(
     kauth_cred_t    credential,
     void*           idata,
     kauth_action_t  action,
@@ -206,7 +206,7 @@ static void UseMainForkIfNamedStream(
 }
 
 // Private functions
-static int HandleVnodeOperation(
+KEXT_STATIC int HandleVnodeOperation(
     kauth_cred_t    credential,
     void*           idata,
     kauth_action_t  action,
