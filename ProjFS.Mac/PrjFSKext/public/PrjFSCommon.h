@@ -34,22 +34,6 @@ enum PrjFSServiceUserClientType
     UserClientType_Log,
 };
 
-template <typename T>
-T Clamp(T value, T min, T max)
-{
-    if (value < min)
-    {
-        return min;
-    }
-    
-    if (value > max)
-    {
-        return max;
-    }
-    
-    return value;
-}
-
 // When building the kext in user space for unit testing, we want some functions
 // to have external linkage in order to make them testable
 #ifdef KEXT_UNIT_TESTING

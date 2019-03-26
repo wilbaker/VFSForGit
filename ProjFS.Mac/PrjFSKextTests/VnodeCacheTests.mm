@@ -158,7 +158,7 @@ static void AllocateCacheEntries(uint32_t capacity, bool fillCache)
     s_entriesCapacity = capacity;
     s_entries = new VnodeCacheEntry[s_entriesCapacity];
     
-    vnode dummyNode;
+    static vnode dummyNode;
     for (uint32_t i = 0; i < s_entriesCapacity; ++i)
     {
         if (fillCache)

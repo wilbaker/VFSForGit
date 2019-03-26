@@ -321,8 +321,19 @@ static int HandleVnodeOperation(
             // Recursively expand directory on delete to ensure child placeholders are created before rename operations
             if (isDeleteAction)
             {
-                // Prevent system services from expanding directories as part of enumeration as this tends to cause deadlocks with the kauth listeners for Antivirus software
-                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, CallbackPolicy_UserInitiatedOnly, isDeleteAction, &root, &vnodeFsidInode, &kauthResult, kauthError))
+                // Prevent system services from expanding directories as part of enumeration as this tends to cause deadlocks
+                // with the kauth listeners for Antivirus software
+                if (!TryGetVirtualizationRoot(
+                        &perfTracer,
+                        context,
+                        currentVnode,
+                        pid,
+                        CallbackPolicy_UserInitiatedOnly,
+                        isDeleteAction,
+                        &root,
+                        &vnodeFsidInode,
+                        &kauthResult,
+                        kauthError))
                 {
                     goto CleanupAndReturn;
                 }
@@ -345,8 +356,19 @@ static int HandleVnodeOperation(
             }
             else if (FileFlagsBitIsSet(currentVnodeFileFlags, FileFlags_IsEmpty))
             {
-                // Prevent system services from expanding directories as part of enumeration as this tends to cause deadlocks with the kauth listeners for Antivirus software
-                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, CallbackPolicy_UserInitiatedOnly, isDeleteAction, &root, &vnodeFsidInode, &kauthResult, kauthError))
+                // Prevent system services from expanding directories as part of enumeration as this tends to cause deadlocks
+                // with the kauth listeners for Antivirus software
+                if (!TryGetVirtualizationRoot(
+                        &perfTracer,
+                        context,
+                        currentVnode,
+                        pid,
+                        CallbackPolicy_UserInitiatedOnly,
+                        isDeleteAction,
+                        &root,
+                        &vnodeFsidInode,
+                        &kauthResult,
+                        kauthError))
                 {
                     goto CleanupAndReturn;
                 }
@@ -384,8 +406,19 @@ static int HandleVnodeOperation(
         {
             if (FileFlagsBitIsSet(currentVnodeFileFlags, FileFlags_IsEmpty))
             {
-                // Prevent system services from hydrating files as this tends to cause deadlocks with the kauth listeners for Antivirus software
-                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, CallbackPolicy_UserInitiatedOnly, isDeleteAction, &root, &vnodeFsidInode, &kauthResult, kauthError))
+                // Prevent system services from hydrating files as this tends to cause deadlocks
+                // with the kauth listeners for Antivirus software
+                if (!TryGetVirtualizationRoot(
+                        &perfTracer,
+                        context,
+                        currentVnode,
+                        pid,
+                        CallbackPolicy_UserInitiatedOnly,
+                        isDeleteAction,
+                        &root,
+                        &vnodeFsidInode,
+                        &kauthResult,
+                        kauthError))
                 {
                     goto CleanupAndReturn;
                 }
