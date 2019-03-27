@@ -23,6 +23,20 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
+enum UpdateCacheBehavior
+{
+    UpdateCacheBehavior_Invalid = 0,
+    
+    // If the current entry is up-to-date it will be used
+    UpdateCacheBehavior_TrustCurrentEntry,
+    
+    // The current entry will be replaced with the new root
+    UpdateCacheBehavior_ForceRefresh,
+    
+    // The current entry will have its root marked as invalid (forcing the next lookup to find the root)
+    UpdateCacheBehavior_InvalidateEntry,
+};
+
 KEXT_STATIC void LookupVnodeRootAndUpdateCache(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
@@ -31,7 +45,7 @@ KEXT_STATIC void LookupVnodeRootAndUpdateCache(
     vnode_t _Nonnull vnode,
     uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
-    bool forceRefreshEntry,
+    UpdateCacheBehavior updateEntryBehavior,
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
@@ -45,7 +59,7 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     vnode_t _Nonnull vnode,
     uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
-    bool invalidateEntry,
+    bool forceRefreshEntry,
     VirtualizationRootHandle rootHandle);
 
 KEXT_STATIC uint32_t s_entriesCapacity;
@@ -133,7 +147,7 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
         vnode,
         vnodeHashIndex,
         vnodeVid,
-        false, // forceRefreshEntry
+        UpdateCacheBehavior_TrustCurrentEntry,
         rootHandle);
     
     return rootHandle;
@@ -161,7 +175,35 @@ VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
         vnode,
         vnodeHashIndex,
         vnodeVid,
-        true, // forceRefreshEntry
+        UpdateCacheBehavior_ForceRefresh,
+        rootHandle);
+    
+    return rootHandle;
+}
+
+VirtualizationRootHandle VnodeCache_InvalidateVnodeAndGetLatestRoot(
+    PerfTracer* _Nonnull perfTracer,
+    PrjFSPerfCounter cacheHitCounter,
+    PrjFSPerfCounter cacheMissCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
+    vnode_t _Nonnull vnode,
+    vfs_context_t _Nonnull context)
+{
+    VirtualizationRootHandle rootHandle = RootHandle_None;
+    uintptr_t vnodeHashIndex = ComputeVnodeHashIndex(vnode);
+    uint32_t vnodeVid = vnode_vid(vnode);
+    
+    perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
+    LookupVnodeRootAndUpdateCache(
+        perfTracer,
+        cacheMissFallbackFunctionCounter,
+        cacheMissFallbackFunctionInnerLoopCounter,
+        context,
+        vnode,
+        vnodeHashIndex,
+        vnodeVid,
+        UpdateCacheBehavior_InvalidateEntry,
         rootHandle);
     
     return rootHandle;
@@ -220,7 +262,9 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
         uintptr_t vnodeIndex;
         if (TryFindVnodeIndex_Locked(vnode, vnodeHashIndex, /*out*/ vnodeIndex))
         {
-            if (vnode == s_entries[vnodeIndex].vnode && vnodeVid == s_entries[vnodeIndex].vid)
+            if (vnode == s_entries[vnodeIndex].vnode &&
+                vnodeVid == s_entries[vnodeIndex].vid &&
+                RootHandle_Indeterminate != s_entries[vnodeIndex].virtualizationRoot)
             {
                 rootFound = true;
                 rootHandle = s_entries[vnodeIndex].virtualizationRoot;
@@ -240,7 +284,7 @@ KEXT_STATIC void LookupVnodeRootAndUpdateCache(
     vnode_t _Nonnull vnode,
     uintptr_t vnodeHashIndex,
     uint32_t vnodeVid,
-    bool forceRefreshEntry,
+    UpdateCacheBehavior updateEntryBehavior,
     /* out parameters */
     VirtualizationRootHandle& rootHandle)
 {
@@ -251,6 +295,26 @@ KEXT_STATIC void LookupVnodeRootAndUpdateCache(
         vnode,
         context);
 
+    bool forceRefreshEntry;
+    VirtualizationRootHandle rootToInsert;
+    switch (updateEntryBehavior)
+    {
+      case UpdateCacheBehavior_ForceRefresh:
+        rootToInsert = rootHandle;
+        forceRefreshEntry = true;
+        break;
+        
+      case UpdateCacheBehavior_InvalidateEntry:
+        rootToInsert = RootHandle_Indeterminate;
+        forceRefreshEntry = true;
+        break;
+
+      default:
+        rootToInsert = rootHandle;
+        forceRefreshEntry = false;
+        break;
+    }
+
     RWLock_AcquireExclusive(s_entriesLock);
     {
         if (!TryInsertOrUpdateEntry_ExclusiveLocked(
@@ -258,7 +322,7 @@ KEXT_STATIC void LookupVnodeRootAndUpdateCache(
                 vnodeHashIndex,
                 vnodeVid,
                 forceRefreshEntry,
-                rootHandle))
+                rootToInsert))
         {
             // TryInsertOrUpdateEntry_ExclusiveLocked can only fail if the cache is full
             
@@ -269,13 +333,14 @@ KEXT_STATIC void LookupVnodeRootAndUpdateCache(
                         vnode,
                         vnodeHashIndex,
                         vnodeVid,
-                        true, // invalidateEntry
-                        rootHandle))
+                        true, // forceRefreshEntry
+                        rootToInsert))
             {
                 KextLog_FileError(
                     vnode,
                     "LookupVnodeRootAndUpdateCache: failed to insert vnode (%p:%u) after emptying cache",
-                    KextLog_Unslide(vnode), vnodeVid);
+                    KextLog_Unslide(vnode),
+                    vnodeVid);
             }
         }
     }
@@ -321,7 +386,10 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     uintptr_t vnodeIndex;
     if (TryFindVnodeIndex_Locked(vnode, vnodeHashIndex, /*out*/ vnodeIndex))
     {
-        if (forceRefreshEntry || NULLVP == s_entries[vnodeIndex].vnode || vnodeVid != s_entries[vnodeIndex].vid)
+        if (forceRefreshEntry ||
+            NULLVP == s_entries[vnodeIndex].vnode ||
+            vnodeVid != s_entries[vnodeIndex].vid ||
+            RootHandle_Indeterminate == s_entries[vnodeIndex].virtualizationRoot)
         {
             s_entries[vnodeIndex].vnode = vnode;
             s_entries[vnodeIndex].vid = vnodeVid;
@@ -333,7 +401,7 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
             {
                 KextLog_FileError(
                     vnode,
-                    "TryInsertOrUpdateEntry_ExclusiveLocked: vnode (%p:%u) has different root in cache:%hu than was found walking tree: %hu",
+                    "TryInsertOrUpdateEntry_ExclusiveLocked: vnode (%p:%u) has different root in cache(%hd) than was found walking tree(%hd)",
                     KextLog_Unslide(vnode),
                     vnodeVid,
                     s_entries[vnodeIndex].virtualizationRoot,
