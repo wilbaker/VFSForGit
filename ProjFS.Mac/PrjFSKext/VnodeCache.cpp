@@ -1,5 +1,4 @@
 #include <string.h>
-#include "ArrayUtilities.hpp"
 #include "Locks.hpp"
 #include "VnodeCache.hpp"
 #include "Memory.hpp"

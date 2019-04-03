@@ -2,7 +2,6 @@
 
 typedef int16_t VirtualizationRootHandle;
 
-#include "../PrjFSKext/ArrayUtilities.hpp"
 #include "../PrjFSKext/VnodeCache.hpp"
 #include "../PrjFSKext/VnodeCacheTestable.hpp"
 #include "../PrjFSKext/VnodeCachePrivate.hpp"
