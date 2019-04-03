@@ -2,6 +2,7 @@
 
 typedef int16_t VirtualizationRootHandle;
 
+#include "MockVnodeAndMount.hpp"
 #include "KextLogMock.h"
 #include "KextMockUtilities.hpp"
 #include "../PrjFSKext/VnodeCache.hpp"
@@ -9,24 +10,22 @@ typedef int16_t VirtualizationRootHandle;
 #include "../PrjFSKext/VnodeCacheTestable.hpp"
 
 using KextMock::_;
+using std::shared_ptr;
 
 @interface VnodeCacheTests : XCTestCase
 @end
 
 @implementation VnodeCacheTests
+{
+    shared_ptr<mount> testMount;
+    shared_ptr<vnode> testVnode;
+}
 
 // Dummy vfs_context implementation for vfs_context_t
 struct vfs_context
 {
 };
 
-// Dummy vnode implementation for vnode_t
-struct vnode
-{
-    int dummyData;
-};
-
-static vnode TestVnode;
 static const VirtualizationRootHandle TestRootHandle = 1;
 static const VirtualizationRootHandle TestSecondRootHandle = 2;
 
@@ -36,10 +35,14 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 
 - (void) setUp
 {
+    testMount = mount::Create();
+    testVnode = testMount->CreateVnodeTree("/Users/test/code/Repo/file");
 }
 
 - (void) tearDown
 {
+    testVnode.reset();
+    testMount.reset();
     MockCalls::Clear();
 }
 
@@ -58,12 +61,12 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 
 - (void)testComputeVnodeHashKeyWithCapacityOfOne {
     s_entriesCapacity = 1;
-    vnode testVnode2;
-    vnode testVnode3;
+    shared_ptr<vnode> testVnode2 = testMount->CreateVnodeTree("/Users/test/code/Repo/file2");
+    shared_ptr<vnode> testVnode3 = testMount->CreateVnodeTree("/Users/test/code/Repo/file3");
     
-    XCTAssertTrue(0 == ComputeVnodeHashIndex(&TestVnode));
-    XCTAssertTrue(0 == ComputeVnodeHashIndex(&testVnode2));
-    XCTAssertTrue(0 == ComputeVnodeHashIndex(&testVnode3));
+    XCTAssertTrue(0 == ComputeVnodeHashIndex(testVnode.get()));
+    XCTAssertTrue(0 == ComputeVnodeHashIndex(testVnode2.get()));
+    XCTAssertTrue(0 == ComputeVnodeHashIndex(testVnode3.get()));
 }
 
 - (void)testVnodeCache_InvalidateCache_SetsMemoryToZeros {
@@ -74,6 +77,8 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     PerfTracer dummyPerfTracer;
     VnodeCache_InvalidateCache(&dummyPerfTracer);
     XCTAssertTrue(0 == memcmp(emptyArray, s_entries, sizeof(VnodeCacheEntry)*s_entriesCapacity));
+    
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
     
     free(emptyArray);
     FreeCacheEntries();
@@ -87,6 +92,8 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     InvalidateCache_ExclusiveLocked();
     XCTAssertTrue(0 == memcmp(emptyArray, s_entries, sizeof(VnodeCacheEntry)*s_entriesCapacity));
     
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
+    
     free(emptyArray);
     FreeCacheEntries();
 }
@@ -94,11 +101,11 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 - (void)testTryFindVnodeIndex_Locked_ReturnsStartingIndexWhenNull {
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
     
-    vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
-    XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode, startingIndex, /* out */ cacheIndex));
+    XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode.get(), startingIndex, /* out */ cacheIndex));
     XCTAssertTrue(cacheIndex == startingIndex);
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
     
     FreeCacheEntries();
 }
@@ -106,10 +113,11 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 - (void)testTryFindVnodeIndex_Locked_ReturnsFalseWhenCacheFull {
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
     
-    vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
-    XCTAssertFalse(TryFindVnodeIndex_Locked(testVnode, startingIndex, /* out */ cacheIndex));
+    XCTAssertFalse(TryFindVnodeIndex_Locked(testVnode.get(), startingIndex, /* out */ cacheIndex));
+    
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
     
     FreeCacheEntries();
 }
@@ -120,11 +128,12 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     uintptr_t emptyIndex = 2;
     MarkEntryAsFree(emptyIndex);
     
-    vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
-    XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode, startingIndex, /* out */ cacheIndex));
+    XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode.get(), startingIndex, /* out */ cacheIndex));
     XCTAssertTrue(emptyIndex == cacheIndex);
+    
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
     
     FreeCacheEntries();
 }
@@ -134,11 +143,12 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     uintptr_t emptyIndex = s_entriesCapacity - 1;
     MarkEntryAsFree(emptyIndex);
     
-    vnode_t testVnode = &TestVnode;
     uintptr_t startingIndex = 5;
     uintptr_t cacheIndex;
-    XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode, startingIndex, /* out */ cacheIndex));
+    XCTAssertTrue(TryFindVnodeIndex_Locked(testVnode.get(), startingIndex, /* out */ cacheIndex));
     XCTAssertTrue(emptyIndex == cacheIndex);
+    
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
     
     FreeCacheEntries();
 }
@@ -147,29 +157,29 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
 
     uintptr_t indexFromHash = 5;
-    vnode_t testVnode = &TestVnode;
     uint32_t testVnodeVid = 7;
 
     XCTAssertFalse(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testVnode,
+            testVnode.get(),
             indexFromHash,
             testVnodeVid,
             true, // forceRefreshEntry
             TestRootHandle));
+
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 
     FreeCacheEntries();
 }
 
 - (void)testTryInsertOrUpdateEntry_ExclusiveLocked_ReplacesIndeterminateEntry {
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
-    vnode_t testVnode = &TestVnode;
-    uintptr_t indexFromHash = ComputeVnodeHashIndex(testVnode);
-    uint32_t testVnodeVid = 7;
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(testVnode.get());
+    uint32_t testVnodeVid = testVnode->GetVid();
 
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testVnode,
+            testVnode.get(),
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
@@ -179,7 +189,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testVnode,
+            testVnode.get(),
             indexFromHash,
             testVnodeVid,
             true, // forceRefreshEntry
@@ -189,7 +199,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testVnode,
+            testVnode.get(),
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
@@ -200,27 +210,71 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     PerfTracer dummyPerfTracer;
     vfs_context dummyContext;
     
-    VnodeCache_FindRootForVnode(
+    XCTAssertTrue(TestRootHandle == VnodeCache_FindRootForVnode(
         &dummyPerfTracer,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        testVnode,
-        &dummyContext);
+        testVnode.get(),
+        &dummyContext));
+
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
+
+    FreeCacheEntries();
+}
+
+- (void)testTryInsertOrUpdateEntry_ExclusiveLocked_ReplacesEntryAfterRecyclingVnode {
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(testVnode.get());
+    
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testVnode.get(),
+            indexFromHash,
+            testVnode->GetVid(),
+            false, // forceRefreshEntry
+            TestRootHandle));
+    XCTAssertTrue(testVnode->GetVid() == s_entries[indexFromHash].vid);
+    XCTAssertTrue(TestRootHandle == s_entries[indexFromHash].virtualizationRoot);
+    
+    testVnode->StartRecycling();
+    
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testVnode.get(),
+            indexFromHash,
+            testVnode->GetVid(),
+            false, // forceRefreshEntry
+            TestSecondRootHandle));
+    XCTAssertTrue(testVnode->GetVid() == s_entries[indexFromHash].vid);
+    XCTAssertTrue(TestSecondRootHandle == s_entries[indexFromHash].virtualizationRoot);
+
+    PerfTracer dummyPerfTracer;
+    vfs_context dummyContext;
+    
+    XCTAssertTrue(TestSecondRootHandle == VnodeCache_FindRootForVnode(
+        &dummyPerfTracer,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        testVnode.get(),
+        &dummyContext));
+    
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 
     FreeCacheEntries();
 }
 
 - (void)testTryInsertOrUpdateEntry_ExclusiveLocked_LogsErrorWhenCacheHasDifferentRoot {
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
-    vnode_t testVnode = &TestVnode;
-    uintptr_t indexFromHash = ComputeVnodeHashIndex(testVnode);
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(testVnode.get());
     uint32_t testVnodeVid = 7;
 
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testVnode,
+            testVnode.get(),
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
@@ -230,7 +284,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testVnode,
+            testVnode.get(),
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
@@ -243,7 +297,6 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     FreeCacheEntries();
 }
 
-// TryInsertOrUpdateEntry_ExclusiveLocked
 // VnodeCache_FindRootForVnode
 // VnodeCache_RefreshRootForVnode
 // VnodeCache_InvalidateVnodeAndGetLatestRoot
@@ -255,12 +308,13 @@ static void AllocateCacheEntries(uint32_t capacity, bool fillCache)
     s_entriesCapacity = capacity;
     s_entries = new VnodeCacheEntry[s_entriesCapacity];
     
-    static vnode dummyNode;
+    static shared_ptr<mount> dummyMount = mount::Create();
+    static shared_ptr<vnode> dummyNode = dummyMount->CreateVnodeTree("/DUMMY");
     for (uint32_t i = 0; i < s_entriesCapacity; ++i)
     {
         if (fillCache)
         {
-            s_entries[i].vnode = &dummyNode;
+            s_entries[i].vnode = dummyNode.get();
         }
         else
         {
