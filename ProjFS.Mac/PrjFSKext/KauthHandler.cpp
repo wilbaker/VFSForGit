@@ -273,16 +273,7 @@ KEXT_STATIC int HandleVnodeOperation(
     {
         // Allow any user to delete individual files, as this generally doesn't cause nested kauth callbacks.
         ProviderCallbackPolicy callbackPolicy = isDirectory ? CallbackPolicy_UserInitiatedOnly : CallbackPolicy_AllowAny;
-        if (!TryGetVirtualizationRoot(
-                &perfTracer,
-                context,
-                currentVnode,
-                pid,
-                callbackPolicy,
-                &root,
-                &vnodeFsidInode,
-                &kauthResult,
-                kauthError))
+        if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, callbackPolicy, &root, &vnodeFsidInode, &kauthResult, kauthError))
         {
             goto CleanupAndReturn;
         }
@@ -320,18 +311,8 @@ KEXT_STATIC int HandleVnodeOperation(
             // Recursively expand directory on delete to ensure child placeholders are created before rename operations
             if (isDeleteAction)
             {
-                // Prevent system services from expanding directories as part of enumeration as this tends to cause deadlocks
-                // with the kauth listeners for Antivirus software
-                if (!TryGetVirtualizationRoot(
-                        &perfTracer,
-                        context,
-                        currentVnode,
-                        pid,
-                        CallbackPolicy_UserInitiatedOnly,
-                        &root,
-                        &vnodeFsidInode,
-                        &kauthResult,
-                        kauthError))
+                // Prevent system services from expanding directories as part of enumeration as this tends to cause deadlocks with the kauth listeners for Antivirus software
+                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, CallbackPolicy_UserInitiatedOnly, &root, &vnodeFsidInode, &kauthResult, kauthError))
                 {
                     goto CleanupAndReturn;
                 }
@@ -354,18 +335,8 @@ KEXT_STATIC int HandleVnodeOperation(
             }
             else if (FileFlagsBitIsSet(currentVnodeFileFlags, FileFlags_IsEmpty))
             {
-                // Prevent system services from expanding directories as part of enumeration as this tends to cause deadlocks
-                // with the kauth listeners for Antivirus software
-                if (!TryGetVirtualizationRoot(
-                        &perfTracer,
-                        context,
-                        currentVnode,
-                        pid,
-                        CallbackPolicy_UserInitiatedOnly,
-                        &root,
-                        &vnodeFsidInode,
-                        &kauthResult,
-                        kauthError))
+                // Prevent system services from expanding directories as part of enumeration as this tends to cause deadlocks with the kauth listeners for Antivirus software
+                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, CallbackPolicy_UserInitiatedOnly, &root, &vnodeFsidInode, &kauthResult, kauthError))
                 {
                     goto CleanupAndReturn;
                 }
@@ -403,18 +374,8 @@ KEXT_STATIC int HandleVnodeOperation(
         {
             if (FileFlagsBitIsSet(currentVnodeFileFlags, FileFlags_IsEmpty))
             {
-                // Prevent system services from hydrating files as this tends to cause deadlocks
-                // with the kauth listeners for Antivirus software
-                if (!TryGetVirtualizationRoot(
-                        &perfTracer,
-                        context,
-                        currentVnode,
-                        pid,
-                        CallbackPolicy_UserInitiatedOnly,
-                        &root,
-                        &vnodeFsidInode,
-                        &kauthResult,
-                        kauthError))
+                // Prevent system services from hydrating files as this tends to cause deadlocks with the kauth listeners for Antivirus software
+                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, CallbackPolicy_UserInitiatedOnly, &root, &vnodeFsidInode, &kauthResult, kauthError))
                 {
                     goto CleanupAndReturn;
                 }
@@ -438,16 +399,7 @@ KEXT_STATIC int HandleVnodeOperation(
             
             if (ActionBitIsSet(action, KAUTH_VNODE_WRITE_DATA))
             {
-                if (!TryGetVirtualizationRoot(
-                        &perfTracer,
-                        context,
-                        currentVnode,
-                        pid,
-                        CallbackPolicy_UserInitiatedOnly,
-                        &root,
-                        &vnodeFsidInode,
-                        &kauthResult,
-                        kauthError))
+                if (!TryGetVirtualizationRoot(&perfTracer, context, currentVnode, pid, CallbackPolicy_UserInitiatedOnly, &root, &vnodeFsidInode, &kauthResult, kauthError))
                 {
                     goto CleanupAndReturn;
                 }

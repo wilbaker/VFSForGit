@@ -99,7 +99,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
 - (void) testEmptyFileHydrates {
     testFileVnode->attrValues.va_flags = FileFlags_IsEmpty | FileFlags_IsInVirtualizationRoot;
     SetPrjFSFileXattrData(testFileVnode);
-
+    
     const int actionCount = 8;
     kauth_action_t actions[actionCount] =
     {
@@ -112,7 +112,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
         KAUTH_VNODE_EXECUTE,
         KAUTH_VNODE_DELETE,
     };
-
+    
     for (int i = 0; i < actionCount; i++)
     {
         HandleVnodeOperation(
@@ -142,7 +142,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
 - (void) testVnodeAccessCausesNoEvent {
     testFileVnode->attrValues.va_flags = FileFlags_IsEmpty | FileFlags_IsInVirtualizationRoot;
     SetPrjFSFileXattrData(testFileVnode);
-
+    
     const int actionCount = 8;
     kauth_action_t actions[actionCount] =
     {
@@ -155,7 +155,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
         KAUTH_VNODE_EXECUTE | KAUTH_VNODE_ACCESS,
         KAUTH_VNODE_DELETE | KAUTH_VNODE_ACCESS,
     };
-
+    
     for (int i = 0; i < actionCount; i++)
     {
         HandleVnodeOperation(
@@ -174,7 +174,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
 
 - (void) testNonEmptyFileDoesNotHydrate {
     testFileVnode->attrValues.va_flags = FileFlags_IsInVirtualizationRoot;
-
+    
     const int actionCount = 8;
     kauth_action_t actions[actionCount] =
     {
@@ -187,7 +187,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
         KAUTH_VNODE_EXECUTE,
         KAUTH_VNODE_DELETE,
     };
-
+    
     for (int i = 0; i < actionCount; i++)
     {
         HandleVnodeOperation(
@@ -217,7 +217,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
 - (void) testNonEmptyFileWithPrjFSFileXAttrNameDoesNotHydrate {
     testFileVnode->attrValues.va_flags = FileFlags_IsInVirtualizationRoot;
     SetPrjFSFileXattrData(testFileVnode);
-
+    
     const int actionCount = 8;
     kauth_action_t actions[actionCount] =
     {
@@ -230,7 +230,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
         KAUTH_VNODE_EXECUTE,
         KAUTH_VNODE_DELETE,
     };
-
+    
     for (int i = 0; i < actionCount; i++)
     {
         HandleVnodeOperation(
@@ -381,7 +381,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
         KAUTH_VNODE_READ_ATTRIBUTES,
         KAUTH_VNODE_READ_EXTATTRIBUTES
     };
-
+    
     for (int i = 0; i < actionCount; i++)
     {
         HandleVnodeOperation(
@@ -619,7 +619,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
         reinterpret_cast<uintptr_t>(filePath),
         0,
         0);
-
+    
     XCTAssertTrue(
        MockCalls::DidCallFunction(
             ProviderMessaging_TrySendRequestAndWaitForResponse,
@@ -661,7 +661,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
         reinterpret_cast<uintptr_t>(filePath),
         KAUTH_FILEOP_CLOSE_MODIFIED,
         0);
-
+    
     XCTAssertTrue(
        MockCalls::DidCallFunction(
             ProviderMessaging_TrySendRequestAndWaitForResponse,
