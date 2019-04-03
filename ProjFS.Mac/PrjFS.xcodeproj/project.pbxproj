@@ -30,7 +30,6 @@
 		264758CE21FA71140095B9F8 /* VnodeCacheTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 264758CD21FA71140095B9F8 /* VnodeCacheTests.mm */; };
 		264758CF21FA71E10095B9F8 /* VnodeCache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */; };
 		265504D0224ADE11005FAD74 /* MockPerfTracing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 265504CE224ADE11005FAD74 /* MockPerfTracing.cpp */; };
-		26BBDB59223B1CE70019235B /* ArrayUtilitiesTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 26BBDB58223B1CE70019235B /* ArrayUtilitiesTests.mm */; };
 		43057C5E21E439C700487681 /* prjfs-log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43057C5B21E439C700487681 /* prjfs-log.cpp */; };
 		43057C5F21E439C700487681 /* kext-perf-tracing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43057C5C21E439C700487681 /* kext-perf-tracing.cpp */; };
 		4391F8A821E42AC50008103C /* Locks.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 4391F88E21E42AC40008103C /* Locks.hpp */; };
@@ -157,8 +156,6 @@
 		264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCacheTestable.hpp; sourceTree = "<group>"; };
 		264758CD21FA71140095B9F8 /* VnodeCacheTests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VnodeCacheTests.mm; sourceTree = "<group>"; };
 		265504CE224ADE11005FAD74 /* MockPerfTracing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MockPerfTracing.cpp; sourceTree = "<group>"; };
-		26BBDB54223B16E40019235B /* ArrayUtilities.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ArrayUtilities.hpp; sourceTree = "<group>"; };
-		26BBDB58223B1CE70019235B /* ArrayUtilitiesTests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ArrayUtilitiesTests.mm; sourceTree = "<group>"; };
 		43057C5B21E439C700487681 /* prjfs-log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "prjfs-log.cpp"; sourceTree = "<group>"; };
 		43057C5C21E439C700487681 /* kext-perf-tracing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "kext-perf-tracing.cpp"; sourceTree = "<group>"; };
 		43057C5D21E439C700487681 /* kext-perf-tracing.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = "kext-perf-tracing.hpp"; sourceTree = "<group>"; };
@@ -323,7 +320,6 @@
 			isa = PBXGroup;
 			children = (
 				4391F88F21E42AC40008103C /* Info.plist */,
-				26BBDB54223B16E40019235B /* ArrayUtilities.hpp */,
 				4391F89321E42AC40008103C /* KauthHandler.cpp */,
 				4391F8A421E42AC50008103C /* KauthHandler.hpp */,
 				F5E39C8121F11556006D65C2 /* KauthHandlerTestable.hpp */,
@@ -402,7 +398,6 @@
 				F5E39C7921F1118D006D65C2 /* KauthHandlerTests.mm */,
 				4A781DAF2223391A00DB7733 /* KextLogMock.cpp */,
 				F557623E22009F0E005DE35E /* KextLogMock.h */,
-				26BBDB58223B1CE70019235B /* ArrayUtilitiesTests.mm */,
 				4A781DAA222330F700DB7733 /* KextMockUtilities.cpp */,
 				4A781DA92223305C00DB7733 /* KextMockUtilities.hpp */,
 				D9C087F122384670009C1110 /* MemoryTests.mm */,
@@ -732,7 +727,6 @@
 				F5554F422239883B00B31D19 /* MockProc.cpp in Sources */,
 				4A781DB422233A4500DB7733 /* TestMemory.cpp in Sources */,
 				F5EACDC22242AB2D00EEA70E /* HandleOperationTests.mm in Sources */,
-				26BBDB59223B1CE70019235B /* ArrayUtilitiesTests.mm in Sources */,
 				F5E39C7A21F1118D006D65C2 /* KauthHandlerTests.mm in Sources */,
 				D9C087F222384670009C1110 /* MemoryTests.mm in Sources */,
 				4A781DB222233A1E00DB7733 /* TestLocks.cpp in Sources */,
