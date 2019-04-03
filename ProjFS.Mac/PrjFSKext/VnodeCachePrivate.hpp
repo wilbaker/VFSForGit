@@ -1,5 +1,19 @@
 #pragma once
 
+enum UpdateCacheBehavior
+{
+    UpdateCacheBehavior_Invalid = 0,
+    
+    // If the current entry is up-to-date it will be used
+    UpdateCacheBehavior_TrustCurrentEntry,
+    
+    // The current entry will be replaced with the new root
+    UpdateCacheBehavior_ForceRefresh,
+    
+    // The current entry will have its root marked as invalid (forcing the next lookup to find the root)
+    UpdateCacheBehavior_InvalidateEntry,
+};
+
 struct VnodeCacheEntry
 {
     vnode_t vnode;

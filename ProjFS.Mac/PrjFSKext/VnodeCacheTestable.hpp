@@ -19,6 +19,25 @@ KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked();
 KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashIndex(vnode_t _Nonnull vnode);
 KEXT_STATIC_INLINE uint32_t ComputePow2CacheCapacity(int expectedVnodeCount);
 
+KEXT_STATIC bool TryGetVnodeRootFromCache(
+    vnode_t _Nonnull vnode,
+    uintptr_t vnodeHashIndex,
+    uint32_t vnodeVid,
+    /* out parameters */
+    VirtualizationRootHandle& rootHandle);
+
+KEXT_STATIC void LookupVnodeRootAndUpdateCache(
+    PerfTracer* _Nonnull perfTracer,
+    PrjFSPerfCounter cacheMissFallbackFunctionCounter,
+    PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
+    vfs_context_t _Nonnull context,
+    vnode_t _Nonnull vnode,
+    uintptr_t vnodeHashIndex,
+    uint32_t vnodeVid,
+    UpdateCacheBehavior updateEntryBehavior,
+    /* out parameters */
+    VirtualizationRootHandle& rootHandle);
+
 KEXT_STATIC bool TryFindVnodeIndex_Locked(
     vnode_t _Nonnull vnode,
     uintptr_t vnodeHash,

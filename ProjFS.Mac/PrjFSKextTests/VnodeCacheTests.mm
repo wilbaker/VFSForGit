@@ -3,8 +3,8 @@
 typedef int16_t VirtualizationRootHandle;
 
 #include "../PrjFSKext/VnodeCache.hpp"
-#include "../PrjFSKext/VnodeCacheTestable.hpp"
 #include "../PrjFSKext/VnodeCachePrivate.hpp"
+#include "../PrjFSKext/VnodeCacheTestable.hpp"
 
 @interface VnodeCacheTests : XCTestCase
 @end
@@ -77,7 +77,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     FreeCacheEntries();
 }
 
-- (void)testTryFindVnodeIndex_SharedLocked_ReturnsStartingIndexWhenNull {
+- (void)testTryFindVnodeIndex_Locked_ReturnsStartingIndexWhenNull {
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
     
     vnode_t testVnode = &TestVnode;
@@ -89,7 +89,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     FreeCacheEntries();
 }
 
-- (void)testTryFindVnodeIndex_SharedLocked_ReturnsFalseWhenCacheFull {
+- (void)testTryFindVnodeIndex_Locked_ReturnsFalseWhenCacheFull {
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
     
     vnode_t testVnode = &TestVnode;
@@ -100,7 +100,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     FreeCacheEntries();
 }
 
-- (void)testTryFindVnodeIndex_SharedLocked_WrapsToBeginningWhenResolvingCollisions {
+- (void)testTryFindVnodeIndex_Locked_WrapsToBeginningWhenResolvingCollisions {
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
     
     uintptr_t emptyIndex = 2;
@@ -115,7 +115,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     FreeCacheEntries();
 }
 
-- (void)testTryFindVnodeIndex_SharedLocked_ReturnsLastIndexWhenEmptyAndResolvingCollisions {
+- (void)testTryFindVnodeIndex_Locked_ReturnsLastIndexWhenEmptyAndResolvingCollisions {
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ true);
     uintptr_t emptyIndex = s_entriesCapacity - 1;
     MarkEntryAsFree(emptyIndex);
@@ -141,11 +141,69 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
             testVnode,
             indexFromHash,
             testVnodeVid,
-            true, // invalidateEntry
+            true, // forceRefreshEntry
             TestRootHandle));
 
     FreeCacheEntries();
 }
+
+- (void)testTryInsertOrUpdateEntry_ExclusiveLocked_ReplacesIndeterminateEntry {
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
+    vnode_t testVnode = &TestVnode;
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(testVnode);
+    uint32_t testVnodeVid = 7;
+
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testVnode,
+            indexFromHash,
+            testVnodeVid,
+            false, // forceRefreshEntry
+            TestRootHandle));
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(TestRootHandle == s_entries[indexFromHash].virtualizationRoot);
+    
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testVnode,
+            indexFromHash,
+            testVnodeVid,
+            true, // forceRefreshEntry
+            RootHandle_Indeterminate));
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(RootHandle_Indeterminate == s_entries[indexFromHash].virtualizationRoot);
+    
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testVnode,
+            indexFromHash,
+            testVnodeVid,
+            false, // forceRefreshEntry
+            TestRootHandle));
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(TestRootHandle == s_entries[indexFromHash].virtualizationRoot);
+
+    PerfTracer dummyPerfTracer;
+    vfs_context dummyContext;
+    
+    VnodeCache_FindRootForVnode(
+        &dummyPerfTracer,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        testVnode,
+        &dummyContext);
+
+    FreeCacheEntries();
+}
+
+// TryInsertOrUpdateEntry_ExclusiveLocked
+// VnodeCache_FindRootForVnode
+// VnodeCache_RefreshRootForVnode
+// VnodeCache_InvalidateVnodeAndGetLatestRoot
+// TryGetVnodeRootFromCache
+// LookupVnodeRootAndUpdateCache
 
 static void AllocateCacheEntries(uint32_t capacity, bool fillCache)
 {
