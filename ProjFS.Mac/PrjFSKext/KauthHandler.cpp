@@ -83,7 +83,6 @@ static bool TryGetVirtualizationRoot(
     const vnode_t vnode,
     pid_t pidMakingRequest,
     ProviderCallbackPolicy callbackPolicy,
-    bool isDelete,
     
     // Out params:
     VirtualizationRootHandle* root,
@@ -280,7 +279,6 @@ KEXT_STATIC int HandleVnodeOperation(
                 currentVnode,
                 pid,
                 callbackPolicy,
-                isDeleteAction,
                 &root,
                 &vnodeFsidInode,
                 &kauthResult,
@@ -330,7 +328,6 @@ KEXT_STATIC int HandleVnodeOperation(
                         currentVnode,
                         pid,
                         CallbackPolicy_UserInitiatedOnly,
-                        isDeleteAction,
                         &root,
                         &vnodeFsidInode,
                         &kauthResult,
@@ -365,7 +362,6 @@ KEXT_STATIC int HandleVnodeOperation(
                         currentVnode,
                         pid,
                         CallbackPolicy_UserInitiatedOnly,
-                        isDeleteAction,
                         &root,
                         &vnodeFsidInode,
                         &kauthResult,
@@ -415,7 +411,6 @@ KEXT_STATIC int HandleVnodeOperation(
                         currentVnode,
                         pid,
                         CallbackPolicy_UserInitiatedOnly,
-                        isDeleteAction,
                         &root,
                         &vnodeFsidInode,
                         &kauthResult,
@@ -449,7 +444,6 @@ KEXT_STATIC int HandleVnodeOperation(
                         currentVnode,
                         pid,
                         CallbackPolicy_UserInitiatedOnly,
-                        false, // isDeleteAction
                         &root,
                         &vnodeFsidInode,
                         &kauthResult,
@@ -844,7 +838,6 @@ static bool TryGetVirtualizationRoot(
     const vnode_t vnode,
     pid_t pidMakingRequest,
     ProviderCallbackPolicy callbackPolicy,
-    bool isDelete,
 
     // Out params:
     VirtualizationRootHandle* root,
@@ -854,32 +847,14 @@ static bool TryGetVirtualizationRoot(
 {
     PerfSample findRootSample(perfTracer, PrjFSPerfCounter_VnodeOp_GetVirtualizationRoot);
     
-//    if (isDelete)
-//    {
-//        // TODO(Mac): Once #337 is fixed, remove the code that invalidates the cache entry for delete actions.
-//        // Currently delete actions invalidate the cache entry to handle the hardlink+delete rename scenario.  If we do not invalidate
-//        // the entry we'll find the root for the newly created hardlink and we need to find the root of the path of the file being deleted.
-//        // Testing has shown that looking up the root again has consistently yielded the root of the file being deleted.
-//        *root = VnodeCache_RefreshRootForVnode(
-//                perfTracer,
-//                PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
-//                PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
-//                PrjFSPerfCounter_VnodeOp_FindRoot,
-//                PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-//                vnode,
-//                context);
-//    }
-//    else
-    {
-        *root = VnodeCache_FindRootForVnode(
-            perfTracer,
-            PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
-            PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
-            PrjFSPerfCounter_VnodeOp_FindRoot,
-            PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-            vnode,
-            context);
-    }
+    *root = VnodeCache_FindRootForVnode(
+        perfTracer,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        vnode,
+        context);
 
     if (RootHandle_ProviderTemporaryDirectory == *root)
     {
