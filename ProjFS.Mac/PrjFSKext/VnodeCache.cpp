@@ -228,16 +228,12 @@ KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked()
 KEXT_STATIC_INLINE uint32_t ComputePow2CacheCapacity(int expectedVnodeCount)
 {
     uint32_t idealCacheSize = expectedVnodeCount * 2;
-    size_t index = 0;
-    uint32_t capacity;
-    
-    do
+    uint32_t capacity = MinPow2VnodeCacheCapacity;
+    while (capacity < idealCacheSize && capacity < MaxPow2VnodeCacheCapacity)
     {
-        capacity = AllowedPow2CacheCapacities[index];
-        ++index;
+        capacity = capacity << 1;
     }
-    while (capacity < idealCacheSize && index < Array_Size(AllowedPow2CacheCapacities));
-    
+   
     return capacity;
 }
 

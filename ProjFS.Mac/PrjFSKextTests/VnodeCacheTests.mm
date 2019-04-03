@@ -33,15 +33,14 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 - (void)testComputePow2CacheCapacity {
 
     // At a minimum ComputePow2CacheCapacity should return the minimum value in AllowedPow2CacheCapacities
-    XCTAssertTrue(AllowedPow2CacheCapacities[0] == ComputePow2CacheCapacity(0));
+    XCTAssertTrue(MinPow2VnodeCacheCapacity == ComputePow2CacheCapacity(0));
     
     // ComputePow2CacheCapacity should round up to the nearest power of 2 (after multiplying expectedVnodeCount by 2)
-    int expectedVnodeCount = AllowedPow2CacheCapacities[0]/2 + 1;
-    XCTAssertTrue(AllowedPow2CacheCapacities[1] == ComputePow2CacheCapacity(expectedVnodeCount));
+    int expectedVnodeCount = MinPow2VnodeCacheCapacity/2 + 1;
+    XCTAssertTrue(MinPow2VnodeCacheCapacity << 1 == ComputePow2CacheCapacity(expectedVnodeCount));
     
     // ComputePow2CacheCapacity should be capped at the maximum value in AllowedPow2CacheCapacities
-    size_t lastAllowedSizeIndex = Array_Size(AllowedPow2CacheCapacities) - 1;
-    XCTAssertTrue(AllowedPow2CacheCapacities[lastAllowedSizeIndex] == ComputePow2CacheCapacity(AllowedPow2CacheCapacities[lastAllowedSizeIndex]));
+    XCTAssertTrue(MaxPow2VnodeCacheCapacity == ComputePow2CacheCapacity(MaxPow2VnodeCacheCapacity + 1));
 }
 
 - (void)testComputeVnodeHashKeyWithCapacityOfOne {
