@@ -2,9 +2,13 @@
 
 typedef int16_t VirtualizationRootHandle;
 
+#include "KextLogMock.h"
+#include "KextMockUtilities.hpp"
 #include "../PrjFSKext/VnodeCache.hpp"
 #include "../PrjFSKext/VnodeCachePrivate.hpp"
 #include "../PrjFSKext/VnodeCacheTestable.hpp"
+
+using KextMock::_;
 
 @interface VnodeCacheTests : XCTestCase
 @end
@@ -24,10 +28,20 @@ struct vnode
 
 static vnode TestVnode;
 static const VirtualizationRootHandle TestRootHandle = 1;
+static const VirtualizationRootHandle TestSecondRootHandle = 2;
 
 static void AllocateCacheEntries(uint32_t capacity, bool fillCache);
 static void FreeCacheEntries();
 static void MarkEntryAsFree(uintptr_t entryIndex);
+
+- (void) setUp
+{
+}
+
+- (void) tearDown
+{
+    MockCalls::Clear();
+}
 
 - (void)testComputePow2CacheCapacity {
 
@@ -194,6 +208,37 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
         testVnode,
         &dummyContext);
+
+    FreeCacheEntries();
+}
+
+- (void)testTryInsertOrUpdateEntry_ExclusiveLocked_LogsErrorWhenCacheHasDifferentRoot {
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
+    vnode_t testVnode = &TestVnode;
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(testVnode);
+    uint32_t testVnodeVid = 7;
+
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testVnode,
+            indexFromHash,
+            testVnodeVid,
+            false, // forceRefreshEntry
+            TestRootHandle));
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(TestRootHandle == s_entries[indexFromHash].virtualizationRoot);
+    
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testVnode,
+            indexFromHash,
+            testVnodeVid,
+            false, // forceRefreshEntry
+            TestSecondRootHandle));
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(TestRootHandle == s_entries[indexFromHash].virtualizationRoot);
+
+    XCTAssertTrue(MockCalls::DidCallFunction(KextMessageLogged, KEXTLOG_ERROR));
 
     FreeCacheEntries();
 }
