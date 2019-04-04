@@ -22,7 +22,7 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
-KEXT_STATIC void LookupVnodeRootAndUpdateCache(
+KEXT_STATIC void FindVnodeRootFromDiskAndUpdateCache(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
@@ -124,7 +124,7 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
     }
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
-    LookupVnodeRootAndUpdateCache(
+    FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
         cacheMissFallbackFunctionCounter,
         cacheMissFallbackFunctionInnerLoopCounter,
@@ -152,7 +152,7 @@ VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
     uint32_t vnodeVid = vnode_vid(vnode);
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
-    LookupVnodeRootAndUpdateCache(
+    FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
         cacheMissFallbackFunctionCounter,
         cacheMissFallbackFunctionInnerLoopCounter,
@@ -180,7 +180,7 @@ VirtualizationRootHandle VnodeCache_InvalidateVnodeAndGetLatestRoot(
     uint32_t vnodeVid = vnode_vid(vnode);
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
-    LookupVnodeRootAndUpdateCache(
+    FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
         cacheMissFallbackFunctionCounter,
         cacheMissFallbackFunctionInnerLoopCounter,
@@ -257,7 +257,7 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
     return rootFound;
 }
 
-KEXT_STATIC void LookupVnodeRootAndUpdateCache(
+KEXT_STATIC void FindVnodeRootFromDiskAndUpdateCache(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
@@ -310,7 +310,6 @@ KEXT_STATIC void LookupVnodeRootAndUpdateCache(
             perfTracer->IncrementCount(PrjFSPerfCounter_CacheFullCount, true /*ignoreSampling*/);
         
             InvalidateCache_ExclusiveLocked();
-            
             if(!TryInsertOrUpdateEntry_ExclusiveLocked(
                         vnode,
                         vnodeHashIndex,
@@ -319,7 +318,7 @@ KEXT_STATIC void LookupVnodeRootAndUpdateCache(
                         rootToInsert))
             {
                 KextLog_Error(
-                    "LookupVnodeRootAndUpdateCache: cleared cache to insert vnode (%p:%u), but insert failed",
+                    "FindVnodeRootFromDiskAndUpdateCache: cleared cache to insert vnode (%p:%u), but insert failed",
                     KextLog_Unslide(vnode),
                     vnodeVid);
             }

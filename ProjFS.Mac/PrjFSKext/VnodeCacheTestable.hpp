@@ -26,7 +26,7 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
-KEXT_STATIC void LookupVnodeRootAndUpdateCache(
+KEXT_STATIC void FindVnodeRootFromDiskAndUpdateCache(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
     PrjFSPerfCounter cacheMissFallbackFunctionInnerLoopCounter,
