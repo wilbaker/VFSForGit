@@ -18,7 +18,9 @@ using std::shared_ptr;
 
 @implementation VnodeCacheTests
 {
+    std::string repoPath;
     shared_ptr<mount> testMount;
+    shared_ptr<vnode> repoRootVnode;
     shared_ptr<vnode> testVnodeFile1;
     shared_ptr<vnode> testVnodeFile2;
     shared_ptr<vnode> testVnodeFile3;
@@ -39,9 +41,11 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     XCTAssertEqual(initResult, KERN_SUCCESS);
     
     self->testMount = mount::Create();
-    self->testVnodeFile1 = testMount->CreateVnodeTree("/Users/test/code/Repo/file1");
-    self->testVnodeFile2 = testMount->CreateVnodeTree("/Users/test/code/Repo/file2");
-    self->testVnodeFile3 = testMount->CreateVnodeTree("/Users/test/code/Repo/file3");
+    repoPath = "/Users/test/code/Repo";
+    self->repoRootVnode = self->testMount->CreateVnodeTree(repoPath, VDIR);
+    self->testVnodeFile1 = testMount->CreateVnodeTree(repoPath + "/file1");
+    self->testVnodeFile2 = testMount->CreateVnodeTree(repoPath + "/file2");
+    self->testVnodeFile3 = testMount->CreateVnodeTree(repoPath + "/file3");
     self->dummyVFSContext = vfs_context_create(nullptr);
 }
 
@@ -51,35 +55,39 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     self->testVnodeFile3.reset();
     self->testVnodeFile2.reset();
     self->testVnodeFile1.reset();
+    self->repoRootVnode.reset();
     self->testMount.reset();
     MockCalls::Clear();
     VirtualizationRoots_Cleanup();
 }
 
-// VnodeCache_FindRootForVnode
+- (void)testVnodeCache_FindRootForVnodeEmptyCache {
+
+}
+
+- (void)testVnodeCache_FindRootForVnodeFullCache {
+
+}
+
+- (void)testVnodeCache_FindRootForVnodeVnodeInCache {
+
+}
 
 - (void)testVnodeCache_RefreshRootForVnode {
-    const char* repoPath = "/Users/test/code/Repo2";
-    const char* filePath = "/Users/test/code/Repo2/file";
-    const char* deeplyNestedPath = "/Users/test/code/Repo2/deeply/nested/sub/directories/with/a/file";
-
-    shared_ptr<vnode> repoRootVnode = self->testMount->CreateVnodeTree(repoPath, VDIR);
-    shared_ptr<vnode> testFileVnode = self->testMount->CreateVnodeTree(filePath);
-    shared_ptr<vnode> deepFileVnode = self->testMount->CreateVnodeTree(deeplyNestedPath);
-    
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
-        nullptr /* no client */, 0,
-        repoRootVnode.get(),
-        repoRootVnode->GetVid(),
-        FsidInode{ repoRootVnode->GetMountPoint()->GetFsid(), repoRootVnode->GetInode() },
-        repoPath);
+        nullptr /* no client */,
+        0,
+        self->repoRootVnode.get(),
+        self->repoRootVnode->GetVid(),
+        FsidInode{ self->repoRootVnode->GetMountPoint()->GetFsid(), self->repoRootVnode->GetInode() },
+        self->repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
 
     VirtualizationRootHandle foundRoot = VirtualizationRoot_FindForVnode(
         &self->dummyPerfTracer,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         self->dummyVFSContext);
     XCTAssertEqual(foundRoot, repoRootHandle);
 
@@ -89,11 +97,11 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
     
     // Insert testFileVnode with TestRootHandle as its root
-    uintptr_t indexFromHash = ComputeVnodeHashIndex(testFileVnode.get());
-    uint32_t testVnodeVid = testFileVnode->GetVid();
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
+    uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testFileVnode.get(),
+            self->testVnodeFile1.get(),
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
@@ -109,7 +117,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         self->dummyVFSContext);
     XCTAssertTrue(rootHandle == repoRootHandle);
     XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
@@ -119,27 +127,20 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 }
 
 - (void)testVnodeCache_InvalidateVnodeAndGetLatestRoot {
-    const char* repoPath = "/Users/test/code/Repo2";
-    const char* filePath = "/Users/test/code/Repo2/file";
-    const char* deeplyNestedPath = "/Users/test/code/Repo2/deeply/nested/sub/directories/with/a/file";
-
-    shared_ptr<vnode> repoRootVnode = self->testMount->CreateVnodeTree(repoPath, VDIR);
-    shared_ptr<vnode> testFileVnode = self->testMount->CreateVnodeTree(filePath);
-    shared_ptr<vnode> deepFileVnode = self->testMount->CreateVnodeTree(deeplyNestedPath);
-    
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
-        nullptr /* no client */, 0,
-        repoRootVnode.get(),
-        repoRootVnode->GetVid(),
-        FsidInode{ repoRootVnode->GetMountPoint()->GetFsid(), repoRootVnode->GetInode() },
-        repoPath);
+        nullptr /* no client */,
+        0,
+        self->repoRootVnode.get(),
+        self->repoRootVnode->GetVid(),
+        FsidInode{ self->repoRootVnode->GetMountPoint()->GetFsid(), self->repoRootVnode->GetInode() },
+        self->repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
 
     VirtualizationRootHandle foundRoot = VirtualizationRoot_FindForVnode(
         &self->dummyPerfTracer,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         self->dummyVFSContext);
     XCTAssertEqual(foundRoot, repoRootHandle);
 
@@ -149,11 +150,11 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
     
     // Insert testFileVnode with TestRootHandle as its root
-    uintptr_t indexFromHash = ComputeVnodeHashIndex(testFileVnode.get());
-    uint32_t testVnodeVid = testFileVnode->GetVid();
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
+    uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testFileVnode.get(),
+            self->testVnodeFile1.get(),
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
@@ -169,7 +170,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         self->dummyVFSContext);
     XCTAssertTrue(rootHandle == repoRootHandle);
     XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
@@ -231,30 +232,60 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
-// TryGetVnodeRootFromCache
+- (void)testTryGetVnodeRootFromCache_VnodeInCache {
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
+    
+    uintptr_t testIndex = 5;
+    s_entries[testIndex].vnode = self->testVnodeFile1.get();
+    s_entries[testIndex].vid = self->testVnodeFile1->GetVid();
+    s_entries[testIndex].virtualizationRoot = TestRootHandle;
+    
+    VirtualizationRootHandle rootHandle = 1;
+    XCTAssertTrue(
+        TryGetVnodeRootFromCache(
+            self->testVnodeFile1.get(),
+            testIndex,
+            self->testVnodeFile1->GetVid(),
+            rootHandle));
+    XCTAssertTrue(TestRootHandle == rootHandle);
+    
+    FreeCacheEntries();
+    
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
+}
+
+- (void)testTryGetVnodeRootFromCache_VnodeNotInCache {
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
+    
+    VirtualizationRootHandle rootHandle = 1;
+    XCTAssertFalse(
+        TryGetVnodeRootFromCache(
+            self->testVnodeFile1.get(),
+            ComputeVnodeHashIndex(self->testVnodeFile1.get()),
+            self->testVnodeFile1->GetVid(),
+            rootHandle));
+    XCTAssertTrue(RootHandle_None == rootHandle);
+    
+    FreeCacheEntries();
+    
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
+}
 
 - (void)testFindVnodeRootFromDiskAndUpdateCache_RefreshAndInvalidateEntry {
-    const char* repoPath = "/Users/test/code/Repo2";
-    const char* filePath = "/Users/test/code/Repo2/file";
-    const char* deeplyNestedPath = "/Users/test/code/Repo2/deeply/nested/sub/directories/with/a/file";
-
-    shared_ptr<vnode> repoRootVnode = self->testMount->CreateVnodeTree(repoPath, VDIR);
-    shared_ptr<vnode> testFileVnode = self->testMount->CreateVnodeTree(filePath);
-    shared_ptr<vnode> deepFileVnode = self->testMount->CreateVnodeTree(deeplyNestedPath);
-    
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
-        nullptr /* no client */, 0,
-        repoRootVnode.get(),
-        repoRootVnode->GetVid(),
-        FsidInode{ repoRootVnode->GetMountPoint()->GetFsid(), repoRootVnode->GetInode() },
-        repoPath);
+        nullptr /* no client */,
+        0,
+        self->repoRootVnode.get(),
+        self->repoRootVnode->GetVid(),
+        FsidInode{ self->repoRootVnode->GetMountPoint()->GetFsid(), self->repoRootVnode->GetInode() },
+        self->repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
 
     VirtualizationRootHandle foundRoot = VirtualizationRoot_FindForVnode(
         &self->dummyPerfTracer,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         self->dummyVFSContext);
     XCTAssertEqual(foundRoot, repoRootHandle);
 
@@ -264,11 +295,11 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
     
     // Insert testFileVnode with TestRootHandle as its root
-    uintptr_t indexFromHash = ComputeVnodeHashIndex(testFileVnode.get());
-    uint32_t testVnodeVid = testFileVnode->GetVid();
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
+    uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
-            testFileVnode.get(),
+            self->testVnodeFile1.get(),
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
@@ -284,7 +315,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
         self->dummyVFSContext,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         indexFromHash,
         testVnodeVid,
         UpdateCacheBehavior_ForceRefresh,
@@ -301,7 +332,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
         self->dummyVFSContext,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         indexFromHash,
         testVnodeVid,
         UpdateCacheBehavior_InvalidateEntry,
@@ -315,27 +346,20 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 }
 
 - (void)testFindVnodeRootFromDiskAndUpdateCache_FullCache {
-    const char* repoPath = "/Users/test/code/Repo2";
-    const char* filePath = "/Users/test/code/Repo2/file";
-    const char* deeplyNestedPath = "/Users/test/code/Repo2/deeply/nested/sub/directories/with/a/file";
-
-    shared_ptr<vnode> repoRootVnode = self->testMount->CreateVnodeTree(repoPath, VDIR);
-    shared_ptr<vnode> testFileVnode = self->testMount->CreateVnodeTree(filePath);
-    shared_ptr<vnode> deepFileVnode = self->testMount->CreateVnodeTree(deeplyNestedPath);
-    
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
-        nullptr /* no client */, 0,
-        repoRootVnode.get(),
-        repoRootVnode->GetVid(),
-        FsidInode{ repoRootVnode->GetMountPoint()->GetFsid(), repoRootVnode->GetInode() },
-        repoPath);
+        nullptr /* no client */,
+        0,
+        self->repoRootVnode.get(),
+        self->repoRootVnode->GetVid(),
+        FsidInode{ self->repoRootVnode->GetMountPoint()->GetFsid(), self->repoRootVnode->GetInode() },
+        self->repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
 
     VirtualizationRootHandle foundRoot = VirtualizationRoot_FindForVnode(
         &self->dummyPerfTracer,
         PrjFSPerfCounter_VnodeOp_FindRoot,
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         self->dummyVFSContext);
     XCTAssertEqual(foundRoot, repoRootHandle);
 
@@ -346,8 +370,8 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     AllocateCacheEntries(cacheCapacity, /* fillCache*/ true);
     
     // Insert testFileVnode with TestRootHandle as its root
-    uintptr_t indexFromHash = ComputeVnodeHashIndex(testFileVnode.get());
-    uint32_t testVnodeVid = testFileVnode->GetVid();
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
+    uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
     
     // UpdateCacheBehavior_TrustCurrentEntry will use the current entry if present
     // In this case there is no entry for the vnode and so the cache will be invalidated
@@ -358,7 +382,7 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
         self->dummyVFSContext,
-        testFileVnode.get(),
+        self->testVnodeFile1.get(),
         indexFromHash,
         testVnodeVid,
         UpdateCacheBehavior_TrustCurrentEntry,
