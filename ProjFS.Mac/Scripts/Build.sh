@@ -64,6 +64,9 @@ while read line; do
 	 [[ $line != *"VirtualizationRoot_GetActiveProvider"* ]] &&      #SHOULD ADD COVERAGE
 	 [[ $line != *"VirtualizationRoots_Init"* ]] && 
 	 [[ $line != *"VirtualizationRoots_Cleanup"* ]] && 
+	 [[ $line != *"VnodeCache_Init"* ]] && 
+	 [[ $line != *"VnodeCache_Cleanup"* ]] && 
+	 [[ $line != *"FindVnodeRootFromDiskAndUpdateCache"* ]] &&       #Unit tests cannot force inner TryInsert to fail 
 	 [[ $line != *"FindOrDetectRootAtVnode"* ]] &&                   #SHOULD ADD COVERAGE
 	 [[ $line != *"FindUnusedIndexOrGrow_Locked"* ]] &&              #SHOULD ADD COVERAGE
 	 [[ $line != *"FindRootAtVnode_Locked"* ]] &&                    #SHOULD ADD COVERAGE
