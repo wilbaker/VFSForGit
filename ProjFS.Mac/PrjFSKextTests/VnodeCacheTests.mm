@@ -304,12 +304,125 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
 }
 
 // VnodeCache_FindRootForVnode
-// VnodeCache_RefreshRootForVnode
-// VnodeCache_InvalidateVnodeAndGetLatestRoot
 // TryGetVnodeRootFromCache
-// LookupVnodeRootAndUpdateCache
 
-- (void)testLookupVnodeRootAndUpdateCache_ReplacesExistingEntryForRefresh {
+- (void)testVnodeCache_RefreshRootForVnode {
+    vfs_context dummyContext;
+    PerfTracer dummyPerfTracer;
+    const char* repoPath = "/Users/test/code/Repo2";
+    const char* filePath = "/Users/test/code/Repo2/file";
+    const char* deeplyNestedPath = "/Users/test/code/Repo2/deeply/nested/sub/directories/with/a/file";
+
+    shared_ptr<vnode> repoRootVnode = self->testMount->CreateVnodeTree(repoPath, VDIR);
+    shared_ptr<vnode> testFileVnode = self->testMount->CreateVnodeTree(filePath);
+    shared_ptr<vnode> deepFileVnode = self->testMount->CreateVnodeTree(deeplyNestedPath);
+    
+    VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
+        nullptr /* no client */, 0,
+        repoRootVnode.get(),
+        repoRootVnode->GetVid(),
+        FsidInode{ repoRootVnode->GetMountPoint()->GetFsid(), repoRootVnode->GetInode() },
+        repoPath);
+    XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
+
+    VirtualizationRootHandle foundRoot = VirtualizationRoot_FindForVnode(
+        &dummyPerfTracer,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        testFileVnode.get(),
+        &dummyContext);
+    XCTAssertEqual(foundRoot, repoRootHandle);
+
+    // Initialize the cache
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
+    
+    // Insert testFileVnode with TestRootHandle as its root
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(testFileVnode.get());
+    uint32_t testVnodeVid = testFileVnode->GetVid();
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testFileVnode.get(),
+            indexFromHash,
+            testVnodeVid,
+            false, // forceRefreshEntry
+            TestRootHandle));
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(TestRootHandle == s_entries[indexFromHash].virtualizationRoot);
+    
+    // VnodeCache_RefreshRootForVnode should
+    // force a lookup of the new root and set it in the cache
+    VirtualizationRootHandle rootHandle = VnodeCache_RefreshRootForVnode(
+        &dummyPerfTracer,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        testFileVnode.get(),
+        &dummyContext);
+    XCTAssertTrue(rootHandle == repoRootHandle);
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(rootHandle == s_entries[indexFromHash].virtualizationRoot);
+}
+
+- (void)testVnodeCache_InvalidateVnodeAndGetLatestRoot {
+    vfs_context dummyContext;
+    PerfTracer dummyPerfTracer;
+    const char* repoPath = "/Users/test/code/Repo2";
+    const char* filePath = "/Users/test/code/Repo2/file";
+    const char* deeplyNestedPath = "/Users/test/code/Repo2/deeply/nested/sub/directories/with/a/file";
+
+    shared_ptr<vnode> repoRootVnode = self->testMount->CreateVnodeTree(repoPath, VDIR);
+    shared_ptr<vnode> testFileVnode = self->testMount->CreateVnodeTree(filePath);
+    shared_ptr<vnode> deepFileVnode = self->testMount->CreateVnodeTree(deeplyNestedPath);
+    
+    VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
+        nullptr /* no client */, 0,
+        repoRootVnode.get(),
+        repoRootVnode->GetVid(),
+        FsidInode{ repoRootVnode->GetMountPoint()->GetFsid(), repoRootVnode->GetInode() },
+        repoPath);
+    XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
+
+    VirtualizationRootHandle foundRoot = VirtualizationRoot_FindForVnode(
+        &dummyPerfTracer,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        testFileVnode.get(),
+        &dummyContext);
+    XCTAssertEqual(foundRoot, repoRootHandle);
+
+    // Initialize the cache
+    AllocateCacheEntries(/* capacity*/ 100, /* fillCache*/ false);
+    
+    // Insert testFileVnode with TestRootHandle as its root
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(testFileVnode.get());
+    uint32_t testVnodeVid = testFileVnode->GetVid();
+    XCTAssertTrue(
+        TryInsertOrUpdateEntry_ExclusiveLocked(
+            testFileVnode.get(),
+            indexFromHash,
+            testVnodeVid,
+            false, // forceRefreshEntry
+            TestRootHandle));
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(TestRootHandle == s_entries[indexFromHash].virtualizationRoot);
+    
+    // VnodeCache_InvalidateVnodeAndGetLatestRoot should return the real root and
+    // set the entry in the cache to RootHandle_Indeterminate
+    VirtualizationRootHandle rootHandle = VnodeCache_InvalidateVnodeAndGetLatestRoot(
+        &dummyPerfTracer,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
+        PrjFSPerfCounter_VnodeOp_FindRoot,
+        PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
+        testFileVnode.get(),
+        &dummyContext);
+    XCTAssertTrue(rootHandle == repoRootHandle);
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(RootHandle_Indeterminate == s_entries[indexFromHash].virtualizationRoot);
+}
+
+- (void)testLookupVnodeRootAndUpdateCache_RefreshAndInvalidateEntry {
     vfs_context dummyContext;
     PerfTracer dummyPerfTracer;
     const char* repoPath = "/Users/test/code/Repo2";
@@ -369,6 +482,23 @@ static void MarkEntryAsFree(uintptr_t entryIndex);
     XCTAssertTrue(rootHandle == repoRootHandle);
     XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
     XCTAssertTrue(rootHandle == s_entries[indexFromHash].virtualizationRoot);
+    
+    // UpdateCacheBehavior_InvalidateEntry means that the root in the cache should be
+    // set to RootHandle_Indeterminate, but the real root will still be returned
+    LookupVnodeRootAndUpdateCache(
+        &dummyPerfTracer,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
+        &dummyContext,
+        testFileVnode.get(),
+        indexFromHash,
+        testVnodeVid,
+        UpdateCacheBehavior_InvalidateEntry,
+        /* out parameters */
+        rootHandle);
+    XCTAssertTrue(rootHandle == repoRootHandle);
+    XCTAssertTrue(testVnodeVid == s_entries[indexFromHash].vid);
+    XCTAssertTrue(RootHandle_Indeterminate == s_entries[indexFromHash].virtualizationRoot);
 }
 
 static void AllocateCacheEntries(uint32_t capacity, bool fillCache)
