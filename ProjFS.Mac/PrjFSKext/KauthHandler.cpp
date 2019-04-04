@@ -1138,15 +1138,13 @@ KEXT_STATIC bool ShouldIgnoreVnodeType(vtype vnodeType, vnode_t vnode)
 	case VREG:
     case VDIR:
     case VLNK:
-        break;
+        return false;
     case VSTR:
     case VCPLX:
         KextLog_FileInfo(vnode, "vnode with type %s encountered", vnodeType == VSTR ? "VSTR" : "VCPLX");
-        break;
+        return false;
     default:
         KextLog_FileInfo(vnode, "vnode with unknown type %d encountered", vnodeType);
-        break;
+        return false;
     }
-    
-    return false;
 }
