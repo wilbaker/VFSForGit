@@ -22,6 +22,8 @@ KEXT_STATIC bool TryGetVnodeRootFromCache(
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
+
+
 KEXT_STATIC void LookupVnodeRootAndUpdateCache(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheMissFallbackFunctionCounter,
@@ -310,16 +312,16 @@ KEXT_STATIC void LookupVnodeRootAndUpdateCache(
             perfTracer->IncrementCount(PrjFSPerfCounter_CacheFullCount, true /*ignoreSampling*/);
         
             InvalidateCache_ExclusiveLocked();
-            if (!TryInsertOrUpdateEntry_ExclusiveLocked(
+            
+            if(!TryInsertOrUpdateEntry_ExclusiveLocked(
                         vnode,
                         vnodeHashIndex,
                         vnodeVid,
                         true, // forceRefreshEntry
                         rootToInsert))
             {
-                KextLog_FileError(
-                    vnode,
-                    "LookupVnodeRootAndUpdateCache: failed to insert vnode (%p:%u) after emptying cache",
+                KextLog_Error(
+                    "LookupVnodeRootAndUpdateCache: cleared cache to insert vnode (%p:%u), but insert failed",
                     KextLog_Unslide(vnode),
                     vnodeVid);
             }
