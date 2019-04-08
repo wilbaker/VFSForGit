@@ -855,6 +855,7 @@ static bool TryGetVirtualizationRoot(
     }
     
     *vnodeFsidInode = Vnode_GetFsidAndInode(vnode, context, true /* the inode is used for getting the path in the provider, so use linkid */);
+    
     return true;
 }
 
@@ -962,12 +963,12 @@ static bool ShouldHandleFileOpEvent(
         {
             // TODO(Mac): Once all hardlink paths are delivered to the appropriate root(s)
             // check if the KAUTH_FILEOP_LINK case can be removed.  For now the check is required to make
-            // sure we're looking up the most up-to-date parent information for the vnode on the nexe
+            // sure we're looking up the most up-to-date parent information for the vnode on the next
             // access to the vnode cache
             switch(action)
             {
                 case KAUTH_FILEOP_LINK:
-                    *root = VnodeCache_InvalidateVnodeAndGetLatestRoot(
+                    *root = VnodeCache_InvalidateVnodeRootAndGetLatestRoot(
                         perfTracer,
                         PrjFSPerfCounter_FileOp_Vnode_Cache_Hit,
                         PrjFSPerfCounter_FileOp_Vnode_Cache_Miss,

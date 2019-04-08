@@ -77,7 +77,7 @@ public:
     }
 };
 
-- (void) setUp
+- (void)setUp
 {
     kern_return_t initResult = VirtualizationRoots_Init();
     XCTAssertEqual(initResult, KERN_SUCCESS);
@@ -91,7 +91,7 @@ public:
     self->dummyVFSContext = vfs_context_create(nullptr);
 }
 
-- (void) tearDown
+- (void)tearDown
 {
     vfs_context_rele(self->dummyVFSContext);
     self->testVnodeFile3.reset();
@@ -115,6 +115,7 @@ public:
         self->repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
     
+    // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
     
     XCTAssertTrue(repoRootHandle == VnodeCache_FindRootForVnode(
@@ -126,6 +127,7 @@ public:
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -141,6 +143,7 @@ public:
         self->repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
     
+    // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
     
     XCTAssertTrue(repoRootHandle == VnodeCache_FindRootForVnode(
@@ -152,6 +155,7 @@ public:
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -167,6 +171,7 @@ public:
         self->repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
     
+    // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
     
     // The first call to VnodeCache_FindRootForVnode results in the vnode being added to the cache
@@ -193,6 +198,7 @@ public:
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -214,6 +220,7 @@ public:
         self->dummyVFSContext);
     XCTAssertEqual(foundRoot, repoRootHandle);
 
+    // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
 
     // Initialize the cache
@@ -246,10 +253,11 @@ public:
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
     XCTAssertTrue(rootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
-- (void)testVnodeCache_InvalidateVnodeAndGetLatestRoot {
+- (void)testVnodeCache_InvalidateVnodeRootAndGetLatestRoot {
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
         nullptr /* no client */,
         0,
@@ -267,6 +275,7 @@ public:
         self->dummyVFSContext);
     XCTAssertEqual(foundRoot, repoRootHandle);
 
+    // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
 
     // Initialize the cache
@@ -285,9 +294,9 @@ public:
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
     XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
-    // VnodeCache_InvalidateVnodeAndGetLatestRoot should return the real root and
+    // VnodeCache_InvalidateVnodeRootAndGetLatestRoot should return the real root and
     // set the entry in the cache to RootHandle_Indeterminate
-    VirtualizationRootHandle rootHandle = VnodeCache_InvalidateVnodeAndGetLatestRoot(
+    VirtualizationRootHandle rootHandle = VnodeCache_InvalidateVnodeRootAndGetLatestRoot(
         &self->dummyPerfTracer,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
@@ -299,6 +308,7 @@ public:
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
     XCTAssertTrue(RootHandle_Indeterminate == cacheWrapper[indexFromHash].virtualizationRoot);
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -311,6 +321,7 @@ public:
     VnodeCache_InvalidateCache(&self->dummyPerfTracer);
     XCTAssertTrue(0 == memcmp(emptyArray.get(), s_entries, sizeof(VnodeCacheEntry) * cacheWrapper.GetCapacity()));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -323,6 +334,7 @@ public:
     InvalidateCache_ExclusiveLocked();
     XCTAssertTrue(0 == memcmp(emptyArray.get(), s_entries, sizeof(VnodeCacheEntry) * cacheWrapper.GetCapacity()));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -338,6 +350,7 @@ public:
     // ComputePow2CacheCapacity should be capped at the maximum value in AllowedPow2CacheCapacities
     XCTAssertTrue(MaxPow2VnodeCacheCapacity == ComputePow2CacheCapacity(MaxPow2VnodeCacheCapacity + 1));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -346,6 +359,8 @@ public:
     XCTAssertTrue(0 == ComputeVnodeHashIndex(self->testVnodeFile1.get()));
     XCTAssertTrue(0 == ComputeVnodeHashIndex(self->testVnodeFile2.get()));
     XCTAssertTrue(0 == ComputeVnodeHashIndex(self->testVnodeFile3.get()));
+    
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -366,6 +381,7 @@ public:
             rootHandle));
     XCTAssertTrue(TestRootHandle == rootHandle);
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -380,7 +396,25 @@ public:
             self->testVnodeFile1->GetVid(),
             rootHandle));
     XCTAssertTrue(RootHandle_None == rootHandle);
+    
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
+}
+
+- (void)testInsertEntryToInvalidatedCache_ExclusiveLocked_CacheFull {
+    // In production InsertEntryToInvalidatedCache_ExclusiveLocked should never
+    // be called when the cache is full, but by this test doing so we can validate
+    // that InsertEntryToInvalidatedCache_ExclusiveLocked logs an error if it fails to
+    // insert a vnode into the cache
+    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ true);
+    
+    InsertEntryToInvalidatedCache_ExclusiveLocked(
+        self->testVnodeFile1.get(),
+        ComputeVnodeHashIndex(self->testVnodeFile1.get()),
+        self->testVnodeFile1->GetVid(),
+        TestRootHandle);
+    
+    XCTAssertTrue(MockCalls::DidCallFunction(KextMessageLogged, KEXTLOG_ERROR));
 }
 
 - (void)testFindVnodeRootFromDiskAndUpdateCache_RefreshAndInvalidateEntry {
@@ -401,6 +435,7 @@ public:
         self->dummyVFSContext);
     XCTAssertEqual(foundRoot, repoRootHandle);
 
+    // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
 
     // Initialize the cache
@@ -454,6 +489,7 @@ public:
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
     XCTAssertTrue(RootHandle_Indeterminate == cacheWrapper[indexFromHash].virtualizationRoot);
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -475,6 +511,7 @@ public:
         self->dummyVFSContext);
     XCTAssertEqual(foundRoot, repoRootHandle);
 
+    // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
 
     // Initialize the cache
@@ -517,6 +554,7 @@ public:
         }
     }
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -528,6 +566,7 @@ public:
     XCTAssertTrue(TryFindVnodeIndex_Locked(self->testVnodeFile1.get(), vnodeHashIndex, /* out */ cacheIndex));
     XCTAssertTrue(cacheIndex == vnodeHashIndex);
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -541,6 +580,7 @@ public:
             ComputeVnodeHashIndex(self->testVnodeFile1.get()),
             /* out */ vnodeIndex));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -555,6 +595,7 @@ public:
     XCTAssertTrue(TryFindVnodeIndex_Locked(self->testVnodeFile1.get(), vnodeHashIndex, /* out */ vnodeIndex));
     XCTAssertTrue(emptyIndex == vnodeIndex);
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -568,6 +609,7 @@ public:
     XCTAssertTrue(TryFindVnodeIndex_Locked(self->testVnodeFile1.get(), vnodeHashIndex, /* out */ vnodeIndex));
     XCTAssertTrue(emptyIndex == vnodeIndex);
 
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -582,6 +624,7 @@ public:
             true, // forceRefreshEntry
             TestRootHandle));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -629,6 +672,7 @@ public:
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
@@ -667,6 +711,7 @@ public:
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
     
+    // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 

@@ -34,6 +34,12 @@ KEXT_STATIC void FindVnodeRootFromDiskAndUpdateCache(
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
+KEXT_STATIC void InsertEntryToInvalidatedCache_ExclusiveLocked(
+    vnode_t _Nonnull vnode,
+    uintptr_t vnodeHashIndex,
+    uint32_t vnodeVid,
+    VirtualizationRootHandle rootHandle);
+
 KEXT_STATIC bool TryFindVnodeIndex_Locked(
     vnode_t _Nonnull vnode,
     uintptr_t vnodeHashIndex,
@@ -166,7 +172,7 @@ VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
     return rootHandle;
 }
 
-VirtualizationRootHandle VnodeCache_InvalidateVnodeAndGetLatestRoot(
+VirtualizationRootHandle VnodeCache_InvalidateVnodeRootAndGetLatestRoot(
     PerfTracer* _Nonnull perfTracer,
     PrjFSPerfCounter cacheHitCounter,
     PrjFSPerfCounter cacheMissCounter,
@@ -306,25 +312,37 @@ KEXT_STATIC void FindVnodeRootFromDiskAndUpdateCache(
                 rootToInsert))
         {
             // TryInsertOrUpdateEntry_ExclusiveLocked can only fail if the cache is full
-            
             perfTracer->IncrementCount(PrjFSPerfCounter_CacheFullCount, true /*ignoreSampling*/);
-        
             InvalidateCache_ExclusiveLocked();
-            if(!TryInsertOrUpdateEntry_ExclusiveLocked(
-                        vnode,
-                        vnodeHashIndex,
-                        vnodeVid,
-                        true, // forceRefreshEntry
-                        rootToInsert))
-            {
-                KextLog_Error(
-                    "FindVnodeRootFromDiskAndUpdateCache: cleared cache to insert vnode (%p:%u), but insert failed",
-                    KextLog_Unslide(vnode),
-                    vnodeVid);
-            }
+            InsertEntryToInvalidatedCache_ExclusiveLocked(vnode, vnodeHashIndex, vnodeVid, rootToInsert);
+
         }
     }
     RWLock_ReleaseExclusive(s_entriesLock);
+}
+
+// InsertEntryToInvalidatedCache_ExclusiveLocked is a helper function for inserting a vnode
+// into the cache after the cache has been invalidated.  This functionality is in its own function
+// (rather than in FindVnodeRootFromDiskAndUpdateCache) so that the kext unit tests can force its call
+// to TryInsertOrUpdateEntry_ExclusiveLocked to fail.
+KEXT_STATIC void InsertEntryToInvalidatedCache_ExclusiveLocked(
+    vnode_t _Nonnull vnode,
+    uintptr_t vnodeHashIndex,
+    uint32_t vnodeVid,
+    VirtualizationRootHandle rootToInsert)
+{
+    if(!TryInsertOrUpdateEntry_ExclusiveLocked(
+                vnode,
+                vnodeHashIndex,
+                vnodeVid,
+                true, // forceRefreshEntry
+                rootToInsert))
+    {
+        KextLog_Error(
+            "InsertEntryToInvalidatedCache_ExclusiveLocked: inserting vnode (%p:%u) failed",
+            KextLog_Unslide(vnode),
+            vnodeVid);
+    }
 }
 
 KEXT_STATIC bool TryFindVnodeIndex_Locked(

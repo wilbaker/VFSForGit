@@ -38,6 +38,12 @@ KEXT_STATIC void FindVnodeRootFromDiskAndUpdateCache(
     /* out parameters */
     VirtualizationRootHandle& rootHandle);
 
+KEXT_STATIC void InsertEntryToInvalidatedCache_ExclusiveLocked(
+    vnode_t _Nonnull vnode,
+    uintptr_t vnodeHashIndex,
+    uint32_t vnodeVid,
+    VirtualizationRootHandle rootHandle);
+
 KEXT_STATIC bool TryFindVnodeIndex_Locked(
     vnode_t _Nonnull vnode,
     uintptr_t vnodeHash,
