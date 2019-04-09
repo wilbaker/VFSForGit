@@ -151,6 +151,7 @@
 
 /* Begin PBXFileReference section */
 		262DFF982230798E005CC5DD /* VnodeCachePrivate.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VnodeCachePrivate.hpp; sourceTree = "<group>"; };
+		263DD5AD225D44C2005FEE9C /* VnodeCacheEntriesWrapper.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCacheEntriesWrapper.hpp; sourceTree = "<group>"; };
 		264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VnodeCache.cpp; sourceTree = "<group>"; };
 		264758C821EFBA8B0095B9F8 /* VnodeCache.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCache.hpp; sourceTree = "<group>"; };
 		264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCacheTestable.hpp; sourceTree = "<group>"; };
@@ -406,6 +407,7 @@
 				4A781DAD2223374200DB7733 /* MockVnodeAndMount.hpp */,
 				4A781DB122233A1E00DB7733 /* TestLocks.cpp */,
 				4A781DB322233A4500DB7733 /* TestMemory.cpp */,
+				263DD5AD225D44C2005FEE9C /* VnodeCacheEntriesWrapper.hpp */,
 				264758CD21FA71140095B9F8 /* VnodeCacheTests.mm */,
 				4A781DA42220946000DB7733 /* VirtualizationRootsTests.mm */,
 				4A8C13AA21F268FE00002878 /* PrjFSKextTests.exp */,

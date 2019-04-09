@@ -89,7 +89,7 @@ static bool TryGetVirtualizationRoot(
     int* kauthResult,
     int* kauthError);
 
-static bool ShouldHandleFileOpEvent(
+KEXT_STATIC bool ShouldHandleFileOpEvent(
     // In params:
     PerfTracer* perfTracer,
     vfs_context_t _Nonnull context,
@@ -904,7 +904,7 @@ static bool CurrentProcessWasSpawnedByRegularUser()
 }
     
 
-static bool ShouldHandleFileOpEvent(
+KEXT_STATIC bool ShouldHandleFileOpEvent(
     // In params:
     PerfTracer* perfTracer,
     vfs_context_t _Nonnull context,

@@ -59,5 +59,6 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
 
 // Static variables used for maintaining Vnode cache state
 extern uint32_t s_entriesCapacity;
+extern uintptr_t s_ModBitmask;
 extern VnodeCacheEntry* _Nullable s_entries;
 

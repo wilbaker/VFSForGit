@@ -218,14 +218,20 @@ KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked()
 
 KEXT_STATIC_INLINE uint32_t ComputePow2CacheCapacity(int expectedVnodeCount)
 {
-    uint32_t idealCacheSize = expectedVnodeCount * 2;
-    uint32_t capacity = MinPow2VnodeCacheCapacity;
-    while (capacity < idealCacheSize && capacity < MaxPow2VnodeCacheCapacity)
+    uint32_t idealCacheCapacity = expectedVnodeCount * 2;
+    
+    // Start with a cache capacity of MinPow2VnodeCacheCapacity, and keep increasing
+    // it by powers of 2 until the capacity is larger than idealCacheCapacity *or* we've
+    // hit the maximum allowed cache capcity
+    uint32_t cacheCapacity = MinPow2VnodeCacheCapacity;
+    while ((cacheCapacity < idealCacheCapacity) &&
+           (cacheCapacity < MaxPow2VnodeCacheCapacity))
     {
-        capacity = capacity << 1;
+        // Increase cacheCapacity by a power of 2
+        cacheCapacity = cacheCapacity << 1;
     }
    
-    return capacity;
+    return cacheCapacity;
 }
 
 KEXT_STATIC_INLINE uintptr_t ComputeVnodeHashIndex(vnode_t _Nonnull vnode)
@@ -286,20 +292,30 @@ KEXT_STATIC void FindVnodeRootFromDiskAndUpdateCache(
     VirtualizationRootHandle rootToInsert;
     switch (updateEntryBehavior)
     {
-      case UpdateCacheBehavior_ForceRefresh:
-        rootToInsert = rootHandle;
-        forceRefreshEntry = true;
-        break;
+        case UpdateCacheBehavior_ForceRefresh:
+            rootToInsert = rootHandle;
+            forceRefreshEntry = true;
+            break;
         
-      case UpdateCacheBehavior_InvalidateEntry:
-        rootToInsert = RootHandle_Indeterminate;
-        forceRefreshEntry = true;
-        break;
+        case UpdateCacheBehavior_InvalidateEntry:
+            rootToInsert = RootHandle_Indeterminate;
+            forceRefreshEntry = true;
+            break;
 
-      default:
-        rootToInsert = rootHandle;
-        forceRefreshEntry = false;
-        break;
+        case UpdateCacheBehavior_TrustCurrentEntry:
+            rootToInsert = rootHandle;
+            forceRefreshEntry = false;
+            break;
+    
+        default:
+            assertf(
+                false,
+                "FindVnodeRootFromDiskAndUpdateCache: Invalid updateEntryBehavior %d",
+                updateEntryBehavior);
+            
+            rootToInsert = rootHandle;
+            forceRefreshEntry = false;
+            break;
     }
 
     RWLock_AcquireExclusive(s_entriesLock);

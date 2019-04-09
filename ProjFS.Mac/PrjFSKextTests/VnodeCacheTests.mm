@@ -1,10 +1,8 @@
 #import <XCTest/XCTest.h>
-
-typedef int16_t VirtualizationRootHandle;
-
 #include "MockVnodeAndMount.hpp"
 #include "KextLogMock.h"
 #include "KextMockUtilities.hpp"
+#include "VnodeCacheEntriesWrapper.hpp"
 #include "../PrjFSKext/VirtualizationRootsTestable.hpp"
 #include "../PrjFSKext/VnodeCache.hpp"
 #include "../PrjFSKext/VnodeCachePrivate.hpp"
@@ -28,54 +26,8 @@ using std::shared_ptr;
     vfs_context_t dummyVFSContext;
 }
 
-static const VirtualizationRootHandle TestRootHandle = 51;
-static const VirtualizationRootHandle TestSecondRootHandle = 52;
-
-// Helper class for interacting with s_entries and s_entriesCapacity
-class VnodeCacheEntriesWrapper
-{
-public:
-    VnodeCacheEntriesWrapper(const uint32_t capacity, const bool fillCache)
-    {
-        s_entriesCapacity = capacity;
-        s_entries = new VnodeCacheEntry[s_entriesCapacity];
-        
-        static shared_ptr<mount> dummyMount = mount::Create();
-        static shared_ptr<vnode> dummyNode = dummyMount->CreateVnodeTree("/DUMMY");
-        for (uint32_t i = 0; i < s_entriesCapacity; ++i)
-        {
-            if (fillCache)
-            {
-                s_entries[i].vnode = dummyNode.get();
-            }
-            else
-            {
-                memset(&(s_entries[i]), 0, sizeof(VnodeCacheEntry));
-            }
-        }
-    }
-    
-    ~VnodeCacheEntriesWrapper()
-    {
-        s_entriesCapacity = 0;
-        delete[] s_entries;
-    }
-    
-    void MarkEntryAsFree(const uintptr_t entryIndex)
-    {
-        s_entries[entryIndex].vnode = nullptr;
-    }
-    
-    VnodeCacheEntry& operator[] (const uintptr_t entryIndex)
-    {
-        return s_entries[entryIndex];
-    }
-    
-    uint32_t GetCapacity() const
-    {
-        return s_entriesCapacity;
-    }
-};
+static const VirtualizationRootHandle DummyRootHandle = 51;
+static const VirtualizationRootHandle DummyRootHandleTwo = 52;
 
 - (void)setUp
 {
@@ -104,7 +56,7 @@ public:
 }
 
 - (void)testVnodeCache_FindRootForVnode_EmptyCache {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
         nullptr /* no client */,
@@ -132,7 +84,7 @@ public:
 }
 
 - (void)testVnodeCache_FindRootForVnode_FullCache {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
         nullptr /* no client */,
@@ -160,7 +112,7 @@ public:
 }
 
 - (void)testVnodeCache_FindRootForVnode_VnodeInCache {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
         nullptr /* no client */,
@@ -224,9 +176,9 @@ public:
     MockCalls::Clear();
 
     // Initialize the cache
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
-    // Insert testFileVnode with TestRootHandle as its root
+    // Insert testFileVnode with DummyRootHandle as its root
     uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
     uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
     XCTAssertTrue(
@@ -235,9 +187,10 @@ public:
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
-            TestRootHandle));
+            DummyRootHandle));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
     // VnodeCache_RefreshRootForVnode should
     // force a lookup of the new root and set it in the cache
@@ -252,6 +205,7 @@ public:
     XCTAssertTrue(rootHandle == repoRootHandle);
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
     XCTAssertTrue(rootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
@@ -279,9 +233,9 @@ public:
     MockCalls::Clear();
 
     // Initialize the cache
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
-    // Insert testFileVnode with TestRootHandle as its root
+    // Insert testFileVnode with DummyRootHandle as its root
     uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
     uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
     XCTAssertTrue(
@@ -290,9 +244,10 @@ public:
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
-            TestRootHandle));
+            DummyRootHandle));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
     // VnodeCache_InvalidateVnodeRootAndGetLatestRoot should return the real root and
     // set the entry in the cache to RootHandle_Indeterminate
@@ -305,6 +260,7 @@ public:
         self->testVnodeFile1.get(),
         self->dummyVFSContext);
     XCTAssertTrue(rootHandle == repoRootHandle);
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
     XCTAssertTrue(RootHandle_Indeterminate == cacheWrapper[indexFromHash].virtualizationRoot);
     
@@ -313,7 +269,7 @@ public:
 }
 
 - (void)testVnodeCache_InvalidateCache_SetsMemoryToZeros {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ true);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ true);
 
     shared_ptr<VnodeCacheEntry> emptyArray(static_cast<VnodeCacheEntry*>(calloc(cacheWrapper.GetCapacity(), sizeof(VnodeCacheEntry))), free);
     XCTAssertTrue(0 != memcmp(emptyArray.get(), s_entries, sizeof(VnodeCacheEntry) * cacheWrapper.GetCapacity()));
@@ -326,7 +282,7 @@ public:
 }
 
 - (void)testInvalidateCache_ExclusiveLocked_SetsMemoryToZeros {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ true);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ true);
     
     shared_ptr<VnodeCacheEntry> emptyArray(static_cast<VnodeCacheEntry*>(calloc(cacheWrapper.GetCapacity(), sizeof(VnodeCacheEntry))), free);
     XCTAssertTrue(0 != memcmp(emptyArray.get(), s_entries, sizeof(VnodeCacheEntry) * cacheWrapper.GetCapacity()));
@@ -354,23 +310,13 @@ public:
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
-- (void)testComputeVnodeHashKeyWithCapacityOfOne {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 1, /* fillCache*/ false);
-    XCTAssertTrue(0 == ComputeVnodeHashIndex(self->testVnodeFile1.get()));
-    XCTAssertTrue(0 == ComputeVnodeHashIndex(self->testVnodeFile2.get()));
-    XCTAssertTrue(0 == ComputeVnodeHashIndex(self->testVnodeFile3.get()));
-    
-    // Sanity check: We don't expect any of the mock functions to have been called
-    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
-}
-
 - (void)testTryGetVnodeRootFromCache_VnodeInCache {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
     uintptr_t testIndex = 5;
     cacheWrapper[testIndex].vnode = self->testVnodeFile1.get();
     cacheWrapper[testIndex].vid = self->testVnodeFile1->GetVid();
-    cacheWrapper[testIndex].virtualizationRoot = TestRootHandle;
+    cacheWrapper[testIndex].virtualizationRoot = DummyRootHandle;
     
     VirtualizationRootHandle rootHandle = 1;
     XCTAssertTrue(
@@ -379,14 +325,14 @@ public:
             testIndex,
             self->testVnodeFile1->GetVid(),
             rootHandle));
-    XCTAssertTrue(TestRootHandle == rootHandle);
+    XCTAssertTrue(DummyRootHandle == rootHandle);
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
 - (void)testTryGetVnodeRootFromCache_VnodeNotInCache {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
     VirtualizationRootHandle rootHandle = 1;
     XCTAssertFalse(
@@ -406,26 +352,27 @@ public:
     // be called when the cache is full, but by this test doing so we can validate
     // that InsertEntryToInvalidatedCache_ExclusiveLocked logs an error if it fails to
     // insert a vnode into the cache
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ true);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ true);
     
     InsertEntryToInvalidatedCache_ExclusiveLocked(
         self->testVnodeFile1.get(),
         ComputeVnodeHashIndex(self->testVnodeFile1.get()),
         self->testVnodeFile1->GetVid(),
-        TestRootHandle);
+        DummyRootHandle);
     
     XCTAssertTrue(MockCalls::DidCallFunction(KextMessageLogged, KEXTLOG_ERROR));
 }
 
 - (void)testFindVnodeRootFromDiskAndUpdateCache_RefreshAndInvalidateEntry {
-    VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
+    VirtualizationRootHandle onDiskRootHandle = InsertVirtualizationRoot_Locked(
         nullptr /* no client */,
         0,
         self->repoRootVnode.get(),
         self->repoRootVnode->GetVid(),
         FsidInode{ self->repoRootVnode->GetMountPoint()->GetFsid(), self->repoRootVnode->GetInode() },
         self->repoPath.c_str());
-    XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
+    XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(onDiskRootHandle));
+    XCTAssertTrue(DummyRootHandle != onDiskRootHandle);
 
     VirtualizationRootHandle foundRoot = VirtualizationRoot_FindForVnode(
         &self->dummyPerfTracer,
@@ -433,15 +380,15 @@ public:
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
         self->testVnodeFile1.get(),
         self->dummyVFSContext);
-    XCTAssertEqual(foundRoot, repoRootHandle);
+    XCTAssertEqual(foundRoot, onDiskRootHandle);
 
     // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
 
     // Initialize the cache
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
-    // Insert testFileVnode with TestRootHandle as its root
+    // Insert testFileVnode with DummyRootHandle as its root
     uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
     uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
     XCTAssertTrue(
@@ -450,9 +397,10 @@ public:
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
-            TestRootHandle));
+            DummyRootHandle));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
     // FindVnodeRootFromDiskAndUpdateCache with UpdateCacheBehavior_ForceRefresh should
     // force a lookup of the new root and set it in the cache
@@ -468,10 +416,11 @@ public:
         UpdateCacheBehavior_ForceRefresh,
         /* out parameters */
         rootHandle);
-    XCTAssertTrue(rootHandle == repoRootHandle);
-    XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
+    XCTAssertTrue(rootHandle == onDiskRootHandle);
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(rootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
-    
+    XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
+
     // UpdateCacheBehavior_InvalidateEntry means that the root in the cache should be
     // set to RootHandle_Indeterminate, but the real root will still be returned
     FindVnodeRootFromDiskAndUpdateCache(
@@ -485,9 +434,10 @@ public:
         UpdateCacheBehavior_InvalidateEntry,
         /* out parameters */
         rootHandle);
-    XCTAssertTrue(rootHandle == repoRootHandle);
-    XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
+    XCTAssertTrue(rootHandle == onDiskRootHandle);
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(RootHandle_Indeterminate == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
@@ -515,10 +465,9 @@ public:
     MockCalls::Clear();
 
     // Initialize the cache
-    uint32_t cacheCapacity = 100;
-    VnodeCacheEntriesWrapper cacheWrapper(cacheCapacity, /* fillCache*/ true);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ true);
     
-    // Insert testFileVnode with TestRootHandle as its root
+    // Insert testFileVnode with DummyRootHandle as its root
     uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
     uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
     
@@ -539,10 +488,11 @@ public:
         rootHandle);
     XCTAssertTrue(rootHandle == repoRootHandle);
     
-    for (uintptr_t index = 0; index < cacheCapacity; ++index)
+    for (uintptr_t index = 0; index < cacheWrapper.GetCapacity(); ++index)
     {
         if (index == indexFromHash)
         {
+            XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
             XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
             XCTAssertTrue(rootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
         }
@@ -558,8 +508,30 @@ public:
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
+- (void)testFindVnodeRootFromDiskAndUpdateCache_InvalidUpdateCacheBehaviorValue {
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
+    uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
+    uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
+    
+    // This test is to ensure 100% coverage of FindVnodeRootFromDiskAndUpdateCache
+    // In production FindVnodeRootFromDiskAndUpdateCache would panic when it sees an
+    // invalid UpdateCacheBehavior, but in user-mode the assertf if a no-op
+    VirtualizationRootHandle rootHandle;
+    FindVnodeRootFromDiskAndUpdateCache(
+        &self->dummyPerfTracer,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
+        PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
+        self->dummyVFSContext,
+        self->testVnodeFile1.get(),
+        indexFromHash,
+        testVnodeVid,
+        UpdateCacheBehavior_Invalid,
+        /* out parameters */
+        rootHandle);
+}
+
 - (void)testTryFindVnodeIndex_Locked_ReturnsVnodeHashIndexWhenSlotEmpty {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     
     uintptr_t vnodeHashIndex = 5;
     uintptr_t cacheIndex;
@@ -571,7 +543,7 @@ public:
 }
 
 - (void)testTryFindVnodeIndex_Locked_ReturnsFalseWhenCacheFull {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ true);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ true);
     
     uintptr_t vnodeIndex;
     XCTAssertFalse(
@@ -585,7 +557,7 @@ public:
 }
 
 - (void)testTryFindVnodeIndex_Locked_WrapsToBeginningWhenResolvingCollisions {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ true);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ true);
     
     uintptr_t emptyIndex = 2;
     cacheWrapper.MarkEntryAsFree(emptyIndex);
@@ -600,7 +572,7 @@ public:
 }
 
 - (void)testTryFindVnodeIndex_Locked_ReturnsLastIndexWhenEmptyAndResolvingCollisions {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ true);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ true);
     uintptr_t emptyIndex = cacheWrapper.GetCapacity() - 1;
     cacheWrapper.MarkEntryAsFree(emptyIndex);
     
@@ -614,7 +586,7 @@ public:
 }
 
 - (void)testTryInsertOrUpdateEntry_ExclusiveLocked_ReturnsFalseWhenFull {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ true);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ true);
 
     XCTAssertFalse(
         TryInsertOrUpdateEntry_ExclusiveLocked(
@@ -622,14 +594,14 @@ public:
             ComputeVnodeHashIndex(self->testVnodeFile1.get()),
             self->testVnodeFile1->GetVid(),
             true, // forceRefreshEntry
-            TestRootHandle));
+            DummyRootHandle));
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
 
 - (void)testTryInsertOrUpdateEntry_ExclusiveLocked_ReplacesIndeterminateEntry {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
     uint32_t testVnodeVid = self->testVnodeFile1->GetVid();
 
@@ -639,9 +611,10 @@ public:
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
-            TestRootHandle));
+            DummyRootHandle));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
@@ -650,6 +623,7 @@ public:
             testVnodeVid,
             true, // forceRefreshEntry
             RootHandle_Indeterminate));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
     XCTAssertTrue(RootHandle_Indeterminate == cacheWrapper[indexFromHash].virtualizationRoot);
     
@@ -659,11 +633,12 @@ public:
             indexFromHash,
             testVnodeVid,
             false, // forceRefreshEntry
-            TestRootHandle));
+            DummyRootHandle));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(testVnodeVid == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
-    XCTAssertTrue(TestRootHandle == VnodeCache_FindRootForVnode(
+    XCTAssertTrue(DummyRootHandle == VnodeCache_FindRootForVnode(
         &self->dummyPerfTracer,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
@@ -677,7 +652,7 @@ public:
 }
 
 - (void)testTryInsertOrUpdateEntry_ExclusiveLocked_ReplacesEntryAfterRecyclingVnode {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
     
     XCTAssertTrue(
@@ -686,9 +661,10 @@ public:
             indexFromHash,
             self->testVnodeFile1->GetVid(),
             false, // forceRefreshEntry
-            TestRootHandle));
+            DummyRootHandle));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(self->testVnodeFile1->GetVid() == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
     self->testVnodeFile1->StartRecycling();
     
@@ -698,11 +674,12 @@ public:
             indexFromHash,
             self->testVnodeFile1->GetVid(),
             false, // forceRefreshEntry
-            TestSecondRootHandle));
+            DummyRootHandleTwo));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(self->testVnodeFile1->GetVid() == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestSecondRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandleTwo == cacheWrapper[indexFromHash].virtualizationRoot);
     
-    XCTAssertTrue(TestSecondRootHandle == VnodeCache_FindRootForVnode(
+    XCTAssertTrue(DummyRootHandleTwo == VnodeCache_FindRootForVnode(
         &self->dummyPerfTracer,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Hit,
         PrjFSPerfCounter_VnodeOp_Vnode_Cache_Miss,
@@ -716,7 +693,7 @@ public:
 }
 
 - (void)testTryInsertOrUpdateEntry_ExclusiveLocked_LogsErrorWhenCacheHasDifferentRoot {
-    VnodeCacheEntriesWrapper cacheWrapper(/* capacity*/ 100, /* fillCache*/ false);
+    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
     uintptr_t indexFromHash = ComputeVnodeHashIndex(self->testVnodeFile1.get());
 
     XCTAssertTrue(
@@ -725,9 +702,10 @@ public:
             indexFromHash,
             self->testVnodeFile1->GetVid(),
             false, // forceRefreshEntry
-            TestRootHandle));
+            DummyRootHandle));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(self->testVnodeFile1->GetVid() == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
     XCTAssertTrue(
         TryInsertOrUpdateEntry_ExclusiveLocked(
@@ -735,9 +713,10 @@ public:
             indexFromHash,
             self->testVnodeFile1->GetVid(),
             false, // forceRefreshEntry
-            TestSecondRootHandle));
+            DummyRootHandleTwo));
+    XCTAssertTrue(self->testVnodeFile1.get() == cacheWrapper[indexFromHash].vnode);
     XCTAssertTrue(self->testVnodeFile1->GetVid() == cacheWrapper[indexFromHash].vid);
-    XCTAssertTrue(TestRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
+    XCTAssertTrue(DummyRootHandle == cacheWrapper[indexFromHash].virtualizationRoot);
     
     XCTAssertTrue(MockCalls::DidCallFunction(KextMessageLogged, KEXTLOG_ERROR));
 }
