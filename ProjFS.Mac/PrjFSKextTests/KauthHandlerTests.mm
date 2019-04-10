@@ -19,13 +19,18 @@ class org_vfsforgit_PrjFSProviderUserClient
 @end
 
 @implementation KauthHandlerTests
+{
+    VnodeCacheEntriesWrapper cacheWrapper;
+}
 
 - (void) setUp {
     kern_return_t initResult = VirtualizationRoots_Init();
     XCTAssertEqual(initResult, KERN_SUCCESS);
+    self->cacheWrapper.AllocateCache(false /* fillCache */);
 }
 
 - (void) tearDown {
+    self->cacheWrapper.FreeCache();
     MockVnodes_CheckAndClear();
     VirtualizationRoots_Cleanup();
 }
@@ -294,8 +299,6 @@ class org_vfsforgit_PrjFSProviderUserClient
         repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(testRootHandle));
 
-    VnodeCacheEntriesWrapper cacheWrapper(/* fillCache*/ false);
-
     VirtualizationRootHandle rootHandle;
     FsidInode vnodeFsidInode;
     int pid;
@@ -313,8 +316,8 @@ class org_vfsforgit_PrjFSProviderUserClient
             &pid));
     XCTAssertTrue(rootHandle == testRootHandle);
     // Finding the root should have added testVnodeFile to the cache
-    XCTAssertTrue(testVnodeFile.get() == cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].vnode);
-    XCTAssertTrue(rootHandle == cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].virtualizationRoot);
+    XCTAssertTrue(testVnodeFile.get() == self->cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].vnode);
+    XCTAssertTrue(rootHandle == self->cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].virtualizationRoot);
     
     // KAUTH_FILEOP_LINK
     XCTAssertTrue(
@@ -329,12 +332,12 @@ class org_vfsforgit_PrjFSProviderUserClient
             &pid));
     XCTAssertTrue(rootHandle == testRootHandle);
     // KAUTH_FILEOP_LINK should invalidate the cache entry for testVnodeFile
-    XCTAssertTrue(testVnodeFile.get() == cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].vnode);
-    XCTAssertTrue(RootHandle_Indeterminate == cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].virtualizationRoot);
+    XCTAssertTrue(testVnodeFile.get() == self->cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].vnode);
+    XCTAssertTrue(RootHandle_Indeterminate == self->cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].virtualizationRoot);
     
     // KAUTH_FILEOP_RENAME (file)
     // Set a different value in the cache for testVnodeFile's root to validate that the cache is refreshed for renames
-    cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].virtualizationRoot = rootHandle + 1;
+    self->cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].virtualizationRoot = rootHandle + 1;
     XCTAssertTrue(
         ShouldHandleFileOpEvent(
             &perfTracer,
@@ -347,13 +350,13 @@ class org_vfsforgit_PrjFSProviderUserClient
             &pid));
     XCTAssertTrue(rootHandle == testRootHandle);
     // The cache should have been refreshed for KAUTH_FILEOP_RENAME
-    XCTAssertTrue(testVnodeFile.get() == cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].vnode);
-    XCTAssertTrue(rootHandle == cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].virtualizationRoot);
+    XCTAssertTrue(testVnodeFile.get() == self->cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].vnode);
+    XCTAssertTrue(rootHandle == self->cacheWrapper[ComputeVnodeHashIndex(testVnodeFile.get())].virtualizationRoot);
     
     // KAUTH_FILEOP_RENAME (directory)
     // Directory KAUTH_FILEOP_RENAME events should invalidate the entire cache and then insert
     // only the directory vnode into the cache
-    cacheWrapper.FillAllEntries();
+    self->cacheWrapper.FillAllEntries();
     XCTAssertTrue(
         ShouldHandleFileOpEvent(
             &perfTracer,
@@ -368,19 +371,19 @@ class org_vfsforgit_PrjFSProviderUserClient
     
     // Validate the cache is empty except for the testVnodeDirectory entry
     uintptr_t directoryVnodeHash = ComputeVnodeHashIndex(testVnodeDirectory.get());
-    for (uintptr_t index = 0; index < cacheWrapper.GetCapacity(); ++index)
+    for (uintptr_t index = 0; index < self->cacheWrapper.GetCapacity(); ++index)
     {
         if (index == directoryVnodeHash)
         {
-            XCTAssertTrue(testVnodeDirectory.get() == cacheWrapper[directoryVnodeHash].vnode);
-            XCTAssertTrue(testVnodeDirectory->GetVid() == cacheWrapper[directoryVnodeHash].vid);
-            XCTAssertTrue(rootHandle == cacheWrapper[directoryVnodeHash].virtualizationRoot);
+            XCTAssertTrue(testVnodeDirectory.get() == self->cacheWrapper[directoryVnodeHash].vnode);
+            XCTAssertTrue(testVnodeDirectory->GetVid() == self->cacheWrapper[directoryVnodeHash].vid);
+            XCTAssertTrue(rootHandle == self->cacheWrapper[directoryVnodeHash].virtualizationRoot);
         }
         else
         {
-            XCTAssertTrue(nullptr == cacheWrapper[index].vnode);
-            XCTAssertTrue(0 == cacheWrapper[index].vid);
-            XCTAssertTrue(0 == cacheWrapper[index].virtualizationRoot);
+            XCTAssertTrue(nullptr == self->cacheWrapper[index].vnode);
+            XCTAssertTrue(0 == self->cacheWrapper[index].vid);
+            XCTAssertTrue(0 == self->cacheWrapper[index].virtualizationRoot);
         }
     }
 }

@@ -4,18 +4,26 @@
 #include "../PrjFSKext/VnodeCachePrivate.hpp"
 #include "../PrjFSKext/VnodeCacheTestable.hpp"
 
-// Helper class for interacting with s_entries and s_entriesCapacity
+// Helper class for interacting with s_entries, s_entriesCapacity, and s_ModBitmask
 class VnodeCacheEntriesWrapper
 {
 public:
-    VnodeCacheEntriesWrapper(const bool fillCache)
+    VnodeCacheEntriesWrapper()
+    {
+        s_entries = nullptr;
+    }
+    
+    ~VnodeCacheEntriesWrapper()
+    {
+        this->FreeCache();
+    }
+    
+    void AllocateCache(const bool fillCache)
     {
         s_entriesCapacity = 64;
         s_ModBitmask = s_entriesCapacity - 1;
         s_entries = new VnodeCacheEntry[s_entriesCapacity];
         
-        this->dummyMount = mount::Create();
-        this->dummyNode = dummyMount->CreateVnodeTree("/DUMMY");
         if (fillCache)
         {
             this->FillAllEntries();
@@ -29,14 +37,27 @@ public:
         }
     }
     
-    ~VnodeCacheEntriesWrapper()
+    void FreeCache()
     {
         s_entriesCapacity = 0;
-        delete[] s_entries;
+        
+        if (nullptr != s_entries)
+        {
+            delete[] s_entries;
+            s_entries = nullptr;
+        }
+        
+        this->dummyMount.reset();
+        this->dummyNode.reset();
     }
     
     void FillAllEntries()
     {
+        // Keep these dummy instances alive until FreeCache is called to ensure that
+        // no subsequent allocations overlap with the vnode we're using to fill the cache
+        this->dummyMount = mount::Create();
+        this->dummyNode = dummyMount->CreateVnodeTree("/DUMMY");
+        
         for (uint32_t i = 0; i < s_entriesCapacity; ++i)
         {
             s_entries[i].vnode = this->dummyNode.get();

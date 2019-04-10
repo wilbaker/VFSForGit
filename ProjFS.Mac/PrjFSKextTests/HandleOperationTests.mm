@@ -14,6 +14,7 @@
 #include "KextMockUtilities.hpp"
 #include "MockVnodeAndMount.hpp"
 #include "MockProc.hpp"
+#include "VnodeCacheEntriesWrapper.hpp"
 #include <tuple>
 
 using std::make_tuple;
@@ -48,6 +49,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
     shared_ptr<vnode> repoRootVnode;
     shared_ptr<vnode> testFileVnode;
     shared_ptr<vnode> testDirVnode;
+    VnodeCacheEntriesWrapper cacheWrapper;
 }
 
 - (void) setUp
@@ -58,12 +60,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
     dummyClientPid = 100;
 
     // Initialize Vnode Cache
-    s_entriesCapacity = 100;
-    s_entries = new VnodeCacheEntry[s_entriesCapacity];
-    for (uint32_t i = 0; i < s_entriesCapacity; ++i)
-    {
-        memset(&(s_entries[i]), 0, sizeof(VnodeCacheEntry));
-    }
+    cacheWrapper.AllocateCache(false /* fillCache */);
 
     // Create Vnode Tree
     repoPath = "/Users/test/code/Repo";
@@ -86,9 +83,7 @@ static void SetPrjFSFileXattrData(const shared_ptr<vnode>& vnode)
     repoRootVnode.reset();
     testFileVnode.reset();
     testDirVnode.reset();
-    
-    s_entriesCapacity = 0;
-    delete[] s_entries;
+    cacheWrapper.FreeCache();
     
     VirtualizationRoots_Cleanup();
     vfs_context_rele(context);
