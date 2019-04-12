@@ -177,11 +177,6 @@ static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection)
 
 static bool TryFetchAndLogKextHealthData(io_connect_t connection)
 {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        mach_timebase_info(&s_machTimebase);
-    });
-    
     PrjFSPerfCounterResult counters[PrjFSPerfCounter_Count];
     size_t out_size = sizeof(counters);
     IOReturn ret = IOConnectCallStructMethod(connection, LogSelector_FetchProfilingData, nullptr, 0, counters, &out_size);
