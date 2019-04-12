@@ -132,12 +132,24 @@ static void StartLoggingKextMessages(io_connect_t connection, io_service_t prjfs
     });
     dispatch_resume(logDataQueue->dispatchSource);
 
+    dispatch_source_t timer = nullptr;
+    if (TryFetchAndLogKextHealthData(connection))
+    {
+        timer = StartKextHealthDataPolling(connection);
+    }
+
     PrjFSService_WatchForServiceTermination(
         prjfsService,
         s_notificationPort,
-        [prjfsServiceEntryID, connection, logDataQueue]()
+        [prjfsServiceEntryID, connection, logDataQueue, timer]()
         {
             DataQueue_Dispose(logDataQueue.get(), connection, LogMemoryType_MessageQueue);
+
+            if (nullptr != timer)
+            {
+                dispatch_cancel(timer);
+                dispatch_release(timer);
+            }
 
             IOServiceClose(connection);
             os_log(s_daemonLogger, "Stopped logging kext messages from PrjFS IOService with registry entry id 0x%llx", prjfsServiceEntryID);
