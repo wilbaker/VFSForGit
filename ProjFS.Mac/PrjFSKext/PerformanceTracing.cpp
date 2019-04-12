@@ -2,7 +2,6 @@
 #include "KextLog.hpp"
 #include "kernel-header-wrappers/stdatomic.h"
 #include <sys/types.h>
-#include "public/PrjFSHealthData.h"
 #include <IOKit/IOUserClient.h>
 
 #if PRJFS_PERFORMANCE_TRACING_ENABLE
@@ -55,39 +54,6 @@ IOReturn PerfTracing_ExportDataUserClient(IOExternalMethodArguments* arguments)
 #else
     return kIOReturnUnsupported;
 #endif
-}
-
-IOReturn PerfTracing_ExportHealthData(IOExternalMethodArguments* arguments)
-{
-    PrjFSHealthData healthData;
-
-    // The buffer will come in either as a memory descriptor or direct pointer, depending on size
-    if (nullptr != arguments->structureOutputDescriptor)
-    {
-        IOMemoryDescriptor* structureOutput = arguments->structureOutputDescriptor;
-        if (sizeof(healthData) != structureOutput->getLength())
-        {
-            KextLog_Info("PerfTracing_ExportHealthData: structure output descriptor size %llu, expected %lu\n", structureOutput->getLength(), sizeof(healthData));
-            return kIOReturnBadArgument;
-        }
-
-        IOReturn result = structureOutput->prepare(kIODirectionIn);
-        if (kIOReturnSuccess == result)
-        {
-            structureOutput->writeBytes(0 /* offset */, &healthData, sizeof(healthData));
-            structureOutput->complete(kIODirectionIn);
-        }
-        return result;
-    }
-
-    if (arguments->structureOutput == nullptr || arguments->structureOutputSize != sizeof(PrjFSHealthData))
-    {
-        KextLog_Info("PerfTracing_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(healthData));
-        return kIOReturnBadArgument;
-    }
-
-    memcpy(arguments->structureOutput, &healthData, sizeof(healthData));
-    return kIOReturnSuccess;
 }
 
 void PerfTracing_RecordSample(PrjFSPerfCounter counter, uint64_t startTime, uint64_t endTime)

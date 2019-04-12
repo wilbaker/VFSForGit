@@ -64,6 +64,7 @@ while read line; do
 	 [[ $line != *"VirtualizationRoots_Cleanup"* ]] && 
 	 [[ $line != *"VnodeCache_Init"* ]] && 
 	 [[ $line != *"VnodeCache_Cleanup"* ]] && 
+	 [[ $line != *"VnodeCache_ExportHealthData"* ]] && 
 	 [[ $line != *"FindOrDetectRootAtVnode"* ]] &&                   #SHOULD ADD COVERAGE
 	 [[ $line != *"FindUnusedIndexOrGrow_Locked"* ]] &&              #SHOULD ADD COVERAGE
 	 [[ $line != *"FindRootAtVnode_Locked"* ]] &&                    #SHOULD ADD COVERAGE

@@ -4,6 +4,7 @@
 #include "public/PrjFSCommon.h"
 #include "public/PrjFSHealthData.h"
 #include "PerformanceTracing.hpp"
+#include "VnodeCache.hpp"
 #include <IOKit/IOSharedDataQueue.h>
 
 
@@ -196,6 +197,6 @@ IOReturn PrjFSLogUserClient::fetchHealthData(
         void* reference,
         IOExternalMethodArguments* arguments)
 {
-    return PerfTracing_ExportHealthData(arguments);
+    return VnodeCache_ExportHealthData(arguments);
 }
 

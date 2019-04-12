@@ -1,9 +1,11 @@
 #include <string.h>
+#include <IOKit/IOUserClient.h>
 #include "Locks.hpp"
 #include "VnodeCache.hpp"
 #include "Memory.hpp"
 #include "KextLog.hpp"
 #include "../PrjFSKext/public/PrjFSCommon.h"
+#include "../PrjFSKext/public/PrjFSHealthData.h"
 
 #include "VnodeCachePrivate.hpp"
 
@@ -209,6 +211,43 @@ void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer)
         InvalidateCache_ExclusiveLocked();
     }
     RWLock_ReleaseExclusive(s_entriesLock);
+}
+
+IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull arguments)
+{
+    PrjFSHealthData healthData;
+    healthData.cacheCapacity = s_entriesCapacity;
+
+    // The buffer will come in either as a memory descriptor or direct pointer, depending on size
+    if (nullptr != arguments->structureOutputDescriptor)
+    {
+        IOMemoryDescriptor* structureOutput = arguments->structureOutputDescriptor;
+        if (sizeof(healthData) != structureOutput->getLength())
+        {
+            KextLog_Info(
+                "VnodeCache_ExportHealthData: structure output descriptor size %llu, expected %lu\n",
+                static_cast<unsigned long long>(structureOutput->getLength()),
+                sizeof(healthData));
+            return kIOReturnBadArgument;
+        }
+
+        IOReturn result = structureOutput->prepare(kIODirectionIn);
+        if (kIOReturnSuccess == result)
+        {
+            structureOutput->writeBytes(0 /* offset */, &healthData, sizeof(healthData));
+            structureOutput->complete(kIODirectionIn);
+        }
+        return result;
+    }
+
+    if (arguments->structureOutput == nullptr || arguments->structureOutputSize != sizeof(PrjFSHealthData))
+    {
+        KextLog_Info("VnodeCache_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(healthData));
+        return kIOReturnBadArgument;
+    }
+
+    memcpy(arguments->structureOutput, &healthData, sizeof(healthData));
+    return kIOReturnSuccess;
 }
 
 KEXT_STATIC_INLINE void InvalidateCache_ExclusiveLocked()
