@@ -1,5 +1,6 @@
 #include <string.h>
 #include <IOKit/IOUserClient.h>
+#include "kernel-header-wrappers/stdatomic.h"
 #include "Locks.hpp"
 #include "VnodeCache.hpp"
 #include "Memory.hpp"
@@ -61,6 +62,10 @@ KEXT_STATIC VnodeCacheEntry* s_entries;
 // s_entriesCapacity will always be a power of 2, and so we can compute the modulo
 // using (value & s_ModBitmask) rather than (value % s_entriesCapacity);
 KEXT_STATIC uintptr_t s_ModBitmask;
+
+static atomic_uint_least64_t s_TotalLookupHits;
+
+static PrjFSHealthData s_HealthData = {};
 
 static RWLock s_entriesLock;
 
@@ -128,10 +133,13 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
     if (TryGetVnodeRootFromCache(vnode, vnodeHashIndex, vnodeVid, rootHandle))
     {
         perfTracer->IncrementCount(cacheHitCounter, true /*ignoreSampling*/);
+        atomic_fetch_add(&s_TotalLookupHits, 1ULL);
         return rootHandle;
     }
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
+    //atomic_fetch_add(&s_HealthData.totalLookupMisses, 1);
+    
     FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
         cacheMissFallbackFunctionCounter,
@@ -160,6 +168,8 @@ VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
     uint32_t vnodeVid = vnode_vid(vnode);
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
+    //atomic_fetch_add(&s_HealthData.totalVnodeRefreshes, 1);
+    
     FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
         cacheMissFallbackFunctionCounter,
@@ -188,6 +198,8 @@ VirtualizationRootHandle VnodeCache_InvalidateVnodeRootAndGetLatestRoot(
     uint32_t vnodeVid = vnode_vid(vnode);
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
+    //atomic_fetch_add(&s_HealthData.totalVnodeInvalidations, 1);
+    
     FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
         cacheMissFallbackFunctionCounter,
@@ -205,6 +217,7 @@ VirtualizationRootHandle VnodeCache_InvalidateVnodeRootAndGetLatestRoot(
 void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer)
 {
     perfTracer->IncrementCount(PrjFSPerfCounter_CacheInvalidateCount, true /*ignoreSampling*/);
+    //atomic_fetch_add(&s_HealthData.invalidateEntireCacheCount, 1);
 
     RWLock_AcquireExclusive(s_entriesLock);
     {
@@ -215,38 +228,39 @@ void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer)
 
 IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull arguments)
 {
-    PrjFSHealthData healthData;
-    healthData.cacheCapacity = s_entriesCapacity;
+    s_HealthData.cacheCapacity = s_entriesCapacity;
+    s_HealthData.totalLookupHits = atomic_exchange(&s_TotalLookupHits, 0ULL);
 
     // The buffer will come in either as a memory descriptor or direct pointer, depending on size
     if (nullptr != arguments->structureOutputDescriptor)
     {
         IOMemoryDescriptor* structureOutput = arguments->structureOutputDescriptor;
-        if (sizeof(healthData) != structureOutput->getLength())
+        if (sizeof(s_HealthData) != structureOutput->getLength())
         {
             KextLog_Info(
                 "VnodeCache_ExportHealthData: structure output descriptor size %llu, expected %lu\n",
                 static_cast<unsigned long long>(structureOutput->getLength()),
-                sizeof(healthData));
+                sizeof(s_HealthData));
             return kIOReturnBadArgument;
         }
 
         IOReturn result = structureOutput->prepare(kIODirectionIn);
         if (kIOReturnSuccess == result)
         {
-            structureOutput->writeBytes(0 /* offset */, &healthData, sizeof(healthData));
+            structureOutput->writeBytes(0 /* offset */, &s_HealthData, sizeof(s_HealthData));
             structureOutput->complete(kIODirectionIn);
         }
+        
         return result;
     }
 
     if (arguments->structureOutput == nullptr || arguments->structureOutputSize != sizeof(PrjFSHealthData))
     {
-        KextLog_Info("VnodeCache_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(healthData));
+        KextLog_Info("VnodeCache_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(s_HealthData));
         return kIOReturnBadArgument;
     }
 
-    memcpy(arguments->structureOutput, &healthData, sizeof(healthData));
+    memcpy(arguments->structureOutput, &s_HealthData, sizeof(s_HealthData));
     return kIOReturnSuccess;
 }
 
