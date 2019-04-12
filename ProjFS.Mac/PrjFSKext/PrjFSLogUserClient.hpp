@@ -32,9 +32,13 @@ public:
         IOExternalMethodDispatch* dispatch = nullptr,
         OSObject* target = nullptr,
         void* reference = nullptr) override;
-
     
     static IOReturn fetchProfilingData(
+        OSObject* target,
+        void* reference,
+        IOExternalMethodArguments* arguments);
+    
+    static IOReturn fetchHealthData(
         OSObject* target,
         void* reference,
         IOExternalMethodArguments* arguments);

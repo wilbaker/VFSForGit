@@ -11,6 +11,7 @@ void PerfTracing_RecordSample(PrjFSPerfCounter counter, uint64_t startTime, uint
 
 struct IOExternalMethodArguments;
 IOReturn PerfTracing_ExportDataUserClient(IOExternalMethodArguments* arguments);
+IOReturn PerfTracing_ExportHealthData(IOExternalMethodArguments* arguments);
 
 class PerfTracer
 {

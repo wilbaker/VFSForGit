@@ -2,6 +2,7 @@
 #include "public/PrjFSLogClientShared.h"
 #include "KextLog.hpp"
 #include "public/PrjFSCommon.h"
+#include "public/PrjFSHealthData.h"
 #include "PerformanceTracing.hpp"
 #include <IOKit/IOSharedDataQueue.h>
 
@@ -20,6 +21,14 @@ static const IOExternalMethodDispatch LogUserClientDispatch[] =
             .checkStructureInputSize =  0,
             .checkScalarOutputCount =   0,
             .checkStructureOutputSize = PrjFSPerfCounter_Count * sizeof(PrjFSPerfCounterResult), // array of results
+        },
+    [LogSelector_FetchHealthData] =
+        {
+            .function =                 &PrjFSLogUserClient::fetchHealthData,
+            .checkScalarInputCount =    0,
+            .checkStructureInputSize =  0,
+            .checkScalarOutputCount =   0,
+            .checkStructureOutputSize = sizeof(PrjFSHealthData),
         },
 };
 
@@ -180,5 +189,13 @@ IOReturn PrjFSLogUserClient::fetchProfilingData(
     IOExternalMethodArguments* arguments)
 {
     return PerfTracing_ExportDataUserClient(arguments);
+}
+
+IOReturn PrjFSLogUserClient::fetchHealthData(
+        OSObject* target,
+        void* reference,
+        IOExternalMethodArguments* arguments)
+{
+    return PerfTracing_ExportHealthData(arguments);
 }
 
