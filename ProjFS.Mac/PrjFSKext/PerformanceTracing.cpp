@@ -60,7 +60,7 @@ IOReturn PerfTracing_ExportDataUserClient(IOExternalMethodArguments* arguments)
 IOReturn PerfTracing_ExportHealthData(IOExternalMethodArguments* arguments)
 {
     PrjFSHealthData healthData;
-    
+
     // The buffer will come in either as a memory descriptor or direct pointer, depending on size
     if (nullptr != arguments->structureOutputDescriptor)
     {
@@ -70,7 +70,7 @@ IOReturn PerfTracing_ExportHealthData(IOExternalMethodArguments* arguments)
             KextLog_Info("PerfTracing_ExportHealthData: structure output descriptor size %llu, expected %lu\n", structureOutput->getLength(), sizeof(healthData));
             return kIOReturnBadArgument;
         }
-        
+
         IOReturn result = structureOutput->prepare(kIODirectionIn);
         if (kIOReturnSuccess == result)
         {
@@ -79,14 +79,14 @@ IOReturn PerfTracing_ExportHealthData(IOExternalMethodArguments* arguments)
         }
         return result;
     }
-    
+
     if (arguments->structureOutput == nullptr || arguments->structureOutputSize != sizeof(PrjFSHealthData))
     {
         KextLog_Info("PerfTracing_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(healthData));
         return kIOReturnBadArgument;
     }
-    
-    memcpy(arguments->structureOutput, &healthData, sizeof(s_perfCounterResults));
+
+    memcpy(arguments->structureOutput, &healthData, sizeof(healthData));
     return kIOReturnSuccess;
 }
 

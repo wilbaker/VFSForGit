@@ -18,6 +18,11 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection);
 
 int main(int argc, const char* argv[])
 {
+#ifdef DEBUG
+    printf("PrjFSKextLogDaemon starting up");
+    fflush(stdout);
+#endif
+    
     s_daemonLogger = os_log_create(PrjFSKextLogDaemon_OSLogSubsystem, "daemon");
     s_kextLogger = os_log_create(PrjFSKextLogDaemon_OSLogSubsystem, "kext");
     
