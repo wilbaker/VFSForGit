@@ -1,4 +1,5 @@
 #include "../PrjFSKext/public/PrjFSLogClientShared.h"
+#include "../PrjFSKext/public/PrjFSHealthData.h"
 #include "../PrjFSLib/PrjFSUser.hpp"
 #include <iostream>
 #include <OS/log.h>
@@ -177,67 +178,16 @@ static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection)
 
 static bool TryFetchAndLogKextHealthData(io_connect_t connection)
 {
-    PrjFSPerfCounterResult counters[PrjFSPerfCounter_Count];
-    size_t out_size = sizeof(counters);
-    IOReturn ret = IOConnectCallStructMethod(connection, LogSelector_FetchProfilingData, nullptr, 0, counters, &out_size);
+    PrjFSHealthData healthData;
+    size_t out_size = sizeof(healthData);
+    IOReturn ret = IOConnectCallStructMethod(connection, LogSelector_FetchHealthData, nullptr, 0, &healthData, &out_size);
     if (ret == kIOReturnUnsupported)
     {
         return false;
     }
     else if (ret == kIOReturnSuccess)
     {
-        for (int32_t i = 0; i < PrjFSPerfCounter_Count; ++i)
-        {
-            double numSamples = counters[i].numSamples;
-            printf(
-                "%2u %-35s [%10llu]",
-                i,
-                PerfCounterNames[i],
-                counters[i].numSamples);
-            
-            if (counters[i].min != UINT64_MAX)
-            {
-                // The values on the counter are reported in units of mach absolute time
-                double sum = counters[i].sum;
-
-                uint64_t sumNS = nanosecondsFromAbsoluteTime(sum);
-                uint64_t meanNS = numSamples > 0 ? sumNS / numSamples : 0;
-
-                printf(
-                    "[%15llu][%10llu][%10llu][%10llu]",
-                    sumNS,
-                    meanNS,
-                    nanosecondsFromAbsoluteTime(counters[i].min),
-                    nanosecondsFromAbsoluteTime(counters[i].max));
-                
-                static const char* const barGraphItems[9] = {
-                    NBSP_STR, "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█",
-                };
-                
-                // Find the bucket with the largest number of samples; use the 8/8
-                // bar symbol for that, and make all other buckets relative to it.
-                // (Defining the overall number of samples across all buckets as
-                // 100% on the scale would limit the resolution of the information
-                // you could read from the graph; the 8/8 bar symbol would only be
-                // used on distributions very concentrated on one bucket.)
-                _Atomic uint64_t(&buckets)[PrjFSPerfCounterBuckets] = counters[i].sampleBuckets;
-                uint64_t bucketMax = *std::max_element(begin(buckets), end(buckets));
-                if (bucketMax > 0) // Should normally not be 0 if we get here, but defends against divide by 0 in case of a bug
-                {
-                    printf("[");
-                    for (size_t bucket = 0; bucket < PrjFSPerfCounterBuckets; ++bucket)
-                    {
-                        // Always round up so we have a clear distinction between buckets with zero and even a single item.
-                        uint64_t eighths = (8 * buckets[bucket] + bucketMax - 1) / bucketMax;
-                        assert(eighths >= 0);
-                        assert(eighths <= 8);
-                        printf("%s", barGraphItems[eighths]);
-                    }
-                    printf("]");
-                }
-            }
-            printf("\n");
-        }
+        os_log_with_type(s_kextLogger, OS_LOG_TYPE_DEFAULT, "PrjFS Health: CacheSize=%u", healthData.cacheSize);
     }
     else
     {

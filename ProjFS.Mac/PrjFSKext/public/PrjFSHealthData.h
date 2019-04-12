@@ -2,5 +2,5 @@
 
 struct PrjFSHealthData
 {
-    uint64_t cacheSize;
+    uint32_t cacheSize;
 };
