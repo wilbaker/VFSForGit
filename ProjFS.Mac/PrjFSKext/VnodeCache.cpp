@@ -65,14 +65,14 @@ KEXT_STATIC uintptr_t s_ModBitmask;
 
 struct VnodeCacheHealthStats
 {
-    atomic_uint_least32_t cacheEntries;
-    atomic_uint_least64_t invalidateEntireCacheCount;
-    atomic_uint_least64_t totalSearches;
-    atomic_uint_least64_t totalProbingSteps;
-    atomic_uint_least64_t totalFindRootForVnodeHits;
-    atomic_uint_least64_t totalFindRootForVnodeMisses;
-    atomic_uint_least64_t totalRefreshRootForVnode;
-    atomic_uint_least64_t totalInvalidateVnodeRoot;
+    _Atomic uint32_t cacheEntries;
+    _Atomic uint64_t invalidateEntireCacheCount;
+    _Atomic uint64_t totalSearches;
+    _Atomic uint64_t totalProbingSteps;
+    _Atomic uint64_t totalFindRootForVnodeHits;
+    _Atomic uint64_t totalFindRootForVnodeMisses;
+    _Atomic uint64_t totalRefreshRootForVnode;
+    _Atomic uint64_t totalInvalidateVnodeRoot;
 };
 
 static VnodeCacheHealthStats s_cacheHealthStats;
