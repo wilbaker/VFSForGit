@@ -207,8 +207,9 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
         os_log_with_type(
             s_kextLogger,
             OS_LOG_TYPE_DEFAULT,
-            "PrjFS Vnode Cache Health: CacheCapacity=%u, InvalidationCount=%llu, LookupHits=%llu",
+            "PrjFS Vnode Cache Health: CacheCapacity=%u, CacheEntries=%u, InvalidationCount=%llu, LookupHits=%llu",
             healthData.cacheCapacity,
+            healthData.cacheEntries,
             healthData.invalidateEntireCacheCount,
             healthData.totalLookupHits);
     }

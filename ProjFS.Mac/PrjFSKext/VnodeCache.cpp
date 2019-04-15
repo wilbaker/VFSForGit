@@ -63,9 +63,9 @@ KEXT_STATIC VnodeCacheEntry* s_entries;
 // using (value & s_ModBitmask) rather than (value % s_entriesCapacity);
 KEXT_STATIC uintptr_t s_ModBitmask;
 
-static atomic_uint_least64_t s_TotalLookupHits;
-
 static PrjFSHealthData s_HealthData = {};
+static atomic_uint_least32_t s_CacheEntries;
+static atomic_uint_least64_t s_TotalLookupHits;
 
 static RWLock s_entriesLock;
 
@@ -93,6 +93,9 @@ kern_return_t VnodeCache_Init()
     }
     
     memset(s_entries, 0, s_entriesCapacity * sizeof(VnodeCacheEntry));
+    
+    atomic_exchange(&s_CacheEntries, 0U);
+    atomic_exchange(&s_TotalLookupHits, 0ULL);
     
     PerfTracing_RecordSample(PrjFSPerfCounter_CacheCapacity, 0, s_entriesCapacity);
     
@@ -229,6 +232,7 @@ void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer)
 IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull arguments)
 {
     s_HealthData.cacheCapacity = s_entriesCapacity;
+    s_HealthData.cacheEntries = atomic_exchange(&s_CacheEntries, 0U);
     s_HealthData.totalLookupHits = atomic_exchange(&s_TotalLookupHits, 0ULL);
 
     // The buffer will come in either as a memory descriptor or direct pointer, depending on size
@@ -458,6 +462,11 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
             vnodeVid != s_entries[vnodeIndex].vid ||
             RootHandle_Indeterminate == s_entries[vnodeIndex].virtualizationRoot)
         {
+            if (NULLVP == s_entries[vnodeIndex].vnode)
+            {
+                atomic_fetch_add(&s_CacheEntries, 1U);
+            }
+        
             s_entries[vnodeIndex].vnode = vnode;
             s_entries[vnodeIndex].vid = vnodeVid;
             s_entries[vnodeIndex].virtualizationRoot = rootHandle;
