@@ -219,6 +219,7 @@ void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer)
 {
     perfTracer->IncrementCount(PrjFSPerfCounter_CacheInvalidateCount, true /*ignoreSampling*/);
     atomic_fetch_add(&s_cacheHealthStats.invalidateEntireCacheCount, 1ULL);
+    atomic_exchange(&s_cacheHealthStats.cacheEntries, 0U);
 
     RWLock_AcquireExclusive(s_entriesLock);
     {
@@ -232,7 +233,7 @@ IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull argumen
     PrjFSHealthData healthData =
     {
         .cacheCapacity = s_entriesCapacity,
-        .cacheEntries = atomic_exchange(&s_cacheHealthStats.cacheEntries, 0U),
+        .cacheEntries = s_cacheHealthStats.cacheEntries,
         .invalidateEntireCacheCount = atomic_exchange(&s_cacheHealthStats.invalidateEntireCacheCount, 0ULL),
         .totalCacheLookups = atomic_exchange(&s_cacheHealthStats.totalCacheLookups, 0ULL),
         .totalLookupCollisions = atomic_exchange(&s_cacheHealthStats.totalLookupCollisions, 0ULL),
