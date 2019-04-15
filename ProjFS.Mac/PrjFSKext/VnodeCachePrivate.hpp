@@ -1,5 +1,7 @@
 #pragma once
 
+#include "kernel-header-wrappers/stdatomic.h"
+
 enum UpdateCacheBehavior
 {
     UpdateCacheBehavior_Invalid = 0,
@@ -19,6 +21,18 @@ struct VnodeCacheEntry
     vnode_t vnode;
     uint32_t vid;   // vnode generation number
     VirtualizationRootHandle virtualizationRoot;
+};
+
+struct VnodeCacheHealthStats
+{
+    _Atomic(uint32_t) cacheEntries;
+    _Atomic(uint64_t) invalidateEntireCacheCount;
+    _Atomic(uint64_t) totalCacheLookups;
+    _Atomic(uint64_t) totalLookupCollisions;
+    _Atomic(uint64_t) totalFindRootForVnodeHits;
+    _Atomic(uint64_t) totalFindRootForVnodeMisses;
+    _Atomic(uint64_t) totalRefreshRootForVnode;
+    _Atomic(uint64_t) totalInvalidateVnodeRoot;
 };
 
 // Allow cache the cache to use between 4 MB and 64 MB of memory (assuming 16 bytes per VnodeCacheEntry)

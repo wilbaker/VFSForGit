@@ -1,6 +1,5 @@
 #include <string.h>
 #include <IOKit/IOUserClient.h>
-#include "kernel-header-wrappers/stdatomic.h"
 #include "Locks.hpp"
 #include "VnodeCache.hpp"
 #include "Memory.hpp"
@@ -56,7 +55,7 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     bool forceRefreshEntry,
     VirtualizationRootHandle rootHandle);
 
-static inline void InitHealthStats();
+KEXT_STATIC_INLINE void InitHealthStats();
 
 KEXT_STATIC uint32_t s_entriesCapacity;
 KEXT_STATIC VnodeCacheEntry* s_entries;
@@ -65,19 +64,7 @@ KEXT_STATIC VnodeCacheEntry* s_entries;
 // using (value & s_ModBitmask) rather than (value % s_entriesCapacity);
 KEXT_STATIC uintptr_t s_ModBitmask;
 
-struct VnodeCacheHealthStats
-{
-    _Atomic(uint32_t) cacheEntries;
-    _Atomic(uint64_t) invalidateEntireCacheCount;
-    _Atomic(uint64_t) totalCacheLookups;
-    _Atomic(uint64_t) totalLookupCollisions;
-    _Atomic(uint64_t) totalFindRootForVnodeHits;
-    _Atomic(uint64_t) totalFindRootForVnodeMisses;
-    _Atomic(uint64_t) totalRefreshRootForVnode;
-    _Atomic(uint64_t) totalInvalidateVnodeRoot;
-};
-
-static VnodeCacheHealthStats s_cacheHealthStats;
+KEXT_STATIC VnodeCacheHealthStats s_cacheHealthStats;
 
 static RWLock s_entriesLock;
 
@@ -517,7 +504,7 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     return false;
 }
 
-static inline void InitHealthStats()
+KEXT_STATIC_INLINE void InitHealthStats()
 {
     atomic_exchange(&s_cacheHealthStats.cacheEntries, 0U);
     atomic_exchange(&s_cacheHealthStats.invalidateEntireCacheCount, 0ULL);
