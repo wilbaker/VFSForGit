@@ -63,9 +63,19 @@ KEXT_STATIC VnodeCacheEntry* s_entries;
 // using (value & s_ModBitmask) rather than (value % s_entriesCapacity);
 KEXT_STATIC uintptr_t s_ModBitmask;
 
-static PrjFSHealthData s_HealthData = {};
-static atomic_uint_least32_t s_CacheEntries;
-static atomic_uint_least64_t s_TotalLookupHits;
+struct VnodeCacheHealthStats
+{
+    atomic_uint_least32_t cacheEntries;
+    atomic_uint_least64_t invalidateEntireCacheCount;
+    atomic_uint_least64_t totalSearches;
+    atomic_uint_least64_t totalProbingSteps;
+    atomic_uint_least64_t totalFindRootForVnodeHits;
+    atomic_uint_least64_t totalFindRootForVnodeMisses;
+    atomic_uint_least64_t totalRefreshRootForVnode;
+    atomic_uint_least64_t totalInvalidateVnodeRoot;
+};
+
+static VnodeCacheHealthStats s_cacheHealthStats;
 
 static RWLock s_entriesLock;
 
@@ -94,8 +104,14 @@ kern_return_t VnodeCache_Init()
     
     memset(s_entries, 0, s_entriesCapacity * sizeof(VnodeCacheEntry));
     
-    atomic_exchange(&s_CacheEntries, 0U);
-    atomic_exchange(&s_TotalLookupHits, 0ULL);
+    atomic_exchange(&s_cacheHealthStats.cacheEntries, 0U);
+    atomic_exchange(&s_cacheHealthStats.invalidateEntireCacheCount, 0ULL);
+    atomic_exchange(&s_cacheHealthStats.totalProbingSteps, 0ULL);
+    atomic_exchange(&s_cacheHealthStats.totalSearches, 0ULL);
+    atomic_exchange(&s_cacheHealthStats.totalFindRootForVnodeHits, 0ULL);
+    atomic_exchange(&s_cacheHealthStats.totalFindRootForVnodeMisses, 0ULL);
+    atomic_exchange(&s_cacheHealthStats.totalRefreshRootForVnode, 0ULL);
+    atomic_exchange(&s_cacheHealthStats.totalInvalidateVnodeRoot, 0ULL);
     
     PerfTracing_RecordSample(PrjFSPerfCounter_CacheCapacity, 0, s_entriesCapacity);
     
@@ -136,12 +152,12 @@ VirtualizationRootHandle VnodeCache_FindRootForVnode(
     if (TryGetVnodeRootFromCache(vnode, vnodeHashIndex, vnodeVid, rootHandle))
     {
         perfTracer->IncrementCount(cacheHitCounter, true /*ignoreSampling*/);
-        atomic_fetch_add(&s_TotalLookupHits, 1ULL);
+        atomic_fetch_add(&s_cacheHealthStats.totalFindRootForVnodeHits, 1ULL);
         return rootHandle;
     }
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
-    //atomic_fetch_add(&s_HealthData.totalLookupMisses, 1);
+    atomic_fetch_add(&s_cacheHealthStats.totalFindRootForVnodeMisses, 1);
     
     FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
@@ -171,7 +187,7 @@ VirtualizationRootHandle VnodeCache_RefreshRootForVnode(
     uint32_t vnodeVid = vnode_vid(vnode);
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
-    //atomic_fetch_add(&s_HealthData.totalVnodeRefreshes, 1);
+    atomic_fetch_add(&s_cacheHealthStats.totalRefreshRootForVnode, 1);
     
     FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
@@ -201,7 +217,7 @@ VirtualizationRootHandle VnodeCache_InvalidateVnodeRootAndGetLatestRoot(
     uint32_t vnodeVid = vnode_vid(vnode);
     
     perfTracer->IncrementCount(cacheMissCounter, true /*ignoreSampling*/);
-    //atomic_fetch_add(&s_HealthData.totalVnodeInvalidations, 1);
+    atomic_fetch_add(&s_cacheHealthStats.totalInvalidateVnodeRoot, 1);
     
     FindVnodeRootFromDiskAndUpdateCache(
         perfTracer,
@@ -220,7 +236,7 @@ VirtualizationRootHandle VnodeCache_InvalidateVnodeRootAndGetLatestRoot(
 void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer)
 {
     perfTracer->IncrementCount(PrjFSPerfCounter_CacheInvalidateCount, true /*ignoreSampling*/);
-    //atomic_fetch_add(&s_HealthData.invalidateEntireCacheCount, 1);
+    atomic_fetch_add(&s_cacheHealthStats.invalidateEntireCacheCount, 1);
 
     RWLock_AcquireExclusive(s_entriesLock);
     {
@@ -231,27 +247,30 @@ void VnodeCache_InvalidateCache(PerfTracer* _Nonnull perfTracer)
 
 IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull arguments)
 {
-    s_HealthData.cacheCapacity = s_entriesCapacity;
-    s_HealthData.cacheEntries = atomic_exchange(&s_CacheEntries, 0U);
-    s_HealthData.totalLookupHits = atomic_exchange(&s_TotalLookupHits, 0ULL);
+    PrjFSHealthData healthData =
+    {
+        .cacheCapacity = s_entriesCapacity,
+        .cacheEntries = atomic_exchange(&s_cacheHealthStats.cacheEntries, 0U),
+        .totalFindRootForVnodeHits  = atomic_exchange(&s_cacheHealthStats.totalFindRootForVnodeHits, 0ULL),
+    };
 
     // The buffer will come in either as a memory descriptor or direct pointer, depending on size
     if (nullptr != arguments->structureOutputDescriptor)
     {
         IOMemoryDescriptor* structureOutput = arguments->structureOutputDescriptor;
-        if (sizeof(s_HealthData) != structureOutput->getLength())
+        if (sizeof(healthData) != structureOutput->getLength())
         {
             KextLog_Info(
                 "VnodeCache_ExportHealthData: structure output descriptor size %llu, expected %lu\n",
                 static_cast<unsigned long long>(structureOutput->getLength()),
-                sizeof(s_HealthData));
+                sizeof(healthData));
             return kIOReturnBadArgument;
         }
 
         IOReturn result = structureOutput->prepare(kIODirectionIn);
         if (kIOReturnSuccess == result)
         {
-            structureOutput->writeBytes(0 /* offset */, &s_HealthData, sizeof(s_HealthData));
+            structureOutput->writeBytes(0 /* offset */, &healthData, sizeof(healthData));
             structureOutput->complete(kIODirectionIn);
         }
         
@@ -260,11 +279,11 @@ IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull argumen
 
     if (arguments->structureOutput == nullptr || arguments->structureOutputSize != sizeof(PrjFSHealthData))
     {
-        KextLog_Info("VnodeCache_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(s_HealthData));
+        KextLog_Info("VnodeCache_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(healthData));
         return kIOReturnBadArgument;
     }
 
-    memcpy(arguments->structureOutput, &s_HealthData, sizeof(s_HealthData));
+    memcpy(arguments->structureOutput, &healthData, sizeof(healthData));
     return kIOReturnSuccess;
 }
 
@@ -464,7 +483,7 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
         {
             if (NULLVP == s_entries[vnodeIndex].vnode)
             {
-                atomic_fetch_add(&s_CacheEntries, 1U);
+                atomic_fetch_add(&s_cacheHealthStats.cacheEntries, 1U);
             }
         
             s_entries[vnodeIndex].vnode = vnode;
