@@ -207,11 +207,16 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
         os_log_with_type(
             s_kextLogger,
             OS_LOG_TYPE_DEFAULT,
-            "PrjFS Vnode Cache Health: CacheCapacity=%u, CacheEntries=%u, InvalidationCount=%llu, FindRootHits=%llu",
+            "PrjFS Vnode Cache Health: CacheCapacity=%u, CacheEntries=%u, InvalidationCount=%llu, CacheLookups=%llu, LookupCollisions=%llu, FindRootHits=%llu, FindRootMisses=%llu, RefreshRoot=%llu, InvalidateRoot=%llu",
             healthData.cacheCapacity,
             healthData.cacheEntries,
             healthData.invalidateEntireCacheCount,
-            healthData.totalFindRootForVnodeHits);
+            healthData.totalCacheLookups,
+            healthData.totalLookupCollisions,
+            healthData.totalFindRootForVnodeHits,
+            healthData.totalFindRootForVnodeMisses,
+            healthData.totalRefreshRootForVnode,
+            healthData.totalInvalidateVnodeRoot);
     }
     else
     {
