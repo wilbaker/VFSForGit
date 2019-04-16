@@ -43,6 +43,7 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     self->testVnodeFile3 = testMount->CreateVnodeTree(repoPath + "/file3");
     self->dummyVFSContext = vfs_context_create(nullptr);
     self->cacheWrapper.AllocateCache();
+    InitCacheStats();
 }
 
 - (void)tearDown
@@ -79,8 +80,6 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
 }
 
 - (void)testAtomicFetchAddCacheHealthStat {
-    InitCacheStats();
-    
     for (int32_t i = 0; i < VnodeCacheHealthStat_Count; ++i)
     {
         AtomicFetchAddCacheHealthStat(static_cast<VnodeCacheHealthStat>(i), 1ULL);
@@ -126,6 +125,11 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
     
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeHits] == 0);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeMisses] == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalCacheLookups] == 2);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalLookupCollisions] == 0);
+    
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
@@ -140,6 +144,8 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
         self->repoPath.c_str());
     XCTAssertTrue(VirtualizationRoot_IsValidRootHandle(repoRootHandle));
     
+    self->cacheWrapper.FillAllEntries();
+    
     // We don't care which mocks were called during the initialization code (above)
     MockCalls::Clear();
     
@@ -151,6 +157,16 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
+    
+    XCTAssertTrue(s_cacheStats.cacheEntries == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeHits] == 0);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeMisses] == 1);
+    
+    // 3 -> The initial lookup, the attempt to update the full cache, the lookup after emptying the cache
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalCacheLookups] == 3);
+    
+    // Capacity * 2 -> The first two lookups (before invalidating the cache), will collide with every entry
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalLookupCollisions] == self->cacheWrapper.GetCapacity() * 2);
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
@@ -179,6 +195,10 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
     
+    XCTAssertTrue(s_cacheStats.cacheEntries == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeHits] == 0);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeMisses] == 1);
+    
     uintptr_t vnodeIndex = ComputeVnodeHashIndex(self->testVnodeFile1.get());
     XCTAssertTrue(self->testVnodeFile1.get() == self->cacheWrapper[vnodeIndex].vnode);
     XCTAssertTrue(self->testVnodeFile1->GetVid() == self->cacheWrapper[vnodeIndex].vid);
@@ -192,6 +212,10 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
+    
+    XCTAssertTrue(s_cacheStats.cacheEntries == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeHits] == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeMisses] == 1);
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
@@ -250,6 +274,9 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     XCTAssertTrue(rootHandle == self->cacheWrapper[indexFromHash].virtualizationRoot);
     XCTAssertTrue(self->testVnodeFile1.get() == self->cacheWrapper[indexFromHash].vnode);
     
+    XCTAssertTrue(s_cacheStats.cacheEntries == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalRefreshRootForVnode] == 1);
+    
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
@@ -307,6 +334,9 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     XCTAssertTrue(testVnodeVid == self->cacheWrapper[indexFromHash].vid);
     XCTAssertTrue(RootHandle_Indeterminate == self->cacheWrapper[indexFromHash].virtualizationRoot);
     
+    XCTAssertTrue(s_cacheStats.cacheEntries == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalInvalidateVnodeRoot] == 1);
+    
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
@@ -320,6 +350,8 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     VnodeCache_InvalidateCache(&self->dummyPerfTracer);
     XCTAssertTrue(0 == memcmp(emptyArray.get(), s_entries, sizeof(VnodeCacheEntry) * self->cacheWrapper.GetCapacity()));
     
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_InvalidateEntireCacheCount] == 1);
+    
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
@@ -332,6 +364,9 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     
     InvalidateCache_ExclusiveLocked();
     XCTAssertTrue(0 == memcmp(emptyArray.get(), s_entries, sizeof(VnodeCacheEntry) * self->cacheWrapper.GetCapacity()));
+    
+    // VnodeCacheHealthStat_InvalidateEntireCacheCount is adjusted by VnodeCache_InvalidateCache
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_InvalidateEntireCacheCount] == 0);
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
@@ -573,6 +608,7 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     uintptr_t cacheIndex;
     XCTAssertTrue(TryFindVnodeIndex_Locked(self->testVnodeFile1.get(), vnodeHashIndex, /* out */ cacheIndex));
     XCTAssertTrue(cacheIndex == vnodeHashIndex);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalLookupCollisions] == 0);
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
@@ -586,6 +622,7 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
             self->testVnodeFile1.get(),
             ComputeVnodeHashIndex(self->testVnodeFile1.get()),
             /* out */ vnodeIndex));
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalLookupCollisions] == self->cacheWrapper.GetCapacity());
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
@@ -601,6 +638,9 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     XCTAssertTrue(TryFindVnodeIndex_Locked(self->testVnodeFile1.get(), vnodeHashIndex, /* out */ vnodeIndex));
     XCTAssertTrue(emptyIndex == vnodeIndex);
     
+    uint64_t expectedCollisions = (self->cacheWrapper.GetCapacity() - vnodeHashIndex) + emptyIndex;
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalLookupCollisions] == expectedCollisions);
+    
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
@@ -615,6 +655,9 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     XCTAssertTrue(TryFindVnodeIndex_Locked(self->testVnodeFile1.get(), vnodeHashIndex, /* out */ vnodeIndex));
     XCTAssertTrue(emptyIndex == vnodeIndex);
 
+    uint64_t expectedCollisions = (self->cacheWrapper.GetCapacity() - 1) - vnodeHashIndex;
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalLookupCollisions] == expectedCollisions);
+    
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
@@ -629,6 +672,8 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
             self->testVnodeFile1->GetVid(),
             true, // forceRefreshEntry
             DummyRootHandle));
+    
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalLookupCollisions] == self->cacheWrapper.GetCapacity());
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
@@ -680,6 +725,10 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
     
+    XCTAssertTrue(s_cacheStats.cacheEntries == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeHits] == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeMisses] == 0);
+    
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());
 }
@@ -719,6 +768,10 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
         PrjFSPerfCounter_VnodeOp_FindRoot_Iteration,
         self->testVnodeFile1.get(),
         self->dummyVFSContext));
+    
+    XCTAssertTrue(s_cacheStats.cacheEntries == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeHits] == 1);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_TotalFindRootForVnodeMisses] == 0);
     
     // Sanity check: We don't expect any of the mock functions to have been called
     XCTAssertFalse(MockCalls::DidCallAnyFunctions());

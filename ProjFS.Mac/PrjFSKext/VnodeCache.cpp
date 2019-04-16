@@ -234,7 +234,7 @@ IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull argumen
     PrjFSHealthData healthData =
     {
         .cacheCapacity = s_entriesCapacity,
-        .cacheEntries = s_cacheStats.cacheEntries,
+        .cacheEntries = s_cacheStats.cacheEntries, // cacheEntries is reset to 0 when VnodeCache_InvalidateCache is called
         .invalidateEntireCacheCount = atomic_exchange(&s_cacheStats.healthStats[VnodeCacheHealthStat_InvalidateEntireCacheCount], 0ULL),
         .totalCacheLookups = atomic_exchange(&s_cacheStats.healthStats[VnodeCacheHealthStat_TotalCacheLookups], 0ULL),
         .totalLookupCollisions = atomic_exchange(&s_cacheStats.healthStats[VnodeCacheHealthStat_TotalLookupCollisions], 0ULL),
