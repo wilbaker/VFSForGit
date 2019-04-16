@@ -250,7 +250,7 @@ IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull argumen
         IOMemoryDescriptor* structureOutput = arguments->structureOutputDescriptor;
         if (sizeof(healthData) != structureOutput->getLength())
         {
-            KextLog_Info(
+            KextLog(
                 "VnodeCache_ExportHealthData: structure output descriptor size %llu, expected %lu\n",
                 static_cast<unsigned long long>(structureOutput->getLength()),
                 sizeof(healthData));
@@ -269,7 +269,7 @@ IOReturn VnodeCache_ExportHealthData(IOExternalMethodArguments* _Nonnull argumen
 
     if (arguments->structureOutput == nullptr || arguments->structureOutputSize != sizeof(PrjFSHealthData))
     {
-        KextLog_Info("VnodeCache_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(healthData));
+        KextLog("VnodeCache_ExportHealthData: structure output size %u, expected %lu\n", arguments->structureOutputSize, sizeof(healthData));
         return kIOReturnBadArgument;
     }
 
@@ -518,5 +518,17 @@ KEXT_STATIC_INLINE void InitCacheStats()
 
 KEXT_STATIC_INLINE void AtomicFetchAddCacheHealthStat(VnodeCacheHealthStat healthStat, uint64_t value)
 {
-    atomic_fetch_add(&s_cacheStats.healthStats[healthStat], value);
+    uint64_t statValue = atomic_fetch_add(&s_cacheStats.healthStats[healthStat], value);
+    if (statValue > (UINT64_MAX - 1000))
+    {
+        // The logging daemon is not fetching stats quickly enough (or not running at all)
+        // to avoid overflow set this stat back to zero
+        KextLog(
+                "AtomicFetchAddCacheHealthStat: health stat %d (%s) nearing UINT64_MAX(%llu), resetting to zero",
+                healthStat,
+                VnodeCacheHealthStatNames[healthStat],
+                statValue);
+        
+        atomic_exchange(&s_cacheStats.healthStats[healthStat], 0ULL);
+    }
 }

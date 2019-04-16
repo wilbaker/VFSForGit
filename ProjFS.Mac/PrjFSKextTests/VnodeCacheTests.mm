@@ -93,6 +93,15 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
         XCTAssertTrue(s_cacheStats.healthStats[i] == 3);
     }
     
+    XCTAssertFalse(MockCalls::DidCallAnyFunctions());
+    
+    atomic_exchange(&s_cacheStats.healthStats[VnodeCacheHealthStat_InvalidateEntireCacheCount], UINT64_MAX - 1000);
+    AtomicFetchAddCacheHealthStat(VnodeCacheHealthStat_InvalidateEntireCacheCount, 1ULL);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_InvalidateEntireCacheCount] == UINT64_MAX - 999);
+    AtomicFetchAddCacheHealthStat(VnodeCacheHealthStat_InvalidateEntireCacheCount, 1ULL);
+    XCTAssertTrue(s_cacheStats.healthStats[VnodeCacheHealthStat_InvalidateEntireCacheCount] == 0ULL);
+    
+    XCTAssertTrue(MockCalls::DidCallFunction(KextMessageLogged, KEXTLOG_DEFAULT));
 }
 
 - (void)testVnodeCache_FindRootForVnode_EmptyCache {
