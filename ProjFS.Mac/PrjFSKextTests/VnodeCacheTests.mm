@@ -78,6 +78,23 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     }
 }
 
+- (void)testAtomicFetchAddCacheHealthStat {
+    InitCacheStats();
+    
+    for (int32_t i = 0; i < VnodeCacheHealthStat_Count; ++i)
+    {
+        AtomicFetchAddCacheHealthStat(static_cast<VnodeCacheHealthStat>(i), 1ULL);
+        XCTAssertTrue(s_cacheStats.healthStats[i] == 1);
+    }
+    
+    for (int32_t i = 0; i < VnodeCacheHealthStat_Count; ++i)
+    {
+        AtomicFetchAddCacheHealthStat(static_cast<VnodeCacheHealthStat>(i), 2ULL);
+        XCTAssertTrue(s_cacheStats.healthStats[i] == 3);
+    }
+    
+}
+
 - (void)testVnodeCache_FindRootForVnode_EmptyCache {
     VirtualizationRootHandle repoRootHandle = InsertVirtualizationRoot_Locked(
         nullptr /* no client */,
