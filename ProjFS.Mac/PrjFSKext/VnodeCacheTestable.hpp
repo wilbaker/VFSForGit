@@ -57,11 +57,11 @@ KEXT_STATIC bool TryInsertOrUpdateEntry_ExclusiveLocked(
     bool forceRefreshEntry,
     VirtualizationRootHandle rootHandle);
 
-KEXT_STATIC_INLINE void InitHealthStats();
+KEXT_STATIC_INLINE void InitCacheStats();
 
 // Static variables used for maintaining Vnode cache state
 extern uint32_t s_entriesCapacity;
 extern uintptr_t s_ModBitmask;
 extern VnodeCacheEntry* _Nullable s_entries;
-extern VnodeCacheHealthStats s_cacheHealthStats;
+extern VnodeCacheStats s_cacheStats;
 

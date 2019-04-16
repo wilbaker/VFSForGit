@@ -58,28 +58,24 @@ static const VirtualizationRootHandle DummyRootHandleTwo = 52;
     VirtualizationRoots_Cleanup();
 }
 
-- (void)testInitHealthStats {
-    // We need to validate that InitHealthStats sets all of the cache health stats to zero, so
+- (void)testInitCacheStats {
+    // We need to validate that InitCacheStats sets all of the cache health stats to zero, so
     // first set them all to something non-zero
-    atomic_exchange(&s_cacheHealthStats.cacheEntries, 1U);
-    atomic_exchange(&s_cacheHealthStats.invalidateEntireCacheCount, 1ULL);
-    atomic_exchange(&s_cacheHealthStats.totalCacheLookups, 1ULL);
-    atomic_exchange(&s_cacheHealthStats.totalLookupCollisions, 1ULL);
-    atomic_exchange(&s_cacheHealthStats.totalFindRootForVnodeHits, 1ULL);
-    atomic_exchange(&s_cacheHealthStats.totalFindRootForVnodeMisses, 1ULL);
-    atomic_exchange(&s_cacheHealthStats.totalRefreshRootForVnode, 1ULL);
-    atomic_exchange(&s_cacheHealthStats.totalInvalidateVnodeRoot, 1ULL);
+    atomic_exchange(&s_cacheStats.cacheEntries, 1U);
+    
+    for (int32_t i = 0; i < VnodeCacheHealthStat_Count; ++i)
+    {
+        atomic_exchange(&s_cacheStats.healthStats[i], 1ULL);
+    }
+    
+    InitCacheStats();
 
-    InitHealthStats();
-
-    XCTAssertTrue(s_cacheHealthStats.cacheEntries == 0);
-    XCTAssertTrue(s_cacheHealthStats.invalidateEntireCacheCount == 0);
-    XCTAssertTrue(s_cacheHealthStats.totalCacheLookups == 0);
-    XCTAssertTrue(s_cacheHealthStats.totalLookupCollisions == 0);
-    XCTAssertTrue(s_cacheHealthStats.totalFindRootForVnodeHits == 0);
-    XCTAssertTrue(s_cacheHealthStats.totalFindRootForVnodeMisses == 0);
-    XCTAssertTrue(s_cacheHealthStats.totalRefreshRootForVnode == 0);
-    XCTAssertTrue(s_cacheHealthStats.totalInvalidateVnodeRoot == 0);
+    XCTAssertTrue(s_cacheStats.cacheEntries == 0);
+    
+    for (int32_t i = 0; i < VnodeCacheHealthStat_Count; ++i)
+    {
+        XCTAssertTrue(s_cacheStats.healthStats[i] == 0);
+    }
 }
 
 - (void)testVnodeCache_FindRootForVnode_EmptyCache {
