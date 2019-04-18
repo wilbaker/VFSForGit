@@ -15,56 +15,96 @@ namespace GVFS.Service
         private const string ServiceNameArgPrefix = "--servicename=";
         private const string EtwArea = nameof(GVFSService);
 
-        private JsonTracer tracer;
+        private ITracer tracer;
         private Thread serviceThread;
         private ManualResetEvent serviceStopped;
         private string serviceName;
+        private bool startListening;
         private RepoRegistry repoRegistry;
         private RequestHandler requestHandler;
+        private GVFSPlatform gvfsPlatform;
 
-        public GVFSService(JsonTracer tracer)
+        public GVFSService(
+            ITracer tracer,
+            string serviceName,
+            bool startListening,
+            RepoRegistry repoRegistry,
+            GVFSPlatform gvfsPlatform)
         {
+            this.tracer = tracer;
+            this.repoRegistry = repoRegistry;
+            this.gvfsPlatform = gvfsPlatform;
+            this.serviceName = serviceName;
+            this.startListening = startListening;
+
+            this.serviceStopped = new ManualResetEvent(false);
+            this.serviceThread = new Thread(this.ServiceThreadMain);
+            this.requestHandler = new RequestHandler(this.tracer, EtwArea, this.repoRegistry);
+        }
+
+        public static GVFSService CreateService(JsonTracer tracer, string[] args)
+        {
+            string serviceName = args.FirstOrDefault(arg => arg.StartsWith(ServiceNameArgPrefix));
+            if (serviceName != null)
+            {
+                serviceName = serviceName.Substring(ServiceNameArgPrefix.Length);
+            }
+            else
+            {
+                serviceName = GVFSConstants.Service.ServiceName;
+            }
+
+            GVFSPlatform gvfsPlatform = GVFSPlatform.Instance;
+
             string logFilePath = Path.Combine(
-                    GVFSPlatform.Instance.GetDataRootForGVFSComponent(GVFSConstants.Service.ServiceName),
+                    gvfsPlatform.GetDataRootForGVFSComponent(serviceName),
                     GVFSConstants.Service.LogDirectory);
             Directory.CreateDirectory(logFilePath);
 
-            this.tracer = tracer;
-            this.tracer.AddLogFileEventListener(
+            tracer.AddLogFileEventListener(
                 GVFSEnlistment.GetNewGVFSLogFileName(logFilePath, GVFSConstants.LogFileTypes.Service),
                 EventLevel.Verbose,
                 Keywords.Any);
 
-            this.serviceName = GVFSConstants.Service.ServiceName;
-            this.serviceStopped = new ManualResetEvent(false);
-            this.serviceThread = new Thread(this.ServiceThreadMain);
-            this.repoRegistry = new RepoRegistry(
-                this.tracer,
+            string serviceDataLocation = gvfsPlatform.GetDataRootForGVFSComponent(serviceName);
+            RepoRegistry repoRegistry = new RepoRegistry(
+                tracer,
                 new PhysicalFileSystem(),
-                GVFSPlatform.Instance.GetDataRootForGVFSComponent(this.serviceName));
-            this.requestHandler = new RequestHandler(this.tracer, EtwArea, this.repoRegistry);
+                serviceDataLocation,
+                gvfsPlatform,
+                new GVFSMountProcess());
+
+            return new GVFSService(
+                tracer,
+                serviceName,
+                startListening: true,
+                repoRegistry: repoRegistry,
+                gvfsPlatform: gvfsPlatform);
         }
 
         public void RunWithArgs(string[] args)
         {
-            string nameArg = args.FirstOrDefault(arg => arg.StartsWith(ServiceNameArgPrefix, StringComparison.OrdinalIgnoreCase));
-            if (!string.IsNullOrEmpty(nameArg))
-            {
-                this.serviceName = nameArg.Substring(ServiceNameArgPrefix.Length);
-            }
-
             try
             {
-                string pipeName = this.serviceName + ".Pipe";
-                this.tracer.RelatedInfo("Starting pipe server with name: " + pipeName);
+                this.RunRepoRegistryTasks();
 
-                using (NamedPipeServer pipeServer = NamedPipeServer.StartNewServer(
-                    pipeName,
-                    this.tracer,
-                    this.requestHandler.HandleRequest))
+                if (this.startListening && !string.IsNullOrEmpty(this.serviceName))
                 {
-                    this.serviceThread.Start();
-                    this.serviceThread.Join();
+                    string pipeName = this.serviceName + ".Pipe";
+                    this.tracer.RelatedInfo("Starting pipe server with name: " + pipeName);
+
+                    using (NamedPipeServer pipeServer = NamedPipeServer.StartNewServer(
+                        pipeName,
+                        this.tracer,
+                        this.requestHandler.HandleRequest))
+                    {
+                        this.serviceThread.Start();
+                        this.serviceThread.Join();
+                    }
+                }
+                else
+                {
+                    this.tracer.RelatedError("No name specified for Service Pipe.");
                 }
             }
             catch (Exception e)
@@ -88,6 +128,14 @@ namespace GVFS.Service
             {
                 this.LogExceptionAndExit(e, nameof(this.ServiceThreadMain));
             }
+        }
+
+        private void RunRepoRegistryTasks()
+        {
+            string currentUser = this.gvfsPlatform.GetCurrentUser();
+
+            this.repoRegistry.AutoMountRepos(int.Parse(currentUser));
+            this.repoRegistry.TraceStatus();
         }
 
         private void LogExceptionAndExit(Exception e, string method)

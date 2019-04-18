@@ -1,52 +1,77 @@
 ﻿using GVFS.Common;
 using GVFS.Common.Tracing;
-using GVFS.Service.Handlers;
-using System;
+using System.Diagnostics;
 
 namespace GVFS.Service
 {
-    public class GVFSMountProcess : IDisposable
+    public class GVFSMountProcess : IRepoMountProcess
     {
-        private const string ParamPrefix = "--";
+        private const string ExecutablePath = "/bin/launchctl";
+        private const string ArgumentFormat = "asuser {0} /usr/local/vfsforgit/gvfs mount {1}";
 
-        private readonly ITracer tracer;
+        private MountLauncher processLauncher;
+        private bool waitTillMounted;
 
-        public GVFSMountProcess(ITracer tracer, int sessionId)
+        public GVFSMountProcess() : this(new MountLauncher(), waitTillMounted: true)
         {
-            this.tracer = tracer;
         }
 
-        public bool Mount(string repoRoot)
+        public GVFSMountProcess(MountLauncher processLauncher, bool waitTillMounted)
         {
-            if (!this.CallGVFSMount(repoRoot))
+            this.processLauncher = processLauncher;
+            this.waitTillMounted = waitTillMounted;
+        }
+
+        public virtual bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
+        {
+            string arguments = string.Format(ArgumentFormat, sessionId, repoRoot);
+
+            if (!this.processLauncher.LaunchProcess(ExecutablePath, arguments, repoRoot, tracer))
             {
-                this.tracer.RelatedError($"{nameof(this.Mount)}: Unable to start the GVFS process.");
+                tracer.RelatedError($"{nameof(this.MountRepository)}: Unable to start the GVFS process.");
                 return false;
             }
 
             string errorMessage;
-            if (!GVFSEnlistment.WaitUntilMounted(repoRoot, false, out errorMessage))
+            if (this.waitTillMounted && !this.WaitUntilMounted(repoRoot, false, out errorMessage))
             {
-                this.tracer.RelatedError(errorMessage);
+                tracer.RelatedError(errorMessage);
                 return false;
             }
 
             return true;
         }
 
-        public void Dispose()
+        public virtual bool WaitUntilMounted(string repoRoot, bool unattended, out string errorMessage)
         {
+            return GVFSEnlistment.WaitUntilMounted(repoRoot, unattended, out errorMessage);
         }
 
-        public string GetUserId()
+        public string GetUserId(int sessionId)
         {
-            return GVFSPlatform.Instance.GetCurrentUser();
+            return sessionId.ToString();
         }
 
-        private bool CallGVFSMount(string repoRoot)
+        public class MountLauncher
         {
-            InternalVerbParameters mountInternal = new InternalVerbParameters(startedByService: true);
-            throw new NotImplementedException();
+            public virtual bool LaunchProcess(string executablePath, string arguments, string workingDirectory, ITracer tracer)
+            {
+                ProcessStartInfo processInfo = new ProcessStartInfo(executablePath);
+                processInfo.Arguments = arguments;
+                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                processInfo.WorkingDirectory = workingDirectory;
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardOutput = true;
+
+                ProcessResult result = ProcessHelper.Run(processInfo);
+                if (result.ExitCode != 0)
+                {
+                    tracer.RelatedError($"{nameof(this.LaunchProcess)} ERROR: {executablePath} {arguments}. Exit code: {result.ExitCode}, {result.Errors}");
+                    return false;
+                }
+
+                return true;
+            }
         }
     }
 }

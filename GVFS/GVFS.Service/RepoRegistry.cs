@@ -21,12 +21,26 @@ namespace GVFS.Service
         private ITracer tracer;
         private PhysicalFileSystem fileSystem;
         private object repoLock = new object();
+        private IRepoMountProcess mountProcess;
+        private GVFSPlatform gvfsPlatform;
 
-        public RepoRegistry(ITracer tracer, PhysicalFileSystem fileSystem, string serviceDataLocation)
+        // The no-args Constructor is there only because it is needed by Moq
+        public RepoRegistry()
+        {
+        }
+
+        public RepoRegistry(
+            ITracer tracer,
+            PhysicalFileSystem fileSystem,
+            string serviceDataLocation,
+            GVFSPlatform gvfsPlatform,
+            IRepoMountProcess mountProcess)
         {
             this.tracer = tracer;
             this.fileSystem = fileSystem;
             this.registryParentFolderPath = serviceDataLocation;
+            this.gvfsPlatform = gvfsPlatform;
+            this.mountProcess = mountProcess;
 
             EventMetadata metadata = new EventMetadata();
             metadata.Add("Area", EtwArea);
@@ -35,7 +49,7 @@ namespace GVFS.Service
             this.tracer.RelatedEvent(EventLevel.Informational, "RepoRegistry_Created", metadata);
         }
 
-        public void Upgrade()
+        public virtual void Upgrade()
         {
             // Version 1 to Version 2, added OwnerSID
             Dictionary<string, RepoRegistration> allRepos = this.ReadRegistry();
@@ -81,7 +95,7 @@ namespace GVFS.Service
             return false;
         }
 
-        public void TraceStatus()
+        public virtual void TraceStatus()
         {
             try
             {
@@ -162,31 +176,28 @@ namespace GVFS.Service
             return false;
         }
 
-        public void AutoMountRepos(int sessionId)
+        public virtual void AutoMountRepos(int sessionId)
         {
             using (ITracer activity = this.tracer.StartActivity("AutoMount", EventLevel.Informational))
             {
-                using (GVFSMountProcess process = new GVFSMountProcess(activity, sessionId))
+                List<RepoRegistration> activeRepos = this.GetActiveReposForUser(this.mountProcess.GetUserId(sessionId));
+                if (activeRepos.Count == 0)
                 {
-                    List<RepoRegistration> activeRepos = this.GetActiveReposForUser(process.GetUserId());
-                    if (activeRepos.Count == 0)
+                    return;
+                }
+
+                this.SendNotification(sessionId, "GVFS AutoMount", "Attempting to mount {0} GVFS repo(s)", activeRepos.Count);
+
+                foreach (RepoRegistration repo in activeRepos)
+                {
+                    // TODO #1043088: We need to respect the elevation level of the original mount
+                    if (this.mountProcess.MountRepository(repo.EnlistmentRoot, sessionId, activity))
                     {
-                        return;
+                        this.SendNotification(sessionId, "GVFS AutoMount", "The following GVFS repo is now mounted: \n{0}", repo.EnlistmentRoot);
                     }
-
-                    this.SendNotification(sessionId, "GVFS AutoMount", "Attempting to mount {0} GVFS repo(s)", activeRepos.Count);
-
-                    foreach (RepoRegistration repo in activeRepos)
+                    else
                     {
-                        // TODO #1043088: We need to respect the elevation level of the original mount
-                        if (process.Mount(repo.EnlistmentRoot))
-                        {
-                            this.SendNotification(sessionId, "GVFS AutoMount", "The following GVFS repo is now mounted: \n{0}", repo.EnlistmentRoot);
-                        }
-                        else
-                        {
-                            this.SendNotification(sessionId, "GVFS AutoMount", "The following GVFS repo failed to mount: \n{0}", repo.EnlistmentRoot);
-                        }
+                        this.SendNotification(sessionId, "GVFS AutoMount", "The following GVFS repo failed to mount: \n{0}", repo.EnlistmentRoot);
                     }
                 }
             }
@@ -233,7 +244,7 @@ namespace GVFS.Service
 
                                 string errorMessage;
                                 string normalizedEnlistmentRootPath = registration.EnlistmentRoot;
-                                if (GVFSPlatform.Instance.FileSystem.TryGetNormalizedPath(registration.EnlistmentRoot, out normalizedEnlistmentRootPath, out errorMessage))
+                                if (this.gvfsPlatform.FileSystem.TryGetNormalizedPath(registration.EnlistmentRoot, out normalizedEnlistmentRootPath, out errorMessage))
                                 {
                                     if (!normalizedEnlistmentRootPath.Equals(registration.EnlistmentRoot, StringComparison.OrdinalIgnoreCase))
                                     {

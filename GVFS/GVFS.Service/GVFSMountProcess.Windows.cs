@@ -6,65 +6,57 @@ using System;
 
 namespace GVFS.Service
 {
-    public class GVFSMountProcess : IDisposable
+    public class GVFSMountProcess : IRepoMountProcess
     {
-        private const string ParamPrefix = "--";
-
-        private readonly ITracer tracer;
-
-        public GVFSMountProcess(ITracer tracer, int sessionId)
+        public bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
         {
-            this.tracer = tracer;
-            this.CurrentUser = new CurrentUser(this.tracer, sessionId);
-        }
-
-        public CurrentUser CurrentUser { get; private set; }
-
-        public bool Mount(string repoRoot)
-        {
-            if (!ProjFSFilter.IsServiceRunning(this.tracer))
+            if (!ProjFSFilter.IsServiceRunning(tracer))
             {
                 string error;
-                if (!EnableAndAttachProjFSHandler.TryEnablePrjFlt(this.tracer, out error))
+                if (!EnableAndAttachProjFSHandler.TryEnablePrjFlt(tracer, out error))
                 {
-                    this.tracer.RelatedError($"{nameof(this.Mount)}: Could not enable PrjFlt: {error}");
+                    tracer.RelatedError($"{nameof(this.MountRepository)}: Could not enable PrjFlt: {error}");
+                    return false;
                 }
             }
 
-            if (!this.CallGVFSMount(repoRoot))
+            using (CurrentUser currentUser = new CurrentUser(tracer, sessionId))
             {
-                this.tracer.RelatedError($"{nameof(this.Mount)}: Unable to start the GVFS.exe process.");
-                return false;
-            }
+                if (!this.CallGVFSMount(repoRoot, currentUser))
+                {
+                    tracer.RelatedError($"{nameof(this.MountRepository)}: Unable to start the GVFS.exe process.");
+                    return false;
+                }
 
-            string errorMessage;
-            if (!GVFSEnlistment.WaitUntilMounted(repoRoot, false, out errorMessage))
-            {
-                this.tracer.RelatedError(errorMessage);
-                return false;
+                string errorMessage;
+                if (!this.WaitUntilMounted(repoRoot, false, out errorMessage))
+                {
+                    tracer.RelatedError(errorMessage);
+                    currentUser.Dispose();
+                    return false;
+                }
             }
 
             return true;
         }
 
-        public string GetUserId()
+        public bool WaitUntilMounted(string repoRoot, bool unattended, out string errorMessage)
         {
-            return this.CurrentUser.Identity.User.Value;
+            return GVFSEnlistment.WaitUntilMounted(repoRoot, unattended, out errorMessage);
         }
 
-        public void Dispose()
+        public string GetUserId(int sessionId)
         {
-            if (this.CurrentUser != null)
+            using (CurrentUser currentUser = new CurrentUser(tracer: null, sessionId: sessionId))
             {
-                this.CurrentUser.Dispose();
-                this.CurrentUser = null;
+                return currentUser.Identity.User.Value;
             }
         }
 
-        private bool CallGVFSMount(string repoRoot)
+        private bool CallGVFSMount(string repoRoot, CurrentUser currentUser)
         {
             InternalVerbParameters mountInternal = new InternalVerbParameters(startedByService: true);
-            return this.CurrentUser.RunAs(
+            return currentUser.RunAs(
                 Configuration.Instance.GVFSLocation,
                 $"mount {repoRoot} --{GVFSConstants.VerbParameters.InternalUseOnly} {mountInternal.ToJson()}");
         }

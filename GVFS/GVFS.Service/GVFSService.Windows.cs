@@ -44,7 +44,7 @@ namespace GVFS.Service
                 metadata.Add("Version", ProcessHelper.GetCurrentProcessVersion());
                 this.tracer.RelatedEvent(EventLevel.Informational, $"{nameof(GVFSService)}_{nameof(this.Run)}", metadata);
 
-                this.repoRegistry = new RepoRegistry(this.tracer, new PhysicalFileSystem(), this.serviceDataLocation);
+                this.repoRegistry = new RepoRegistry(this.tracer, new PhysicalFileSystem(), this.serviceDataLocation, GVFSPlatform.Instance, new GVFSMountProcess());
                 this.repoRegistry.Upgrade();
                 this.requestHandler = new WindowsRequestHandler(this.tracer, EtwArea, this.repoRegistry);
 

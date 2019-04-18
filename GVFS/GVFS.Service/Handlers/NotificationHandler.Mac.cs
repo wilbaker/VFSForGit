@@ -21,7 +21,8 @@ namespace GVFS.Service.Handlers
 
         public void SendNotification(ITracer tracer, int sessionId, NamedPipeMessages.Notification.Request request)
         {
-            throw new NotImplementedException();
+            // Log the notification till platform specific notifications become available.
+            tracer.RelatedInfo($"{request.Title} - {request.Message}.");
         }
     }
 }

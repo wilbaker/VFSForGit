@@ -118,7 +118,6 @@
     <Compile Include="Windows\Mock\MockGitHubUpgrader.cs" />
     <Compile Include="Windows\Mock\MockTextWriter.cs" />
     <Compile Include="Windows\Mock\MockWriteBuffer.cs" />
-    <Compile Include="Windows\Service\RepoRegistryTests.cs" />
     <Compile Include="Windows\Upgrader\ProductUpgraderTests.cs" />
     <Compile Include="Windows\Upgrader\UpgradeOrchestratorWithGitHubUpgraderTests.cs" />
     <Compile Include="Windows\Upgrader\UpgradeOrchestratorTests.cs" />
@@ -194,6 +193,12 @@
       <Link>Readme.md</Link>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
+    <EmbeddedResource Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
+    <None Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Analyzer Include="..\..\..\packages\StyleCop.Analyzers.1.0.2\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
     <Analyzer Include="..\..\..\packages\StyleCop.Analyzers.1.0.2\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
