@@ -99,6 +99,12 @@ namespace GVFS.Platform.POSIX
             return Getuid().ToString();
         }
 
+        public override string GetUserIdFromLoginSessionId(int sessionId)
+        {
+            // There no separate User and Session Ids on non Windows platforms.
+            return sessionId.ToString();
+        }
+
         public override Dictionary<string, string> GetPhysicalDiskInfo(string path, bool sizeStatsOnly)
         {
             // TODO(POSIX): Collect disk information

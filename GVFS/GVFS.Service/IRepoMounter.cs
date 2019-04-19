@@ -5,6 +5,5 @@ namespace GVFS.Service
     public interface IRepoMounter
     {
         bool MountRepository(string repoRoot, int sessionId, ITracer tracer);
-        string GetUserId(int sessionId);
     }
 }

@@ -311,6 +311,14 @@ namespace GVFS.Platform.Windows
             return identity.User.Value;
         }
 
+        public override string GetUserIdFromLoginSessionId(int sessionId)
+        {
+            using (CurrentUser currentUser = new CurrentUser(tracer: null, sessionId: sessionId))
+            {
+                return currentUser.Identity.User.Value;
+            }
+        }
+
         public override Dictionary<string, string> GetPhysicalDiskInfo(string path, bool sizeStatsOnly) => WindowsPhysicalDiskInfo.GetPhysicalDiskInfo(path, sizeStatsOnly);
 
         public override bool IsConsoleOutputRedirectedToFile()

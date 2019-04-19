@@ -30,11 +30,14 @@ namespace GVFS.UnitTests.Service
             this.fileSystem = new MockFileSystem(new MockDirectory(ServiceDataLocation, null, null));
             this.gvfsPlatformMock = new Mock<MacPlatform>();
             this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ExpectedActiveUserId);
+            this.gvfsPlatformMock.Setup(p => p.GetUserIdFromLoginSessionId(It.IsAny<int>())).Returns<int>(x => x.ToString());
+            this.gvfsPlatformMock.SetupGet(p => p.FileSystem).Returns(new MockPlatformFileSystem());
         }
 
         [TearDown]
         public void TearDown()
         {
+            this.gvfsPlatformMock = null;
             this.fileSystem = null;
             this.tracer = null;
         }
@@ -66,16 +69,14 @@ namespace GVFS.UnitTests.Service
         {
             Mock<IRepoMounter> mountProcessMock = new Mock<IRepoMounter>();
             mountProcessMock.Setup(mp => mp.MountRepository(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<ITracer>())).Returns(true);
-            mountProcessMock.Setup(mp => mp.GetUserId(It.IsAny<int>())).Returns<int>(x => x.ToString());
 
             this.CreateTestRepos(this.fileSystem, ServiceDataLocation);
 
-            MockPlatform gvfsPlatform = new MockPlatform();
             RepoRegistry repoRegistry = new RepoRegistry(
                 this.tracer,
                 this.fileSystem,
                 ServiceDataLocation,
-                gvfsPlatform,
+                this.gvfsPlatformMock.Object,
                 mountProcessMock.Object);
 
             repoRegistry.AutoMountRepos(int.Parse(ExpectedActiveUserId));

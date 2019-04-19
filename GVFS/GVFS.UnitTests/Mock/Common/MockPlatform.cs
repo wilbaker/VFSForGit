@@ -65,6 +65,11 @@ namespace GVFS.UnitTests.Mock.Common
             throw new NotSupportedException();
         }
 
+        public override string GetUserIdFromLoginSessionId(int sessionId)
+        {
+            return sessionId.ToString();
+        }
+
         public override string GetOSVersionInformation()
         {
             throw new NotSupportedException();

@@ -38,11 +38,6 @@ namespace GVFS.Service
             return true;
         }
 
-        public string GetUserId(int sessionId)
-        {
-            return sessionId.ToString();
-        }
-
         public class MountLauncher
         {
             public virtual bool LaunchProcess(string executablePath, string arguments, string workingDirectory, ITracer tracer)

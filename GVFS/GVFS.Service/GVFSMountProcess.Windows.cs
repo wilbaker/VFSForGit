@@ -38,14 +38,6 @@ namespace GVFS.Service
             return true;
         }
 
-        public string GetUserId(int sessionId)
-        {
-            using (CurrentUser currentUser = new CurrentUser(tracer: null, sessionId: sessionId))
-            {
-                return currentUser.Identity.User.Value;
-            }
-        }
-
         private bool CallGVFSMount(string repoRoot, CurrentUser currentUser)
         {
             InternalVerbParameters mountInternal = new InternalVerbParameters(startedByService: true);

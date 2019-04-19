@@ -175,7 +175,7 @@ namespace GVFS.Service
         {
             using (ITracer activity = this.tracer.StartActivity("AutoMount", EventLevel.Informational))
             {
-                List<RepoRegistration> activeRepos = this.GetActiveReposForUser(this.mountProcess.GetUserId(sessionId));
+                List<RepoRegistration> activeRepos = this.GetActiveReposForUser(this.gvfsPlatform.GetUserIdFromLoginSessionId(sessionId));
                 if (activeRepos.Count == 0)
                 {
                     return;
