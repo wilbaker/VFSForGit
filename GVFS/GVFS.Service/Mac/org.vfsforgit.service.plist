@@ -4,6 +4,13 @@
 <dict>
     <key>EnvironmentVariables</key>
     <dict>
+        <!--
+        Although GVFS.Service gets launched in the GUI context of actively logged-in user, it
+        does not seem to inherit any user-specific environment variables (like user customized
+        $PATH specified in shell ~/.profile). VFSForGit needs /usr/local/bin to be in its 
+        search PATH environment, so specifying it here, along with rest of the default paths 
+        that are set by launchd.
+        -->
         <key>PATH</key>
         <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>

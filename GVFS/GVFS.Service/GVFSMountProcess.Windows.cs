@@ -2,11 +2,10 @@
 using GVFS.Common.Tracing;
 using GVFS.Platform.Windows;
 using GVFS.Service.Handlers;
-using System;
 
 namespace GVFS.Service
 {
-    public class GVFSMountProcess : IRepoMountProcess
+    public class GVFSMountProcess : IRepoMounter
     {
         public bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
         {
@@ -29,20 +28,14 @@ namespace GVFS.Service
                 }
 
                 string errorMessage;
-                if (!this.WaitUntilMounted(repoRoot, false, out errorMessage))
+                if (!GVFSEnlistment.WaitUntilMounted(repoRoot, false, out errorMessage))
                 {
                     tracer.RelatedError(errorMessage);
-                    currentUser.Dispose();
                     return false;
                 }
             }
 
             return true;
-        }
-
-        public bool WaitUntilMounted(string repoRoot, bool unattended, out string errorMessage)
-        {
-            return GVFSEnlistment.WaitUntilMounted(repoRoot, unattended, out errorMessage);
         }
 
         public string GetUserId(int sessionId)

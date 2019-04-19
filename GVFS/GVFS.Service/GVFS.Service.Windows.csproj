@@ -69,7 +69,8 @@
     <Compile Include="Handlers\UnregisterRepoHandler.cs" />
     <Compile Include="Handlers\RegisterRepoHandler.cs" />
     <Compile Include="CurrentUser.cs" />
-    <Compile Include="IRepoMountProcess.cs" />
+    <Compile Include="IRepoMounter.cs" />
+    <Compile Include="IRepoRegistry.cs" />
     <Compile Include="ProductUpgradeTimer.cs" />
     <Compile Include="Program.Windows.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -27,7 +27,8 @@
     <Compile Include="Handlers\MessageHandler.cs" />
     <Compile Include="Handlers\RegisterRepoHandler.cs" />
     <Compile Include="Handlers\UnregisterRepoHandler.cs" />
-    <Compile Include="IRepoMountProcess.cs" />
+    <Compile Include="IRepoMounter.cs" />
+    <Compile Include="IRepoRegistry.cs" />
     <Compile Include="Program.Mac.cs" />
     <Compile Include="RepoRegistration.cs" />
     <Compile Include="RepoRegistry.cs" />

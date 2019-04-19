@@ -20,7 +20,7 @@ namespace GVFS.Service
         private ManualResetEvent serviceStopped;
         private string serviceName;
         private bool startListening;
-        private RepoRegistry repoRegistry;
+        private IRepoRegistry repoRegistry;
         private RequestHandler requestHandler;
         private GVFSPlatform gvfsPlatform;
 
@@ -28,7 +28,7 @@ namespace GVFS.Service
             ITracer tracer,
             string serviceName,
             bool startListening,
-            RepoRegistry repoRegistry,
+            IRepoRegistry repoRegistry,
             GVFSPlatform gvfsPlatform)
         {
             this.tracer = tracer;
@@ -44,7 +44,7 @@ namespace GVFS.Service
 
         public static GVFSService CreateService(JsonTracer tracer, string[] args)
         {
-            string serviceName = args.FirstOrDefault(arg => arg.StartsWith(ServiceNameArgPrefix));
+            string serviceName = args.FirstOrDefault(arg => arg.StartsWith(ServiceNameArgPrefix, StringComparison.OrdinalIgnoreCase));
             if (serviceName != null)
             {
                 serviceName = serviceName.Substring(ServiceNameArgPrefix.Length);
@@ -132,10 +132,16 @@ namespace GVFS.Service
 
         private void RunRepoRegistryTasks()
         {
-            string currentUser = this.gvfsPlatform.GetCurrentUser();
-
-            this.repoRegistry.AutoMountRepos(int.Parse(currentUser));
-            this.repoRegistry.TraceStatus();
+            int currentUser;
+            if (int.TryParse(this.gvfsPlatform.GetCurrentUser(), out currentUser))
+            {
+                this.repoRegistry.AutoMountRepos(currentUser);
+                this.repoRegistry.TraceStatus();
+            }
+            else
+            {
+                this.tracer.RelatedError($"{nameof(this.RunRepoRegistryTasks)} Error: could not parse current user info from RepoRegistry.");
+            }
         }
 
         private void LogExceptionAndExit(Exception e, string method)

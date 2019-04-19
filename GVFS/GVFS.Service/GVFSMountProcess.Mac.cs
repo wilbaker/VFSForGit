@@ -4,27 +4,23 @@ using System.Diagnostics;
 
 namespace GVFS.Service
 {
-    public class GVFSMountProcess : IRepoMountProcess
+    public class GVFSMountProcess : IRepoMounter
     {
         private const string ExecutablePath = "/bin/launchctl";
-        private const string ArgumentFormat = "asuser {0} /usr/local/vfsforgit/gvfs mount {1}";
+        private const string GVFSPath = "/usr/local/vfsforgit/gvfs";
 
         private MountLauncher processLauncher;
         private bool waitTillMounted;
 
-        public GVFSMountProcess() : this(new MountLauncher(), waitTillMounted: true)
+        public GVFSMountProcess(MountLauncher processLauncher = null, bool waitTillMounted = false)
         {
-        }
-
-        public GVFSMountProcess(MountLauncher processLauncher, bool waitTillMounted)
-        {
-            this.processLauncher = processLauncher;
+            this.processLauncher = processLauncher ?? new MountLauncher();
             this.waitTillMounted = waitTillMounted;
         }
 
-        public virtual bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
+        public bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
         {
-            string arguments = string.Format(ArgumentFormat, sessionId, repoRoot);
+            string arguments = string.Format("asuser {0} {1} mount {2}", sessionId, GVFSPath, repoRoot);
 
             if (!this.processLauncher.LaunchProcess(ExecutablePath, arguments, repoRoot, tracer))
             {
@@ -33,18 +29,13 @@ namespace GVFS.Service
             }
 
             string errorMessage;
-            if (this.waitTillMounted && !this.WaitUntilMounted(repoRoot, false, out errorMessage))
+            if (this.waitTillMounted && !GVFSEnlistment.WaitUntilMounted(repoRoot, false, out errorMessage))
             {
                 tracer.RelatedError(errorMessage);
                 return false;
             }
 
             return true;
-        }
-
-        public virtual bool WaitUntilMounted(string repoRoot, bool unattended, out string errorMessage)
-        {
-            return GVFSEnlistment.WaitUntilMounted(repoRoot, unattended, out errorMessage);
         }
 
         public string GetUserId(int sessionId)

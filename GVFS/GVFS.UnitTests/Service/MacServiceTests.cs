@@ -1,6 +1,6 @@
-﻿using GVFS.Common;
-using GVFS.Common.FileSystem;
+﻿using GVFS.Common.FileSystem;
 using GVFS.Common.Tracing;
+using GVFS.Platform.Mac;
 using GVFS.Service;
 using GVFS.UnitTests.Mock.Common;
 using GVFS.UnitTests.Mock.FileSystem;
@@ -15,21 +15,21 @@ namespace GVFS.UnitTests.Service
     public class MacServiceTests
     {
         private const string GVFSServiceName = "GVFS.Service";
-        private const string ActiveUserId = "502";
-        private static readonly string RegisteredRepo = Path.Combine("mock:", "code", "repo2");
+        private const string ExpectedActiveUserId = "502";
+        private static readonly string ExpectedActiveRepoPath = Path.Combine("mock:", "code", "repo2");
         private static readonly string ServiceDataLocation = Path.Combine("mock:", "registryDataFolder");
 
         private MockFileSystem fileSystem;
         private MockTracer tracer;
-        private Mock<MockPlatform> gvfsPlatformMock;
+        private Mock<MacPlatform> gvfsPlatformMock;
 
         [SetUp]
         public void SetUp()
         {
             this.tracer = new MockTracer();
             this.fileSystem = new MockFileSystem(new MockDirectory(ServiceDataLocation, null, null));
-            this.gvfsPlatformMock = new Mock<MockPlatform>();
-            this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ActiveUserId);
+            this.gvfsPlatformMock = new Mock<MacPlatform>();
+            this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ExpectedActiveUserId);
         }
 
         [TearDown]
@@ -42,7 +42,7 @@ namespace GVFS.UnitTests.Service
         [TestCase]
         public void ServiceStartTriggersAutoMountForCurrentUser()
         {
-            Mock<RepoRegistry> repoRegistry = new Mock<RepoRegistry>();
+            Mock<IRepoRegistry> repoRegistry = new Mock<IRepoRegistry>();
             repoRegistry.Setup(r => r.AutoMountRepos(It.IsAny<int>()));
 
             GVFSService service = new GVFSService(
@@ -54,24 +54,20 @@ namespace GVFS.UnitTests.Service
 
             service.RunWithArgs(new string[] { $"--servicename={GVFSServiceName}" });
 
-            int expectedUserId = int.Parse(ActiveUserId);
+            int expectedUserId = int.Parse(ExpectedActiveUserId);
 
             repoRegistry.Verify(
                 r => r.AutoMountRepos(It.Is<int>(arg => arg == expectedUserId)),
                 Times.Once,
                 $"{nameof(repoRegistry.Object.AutoMountRepos)} was not called during Service startup");
-
-            repoRegistry.Verify(
-                r => r.TraceStatus(),
-                Times.Once,
-                $"{nameof(repoRegistry.Object.TraceStatus)} was not called during Service startup");
         }
 
         [TestCase]
         public void RepoRegistryMountsOnlyRegisteredRepos()
         {
-            Mock<GVFSMountProcess> mountProcessMock = new Mock<GVFSMountProcess>();
-            mountProcessMock.Setup(mp => mp.MountRepository(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<ITracer>()));
+            Mock<IRepoMounter> mountProcessMock = new Mock<IRepoMounter>();
+            mountProcessMock.Setup(mp => mp.MountRepository(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<ITracer>())).Returns(true);
+            mountProcessMock.Setup(mp => mp.GetUserId(It.IsAny<int>())).Returns<int>(x => x.ToString());
 
             this.CreateTestRepos(this.fileSystem, ServiceDataLocation);
 
@@ -83,12 +79,12 @@ namespace GVFS.UnitTests.Service
                 gvfsPlatform,
                 mountProcessMock.Object);
 
-            repoRegistry.AutoMountRepos(int.Parse(ActiveUserId));
+            repoRegistry.AutoMountRepos(int.Parse(ExpectedActiveUserId));
 
             mountProcessMock.Verify(
                 mp => mp.MountRepository(
-                    It.Is<string>(repo => repo.Equals(RegisteredRepo)),
-                    It.Is<int>(id => id == int.Parse(ActiveUserId)),
+                    It.Is<string>(repo => repo.Equals(ExpectedActiveRepoPath)),
+                    It.Is<int>(id => id == int.Parse(ExpectedActiveUserId)),
                     It.IsAny<ITracer>()),
                 Times.Once,
                 $"{nameof(mountProcessMock.Object.MountRepository)} was not called for registered repository");
@@ -98,7 +94,7 @@ namespace GVFS.UnitTests.Service
         public void MountProcessLaunchedUsingCorrectArgs()
         {
             string executable = @"/bin/launchctl";
-            string expectedArgs = $"asuser {int.Parse(ActiveUserId)} /usr/local/vfsforgit/gvfs mount {RegisteredRepo}";
+            string expectedArgs = $"asuser {int.Parse(ExpectedActiveUserId)} /usr/local/vfsforgit/gvfs mount {ExpectedActiveRepoPath}";
 
             Mock<GVFSMountProcess.MountLauncher> mountLauncherMock = new Mock<GVFSMountProcess.MountLauncher>();
             mountLauncherMock.Setup(mp => mp.LaunchProcess(
@@ -109,13 +105,13 @@ namespace GVFS.UnitTests.Service
                 .Returns(true);
 
             GVFSMountProcess mountProcess = new GVFSMountProcess(mountLauncherMock.Object, waitTillMounted: false);
-            mountProcess.MountRepository(RegisteredRepo, int.Parse(ActiveUserId), this.tracer);
+            mountProcess.MountRepository(ExpectedActiveRepoPath, int.Parse(ExpectedActiveUserId), this.tracer);
 
             mountLauncherMock.Verify(
                 mp => mp.LaunchProcess(
                     It.Is<string>(exe => exe.Equals(executable)),
                     It.Is<string>(args => args.Equals(expectedArgs)),
-                    It.Is<string>(workingDirectory => workingDirectory.Equals(RegisteredRepo)),
+                    It.Is<string>(workingDirectory => workingDirectory.Equals(ExpectedActiveRepoPath)),
                     It.IsAny<ITracer>()),
                 Times.Once,
                 $"{nameof(mountLauncherMock.Object.LaunchProcess)} was not called for registered repository");
@@ -124,7 +120,7 @@ namespace GVFS.UnitTests.Service
         private void CreateTestRepos(PhysicalFileSystem fileSystem, string dataLocation)
         {
             string repo1 = Path.Combine("mock:", "code", "repo1");
-            string repo2 = Path.Combine("mock:", "code", "repo2");
+            string repo2 = ExpectedActiveRepoPath;
             string repo3 = Path.Combine("mock:", "code", "repo3");
             string repo4 = Path.Combine("mock:", "code", "repo4");
 

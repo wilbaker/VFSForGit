@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace GVFS.Service
 {
-    public class RepoRegistry
+    public class RepoRegistry : IRepoRegistry
     {
         public const string RegistryName = "repo-registry";
         private const string EtwArea = nameof(RepoRegistry);
@@ -21,20 +21,15 @@ namespace GVFS.Service
         private ITracer tracer;
         private PhysicalFileSystem fileSystem;
         private object repoLock = new object();
-        private IRepoMountProcess mountProcess;
+        private IRepoMounter mountProcess;
         private GVFSPlatform gvfsPlatform;
-
-        // The no-args Constructor is there only because it is needed by Moq
-        public RepoRegistry()
-        {
-        }
 
         public RepoRegistry(
             ITracer tracer,
             PhysicalFileSystem fileSystem,
             string serviceDataLocation,
             GVFSPlatform gvfsPlatform,
-            IRepoMountProcess mountProcess)
+            IRepoMounter mountProcess)
         {
             this.tracer = tracer;
             this.fileSystem = fileSystem;
@@ -49,7 +44,7 @@ namespace GVFS.Service
             this.tracer.RelatedEvent(EventLevel.Informational, "RepoRegistry_Created", metadata);
         }
 
-        public virtual void Upgrade()
+        public void Upgrade()
         {
             // Version 1 to Version 2, added OwnerSID
             Dictionary<string, RepoRegistration> allRepos = this.ReadRegistry();
@@ -95,7 +90,7 @@ namespace GVFS.Service
             return false;
         }
 
-        public virtual void TraceStatus()
+        public void TraceStatus()
         {
             try
             {
@@ -176,7 +171,7 @@ namespace GVFS.Service
             return false;
         }
 
-        public virtual void AutoMountRepos(int sessionId)
+        public void AutoMountRepos(int sessionId)
         {
             using (ITracer activity = this.tracer.StartActivity("AutoMount", EventLevel.Informational))
             {
