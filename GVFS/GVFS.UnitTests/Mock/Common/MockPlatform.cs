@@ -2,7 +2,6 @@
 using GVFS.Common.FileSystem;
 using GVFS.Common.Git;
 using GVFS.Common.Tracing;
-using GVFS.UnitTests.Mock.Common.Tracing;
 using GVFS.UnitTests.Mock.FileSystem;
 using GVFS.UnitTests.Mock.Git;
 using System;
@@ -65,7 +64,7 @@ namespace GVFS.UnitTests.Mock.Common
             throw new NotSupportedException();
         }
 
-        public override string GetUserIdFromLoginSessionId(int sessionId)
+        public override string GetUserIdFromLoginSessionId(int sessionId, ITracer tracer)
         {
             return sessionId.ToString();
         }

@@ -30,7 +30,7 @@ namespace GVFS.UnitTests.Service
             this.fileSystem = new MockFileSystem(new MockDirectory(ServiceDataLocation, null, null));
             this.gvfsPlatformMock = new Mock<MacPlatform>();
             this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ExpectedActiveUserId);
-            this.gvfsPlatformMock.Setup(p => p.GetUserIdFromLoginSessionId(It.IsAny<int>())).Returns<int>(x => x.ToString());
+            this.gvfsPlatformMock.Setup(p => p.GetUserIdFromLoginSessionId(It.IsAny<int>(), It.IsAny<ITracer>())).Returns<int, ITracer>((x, y) => x.ToString());
             this.gvfsPlatformMock.SetupGet(p => p.FileSystem).Returns(new MockPlatformFileSystem());
         }
 

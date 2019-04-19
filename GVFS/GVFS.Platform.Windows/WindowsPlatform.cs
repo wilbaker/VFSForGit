@@ -311,9 +311,9 @@ namespace GVFS.Platform.Windows
             return identity.User.Value;
         }
 
-        public override string GetUserIdFromLoginSessionId(int sessionId)
+        public override string GetUserIdFromLoginSessionId(int sessionId, ITracer tracer)
         {
-            using (CurrentUser currentUser = new CurrentUser(tracer: null, sessionId: sessionId))
+            using (CurrentUser currentUser = new CurrentUser(tracer, sessionId))
             {
                 return currentUser.Identity.User.Value;
             }
