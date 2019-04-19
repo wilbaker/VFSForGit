@@ -10,12 +10,10 @@ namespace GVFS.Service
         private const string GVFSPath = "/usr/local/vfsforgit/gvfs";
 
         private MountLauncher processLauncher;
-        private bool waitTillMounted;
 
-        public GVFSMountProcess(MountLauncher processLauncher = null, bool waitTillMounted = false)
+        public GVFSMountProcess(MountLauncher processLauncher = null)
         {
             this.processLauncher = processLauncher ?? new MountLauncher();
-            this.waitTillMounted = waitTillMounted;
         }
 
         public bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
@@ -29,7 +27,7 @@ namespace GVFS.Service
             }
 
             string errorMessage;
-            if (this.waitTillMounted && !GVFSEnlistment.WaitUntilMounted(repoRoot, false, out errorMessage))
+            if (!this.processLauncher.WaitUntilMounted(repoRoot, false, out errorMessage))
             {
                 tracer.RelatedError(errorMessage);
                 return false;
@@ -57,6 +55,11 @@ namespace GVFS.Service
                 }
 
                 return true;
+            }
+
+            public virtual bool WaitUntilMounted(string enlistmentRoot, bool unattended, out string errorMessage)
+            {
+                return GVFSEnlistment.WaitUntilMounted(enlistmentRoot, false, out errorMessage);
             }
         }
     }

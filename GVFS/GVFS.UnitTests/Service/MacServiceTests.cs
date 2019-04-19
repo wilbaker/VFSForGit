@@ -104,7 +104,14 @@ namespace GVFS.UnitTests.Service
                 It.IsAny<ITracer>()))
                 .Returns(true);
 
-            GVFSMountProcess mountProcess = new GVFSMountProcess(mountLauncherMock.Object, waitTillMounted: false);
+            string errorString = null;
+            mountLauncherMock.Setup(mp => mp.WaitUntilMounted(
+                It.IsAny<string>(),
+                It.IsAny<bool>(),
+                out errorString))
+                .Returns(true);
+
+            GVFSMountProcess mountProcess = new GVFSMountProcess(mountLauncherMock.Object);
             mountProcess.MountRepository(ExpectedActiveRepoPath, int.Parse(ExpectedActiveUserId), this.tracer);
 
             mountLauncherMock.Verify(
