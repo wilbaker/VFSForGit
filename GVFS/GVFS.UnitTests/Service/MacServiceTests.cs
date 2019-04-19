@@ -47,8 +47,7 @@ namespace GVFS.UnitTests.Service
 
             GVFSService service = new GVFSService(
                 this.tracer,
-                GVFSServiceName,
-                startListening: false,
+                serviceName: null,
                 repoRegistry: repoRegistry.Object,
                 gvfsPlatform: this.gvfsPlatformMock.Object);
 

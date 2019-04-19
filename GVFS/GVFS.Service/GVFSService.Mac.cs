@@ -19,7 +19,6 @@ namespace GVFS.Service
         private Thread serviceThread;
         private ManualResetEvent serviceStopped;
         private string serviceName;
-        private bool startListening;
         private IRepoRegistry repoRegistry;
         private RequestHandler requestHandler;
         private GVFSPlatform gvfsPlatform;
@@ -27,7 +26,6 @@ namespace GVFS.Service
         public GVFSService(
             ITracer tracer,
             string serviceName,
-            bool startListening,
             IRepoRegistry repoRegistry,
             GVFSPlatform gvfsPlatform)
         {
@@ -35,7 +33,6 @@ namespace GVFS.Service
             this.repoRegistry = repoRegistry;
             this.gvfsPlatform = gvfsPlatform;
             this.serviceName = serviceName;
-            this.startListening = startListening;
 
             this.serviceStopped = new ManualResetEvent(false);
             this.serviceThread = new Thread(this.ServiceThreadMain);
@@ -77,7 +74,6 @@ namespace GVFS.Service
             return new GVFSService(
                 tracer,
                 serviceName,
-                startListening: true,
                 repoRegistry: repoRegistry,
                 gvfsPlatform: gvfsPlatform);
         }
@@ -88,7 +84,7 @@ namespace GVFS.Service
             {
                 this.RunRepoRegistryTasks();
 
-                if (this.startListening && !string.IsNullOrEmpty(this.serviceName))
+                if (!string.IsNullOrEmpty(this.serviceName))
                 {
                     string pipeName = this.serviceName + ".Pipe";
                     this.tracer.RelatedInfo("Starting pipe server with name: " + pipeName);
