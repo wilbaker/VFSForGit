@@ -39,7 +39,7 @@ namespace GVFS.Service
             this.requestHandler = new RequestHandler(this.tracer, EtwArea, this.repoRegistry);
         }
 
-        public static GVFSService CreateService(JsonTracer tracer, string[] args)
+        public static void CreateAndRun(JsonTracer tracer, string[] args)
         {
             string serviceName = args.FirstOrDefault(arg => arg.StartsWith(ServiceNameArgPrefix, StringComparison.OrdinalIgnoreCase));
             if (serviceName != null)
@@ -54,8 +54,8 @@ namespace GVFS.Service
             GVFSPlatform gvfsPlatform = GVFSPlatform.Instance;
 
             string logFilePath = Path.Combine(
-                    gvfsPlatform.GetDataRootForGVFSComponent(serviceName),
-                    GVFSConstants.Service.LogDirectory);
+                gvfsPlatform.GetDataRootForGVFSComponent(serviceName),
+                GVFSConstants.Service.LogDirectory);
             Directory.CreateDirectory(logFilePath);
 
             tracer.AddLogFileEventListener(
@@ -71,11 +71,7 @@ namespace GVFS.Service
                 gvfsPlatform,
                 new GVFSMountProcess());
 
-            return new GVFSService(
-                tracer,
-                serviceName,
-                repoRegistry: repoRegistry,
-                gvfsPlatform: gvfsPlatform);
+            new GVFSService(tracer, serviceName, repoRegistry, gvfsPlatform).RunWithArgs(args);
         }
 
         public void RunWithArgs(string[] args)

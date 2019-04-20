@@ -15,7 +15,7 @@ namespace GVFS.Service
 
             using (JsonTracer tracer = new JsonTracer(GVFSConstants.Service.ServiceName, GVFSConstants.Service.ServiceName))
             {
-                GVFSService.CreateService(tracer, args).RunWithArgs(args);
+                GVFSService.CreateAndRun(tracer, args);
             }
         }
 

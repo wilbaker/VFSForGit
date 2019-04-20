@@ -21,7 +21,7 @@ namespace GVFS.Service
         private ITracer tracer;
         private PhysicalFileSystem fileSystem;
         private object repoLock = new object();
-        private IRepoMounter mountProcess;
+        private IRepoMounter repoMounter;
         private GVFSPlatform gvfsPlatform;
 
         public RepoRegistry(
@@ -29,13 +29,13 @@ namespace GVFS.Service
             PhysicalFileSystem fileSystem,
             string serviceDataLocation,
             GVFSPlatform gvfsPlatform,
-            IRepoMounter mountProcess)
+            IRepoMounter repoMounter)
         {
             this.tracer = tracer;
             this.fileSystem = fileSystem;
             this.registryParentFolderPath = serviceDataLocation;
             this.gvfsPlatform = gvfsPlatform;
-            this.mountProcess = mountProcess;
+            this.repoMounter = repoMounter;
 
             EventMetadata metadata = new EventMetadata();
             metadata.Add("Area", EtwArea);
@@ -186,7 +186,7 @@ namespace GVFS.Service
                 foreach (RepoRegistration repo in activeRepos)
                 {
                     // TODO #1043088: We need to respect the elevation level of the original mount
-                    if (this.mountProcess.MountRepository(repo.EnlistmentRoot, sessionId, activity))
+                    if (this.repoMounter.MountRepository(repo.EnlistmentRoot, sessionId, activity))
                     {
                         this.SendNotification(sessionId, "GVFS AutoMount", "The following GVFS repo is now mounted: \n{0}", repo.EnlistmentRoot);
                     }
