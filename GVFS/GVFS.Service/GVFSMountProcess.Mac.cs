@@ -1,24 +1,30 @@
 ﻿using GVFS.Common;
 using GVFS.Common.Tracing;
 using System.Diagnostics;
+using System.IO;
 
 namespace GVFS.Service
 {
     public class GVFSMountProcess : IRepoMounter
     {
         private const string ExecutablePath = "/bin/launchctl";
-        private const string GVFSPath = "/usr/local/vfsforgit/gvfs";
 
         private MountLauncher processLauncher;
+        private GVFSPlatform platform;
 
-        public GVFSMountProcess(MountLauncher processLauncher = null)
+        public GVFSMountProcess(MountLauncher processLauncher = null, GVFSPlatform platform = null)
         {
             this.processLauncher = processLauncher ?? new MountLauncher();
+            this.platform = platform ?? GVFSPlatform.Instance;
         }
 
         public bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
         {
-            string arguments = string.Format("asuser {0} {1} mount {2}", sessionId, GVFSPath, repoRoot);
+            string arguments = string.Format(
+                "asuser {0} {1} mount {2}",
+                sessionId,
+                Path.Combine(this.platform.Constants.GVFSBinDirectoryPath, this.platform.Constants.GVFSExecutableName),
+                repoRoot);
 
             if (!this.processLauncher.LaunchProcess(ExecutablePath, arguments, repoRoot, tracer))
             {

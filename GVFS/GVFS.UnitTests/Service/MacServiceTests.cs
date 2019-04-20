@@ -32,6 +32,7 @@ namespace GVFS.UnitTests.Service
             this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ExpectedActiveUserId);
             this.gvfsPlatformMock.Setup(p => p.GetUserIdFromLoginSessionId(It.IsAny<int>(), It.IsAny<ITracer>())).Returns<int, ITracer>((x, y) => x.ToString());
             this.gvfsPlatformMock.SetupGet(p => p.FileSystem).Returns(new MockPlatformFileSystem());
+            this.gvfsPlatformMock.SetupGet(p => p.Constants).Returns(new MacPlatform.MacPlatformConstants());
         }
 
         [TearDown]
@@ -94,7 +95,8 @@ namespace GVFS.UnitTests.Service
         public void MountProcessLaunchedUsingCorrectArgs()
         {
             string executable = @"/bin/launchctl";
-            string expectedArgs = $"asuser {int.Parse(ExpectedActiveUserId)} /usr/local/vfsforgit/gvfs mount {ExpectedActiveRepoPath}";
+            string gvfsBinPath = Path.Combine("/", "usr", "local", "vfsforgit", "gvfs");
+            string expectedArgs = $"asuser {int.Parse(ExpectedActiveUserId)} {gvfsBinPath} mount {ExpectedActiveRepoPath}";
 
             Mock<GVFSMountProcess.MountLauncher> mountLauncherMock = new Mock<GVFSMountProcess.MountLauncher>();
             mountLauncherMock.Setup(mp => mp.LaunchProcess(
@@ -111,7 +113,7 @@ namespace GVFS.UnitTests.Service
                 out errorString))
                 .Returns(true);
 
-            GVFSMountProcess mountProcess = new GVFSMountProcess(mountLauncherMock.Object);
+            GVFSMountProcess mountProcess = new GVFSMountProcess(mountLauncherMock.Object, this.gvfsPlatformMock.Object);
             mountProcess.MountRepository(ExpectedActiveRepoPath, int.Parse(ExpectedActiveUserId), this.tracer);
 
             mountLauncherMock.Verify(

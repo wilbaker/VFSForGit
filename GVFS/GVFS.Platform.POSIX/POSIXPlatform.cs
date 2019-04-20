@@ -13,11 +13,7 @@ namespace GVFS.Platform.POSIX
 {
     public abstract partial class POSIXPlatform : GVFSPlatform
     {
-        private const string GVFSBinPath = "/usr/local/vfsforgit";
-
-        public POSIXPlatform(string installerExtension) : base(
-            executableExtension: string.Empty,
-            installerExtension: installerExtension,
+        public POSIXPlatform() : base(
             underConstruction: new UnderConstructionFlags(
                 supportsGVFSUpgrade: false,
                 supportsGVFSConfig: false))
@@ -26,7 +22,7 @@ namespace GVFS.Platform.POSIX
 
         public override IGitInstallation GitInstallation { get; } = new POSIXGitInstallation();
         public override IPlatformFileSystem FileSystem { get; } = new POSIXFileSystem();
-
+        public override GVFSPlatformConstants Constants { get; } = new GVFSPlatformConstants(executableExtension: string.Empty, installerExtension: ".dmg");
         public override void ConfigureVisualStudio(string gitBinPath, ITracer tracer)
         {
         }
@@ -34,7 +30,7 @@ namespace GVFS.Platform.POSIX
         public override bool TryGetGVFSHooksPathAndVersion(out string hooksPaths, out string hooksVersion, out string error)
         {
             hooksPaths = string.Empty;
-            string binPath = Path.Combine(GVFSBinPath, GVFSPlatform.Instance.Constants.GVFSHooksExecutableName);
+            string binPath = Path.Combine(this.Constants.GVFSBinDirectoryPath, GVFSPlatform.Instance.Constants.GVFSHooksExecutableName);
             if (File.Exists(binPath))
             {
                 hooksPaths = binPath;

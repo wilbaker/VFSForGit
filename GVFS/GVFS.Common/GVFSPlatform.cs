@@ -10,9 +10,8 @@ namespace GVFS.Common
 {
     public abstract class GVFSPlatform
     {
-        public GVFSPlatform(string executableExtension, string installerExtension, UnderConstructionFlags underConstruction)
+        public GVFSPlatform(UnderConstructionFlags underConstruction)
         {
-            this.Constants = new GVFSPlatformConstants(executableExtension, installerExtension);
             this.UnderConstruction = underConstruction;
         }
 
@@ -23,7 +22,7 @@ namespace GVFS.Common
         public abstract IDiskLayoutUpgradeData DiskLayoutUpgrade { get; }
         public abstract IPlatformFileSystem FileSystem { get; }
 
-        public GVFSPlatformConstants Constants { get; }
+        public abstract GVFSPlatformConstants Constants { get; }
         public UnderConstructionFlags UnderConstruction { get; }
         public abstract string Name { get; }
 
@@ -101,7 +100,17 @@ namespace GVFS.Common
             public string ExecutableExtension { get; }
             public string InstallerExtension { get; }
 
-            public string GVFSExecutableName
+            public virtual string GVFSBinDirectoryPath
+            {
+                get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), this.GVFSBinDirectoryName); }
+            }
+
+            public virtual string GVFSBinDirectoryName
+            {
+                get { return "GVFS"; }
+            }
+
+            public virtual string GVFSExecutableName
             {
                 get { return "GVFS" + this.ExecutableExtension; }
             }
