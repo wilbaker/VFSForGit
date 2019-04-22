@@ -15,7 +15,7 @@ namespace GVFS.UnitTests.Mac.Service
     public class MacServiceTests
     {
         private const string GVFSServiceName = "GVFS.Service";
-        private const string ExpectedActiveUserId = "502";
+        private const int ExpectedActiveUserId = 502;
         private static readonly string ExpectedActiveRepoPath = Path.Combine("mock:", "code", "repo2");
         private static readonly string ServiceDataLocation = Path.Combine("mock:", "registryDataFolder");
 
@@ -29,7 +29,7 @@ namespace GVFS.UnitTests.Mac.Service
             this.tracer = new MockTracer();
             this.fileSystem = new MockFileSystem(new MockDirectory(ServiceDataLocation, null, null));
             this.gvfsPlatformMock = new Mock<MacPlatform>();
-            this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ExpectedActiveUserId);
+            this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ExpectedActiveUserId.ToString());
             this.gvfsPlatformMock.Setup(p => p.GetUserIdFromLoginSessionId(It.IsAny<int>(), It.IsAny<ITracer>())).Returns<int, ITracer>((x, y) => x.ToString());
             this.gvfsPlatformMock.SetupGet(p => p.FileSystem).Returns(new MockPlatformFileSystem());
             this.gvfsPlatformMock.SetupGet(p => p.Constants).Returns(new MacPlatform.MacPlatformConstants());
@@ -57,10 +57,8 @@ namespace GVFS.UnitTests.Mac.Service
 
             service.RunWithArgs(new string[] { $"--servicename={GVFSServiceName}" });
 
-            int expectedUserId = int.Parse(ExpectedActiveUserId);
-
             repoRegistry.Verify(
-                r => r.AutoMountRepos(It.Is<int>(arg => arg == expectedUserId)),
+                r => r.AutoMountRepos(It.Is<int>(arg => arg == ExpectedActiveUserId)),
                 Times.Once,
                 $"{nameof(repoRegistry.Object.AutoMountRepos)} was not called during Service startup");
         }
@@ -80,12 +78,12 @@ namespace GVFS.UnitTests.Mac.Service
                 this.gvfsPlatformMock.Object,
                 mountProcessMock.Object);
 
-            repoRegistry.AutoMountRepos(int.Parse(ExpectedActiveUserId));
+            repoRegistry.AutoMountRepos(ExpectedActiveUserId);
 
             mountProcessMock.Verify(
                 mp => mp.MountRepository(
                     It.Is<string>(repo => repo.Equals(ExpectedActiveRepoPath)),
-                    It.Is<int>(id => id == int.Parse(ExpectedActiveUserId)),
+                    It.Is<int>(id => id == ExpectedActiveUserId),
                     It.IsAny<ITracer>()),
                 Times.Once,
                 $"{nameof(mountProcessMock.Object.MountRepository)} was not called for registered repository");
@@ -96,7 +94,7 @@ namespace GVFS.UnitTests.Mac.Service
         {
             string executable = @"/bin/launchctl";
             string gvfsBinPath = Path.Combine("/", "usr", "local", "vfsforgit", "gvfs");
-            string expectedArgs = $"asuser {int.Parse(ExpectedActiveUserId)} {gvfsBinPath} mount {ExpectedActiveRepoPath}";
+            string expectedArgs = $"asuser {ExpectedActiveUserId} {gvfsBinPath} mount {ExpectedActiveRepoPath}";
 
             Mock<GVFSMountProcess.MountLauncher> mountLauncherMock = new Mock<GVFSMountProcess.MountLauncher>();
             mountLauncherMock.Setup(mp => mp.LaunchProcess(
@@ -114,7 +112,7 @@ namespace GVFS.UnitTests.Mac.Service
                 .Returns(true);
 
             GVFSMountProcess mountProcess = new GVFSMountProcess(mountLauncherMock.Object, this.gvfsPlatformMock.Object);
-            mountProcess.MountRepository(ExpectedActiveRepoPath, int.Parse(ExpectedActiveUserId), this.tracer);
+            mountProcess.MountRepository(ExpectedActiveRepoPath, ExpectedActiveUserId, this.tracer);
 
             mountLauncherMock.Verify(
                 mp => mp.LaunchProcess(
