@@ -24,11 +24,11 @@ namespace GVFS.UnitTests.Mock.Common
         public override IDiskLayoutUpgradeData DiskLayoutUpgrade => throw new NotSupportedException();
 
         public override IPlatformFileSystem FileSystem { get; } = new MockPlatformFileSystem();
-        
+
         public override string Name { get => "Mock"; }
-        
+
         public override GVFSPlatformConstants Constants { get; } = new GVFSPlatformConstants(executableExtension: ".mockexe", installerExtension: ".mockexe");
-        
+
         public HashSet<int> ActiveProcesses { get; } = new HashSet<int>();
 
         public override void ConfigureVisualStudio(string gitBinPath, ITracer tracer)

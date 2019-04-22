@@ -8,7 +8,7 @@ using Moq;
 using NUnit.Framework;
 using System.IO;
 
-namespace GVFS.UnitTests.Service
+namespace GVFS.UnitTests.Mac.Service
 {
     [TestFixture]
     [NonParallelizable]
