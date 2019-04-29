@@ -69,7 +69,7 @@ namespace GVFS.Service
                 new PhysicalFileSystem(),
                 serviceDataLocation,
                 gvfsPlatform,
-                new GVFSMountProcess());
+                new GVFSMountProcess(tracer));
 
             new GVFSService(tracer, serviceName, repoRegistry, gvfsPlatform).RunWithArgs(args);
         }

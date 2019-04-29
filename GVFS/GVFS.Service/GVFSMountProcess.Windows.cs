@@ -7,30 +7,37 @@ namespace GVFS.Service
 {
     public class GVFSMountProcess : IRepoMounter
     {
-        public bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
+        private ITracer tracer;
+
+        public GVFSMountProcess(ITracer tracer)
         {
-            if (!ProjFSFilter.IsServiceRunning(tracer))
+            this.tracer = tracer;
+        }
+
+        public bool MountRepository(string repoRoot, int sessionId)
+        {
+            if (!ProjFSFilter.IsServiceRunning(this.tracer))
             {
                 string error;
-                if (!EnableAndAttachProjFSHandler.TryEnablePrjFlt(tracer, out error))
+                if (!EnableAndAttachProjFSHandler.TryEnablePrjFlt(this.tracer, out error))
                 {
-                    tracer.RelatedError($"{nameof(this.MountRepository)}: Could not enable PrjFlt: {error}");
+                    this.tracer.RelatedError($"{nameof(this.MountRepository)}: Could not enable PrjFlt: {error}");
                     return false;
                 }
             }
 
-            using (CurrentUser currentUser = new CurrentUser(tracer, sessionId))
+            using (CurrentUser currentUser = new CurrentUser(this.tracer, sessionId))
             {
                 if (!this.CallGVFSMount(repoRoot, currentUser))
                 {
-                    tracer.RelatedError($"{nameof(this.MountRepository)}: Unable to start the GVFS.exe process.");
+                    this.tracer.RelatedError($"{nameof(this.MountRepository)}: Unable to start the GVFS.exe process.");
                     return false;
                 }
 
                 string errorMessage;
                 if (!GVFSEnlistment.WaitUntilMounted(repoRoot, false, out errorMessage))
                 {
-                    tracer.RelatedError(errorMessage);
+                    this.tracer.RelatedError(errorMessage);
                     return false;
                 }
             }

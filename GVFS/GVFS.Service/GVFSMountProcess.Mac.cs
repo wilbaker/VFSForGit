@@ -11,14 +11,16 @@ namespace GVFS.Service
 
         private MountLauncher processLauncher;
         private GVFSPlatform platform;
+        private ITracer tracer;
 
-        public GVFSMountProcess(MountLauncher processLauncher = null, GVFSPlatform platform = null)
+        public GVFSMountProcess(ITracer tracer, MountLauncher processLauncher = null, GVFSPlatform platform = null)
         {
-            this.processLauncher = processLauncher ?? new MountLauncher();
+            this.tracer = tracer;
+            this.processLauncher = processLauncher ?? new MountLauncher(tracer);
             this.platform = platform ?? GVFSPlatform.Instance;
         }
 
-        public bool MountRepository(string repoRoot, int sessionId, ITracer tracer)
+        public bool MountRepository(string repoRoot, int sessionId)
         {
             string arguments = string.Format(
                 "asuser {0} {1} mount {2}",
@@ -26,16 +28,16 @@ namespace GVFS.Service
                 Path.Combine(this.platform.Constants.GVFSBinDirectoryPath, this.platform.Constants.GVFSExecutableName),
                 repoRoot);
 
-            if (!this.processLauncher.LaunchProcess(ExecutablePath, arguments, repoRoot, tracer))
+            if (!this.processLauncher.LaunchProcess(ExecutablePath, arguments, repoRoot))
             {
-                tracer.RelatedError($"{nameof(this.MountRepository)}: Unable to start the GVFS process.");
+                this.tracer.RelatedError($"{nameof(this.MountRepository)}: Unable to start the GVFS process.");
                 return false;
             }
 
             string errorMessage;
             if (!this.processLauncher.WaitUntilMounted(repoRoot, false, out errorMessage))
             {
-                tracer.RelatedError(errorMessage);
+                this.tracer.RelatedError(errorMessage);
                 return false;
             }
 
@@ -44,7 +46,14 @@ namespace GVFS.Service
 
         public class MountLauncher
         {
-            public virtual bool LaunchProcess(string executablePath, string arguments, string workingDirectory, ITracer tracer)
+            private ITracer tracer;
+
+            public MountLauncher(ITracer tracer)
+            {
+                this.tracer = tracer;
+            }
+
+            public virtual bool LaunchProcess(string executablePath, string arguments, string workingDirectory)
             {
                 ProcessStartInfo processInfo = new ProcessStartInfo(executablePath);
                 processInfo.Arguments = arguments;
@@ -56,7 +65,7 @@ namespace GVFS.Service
                 ProcessResult result = ProcessHelper.Run(processInfo);
                 if (result.ExitCode != 0)
                 {
-                    tracer.RelatedError($"{nameof(this.LaunchProcess)} ERROR: {executablePath} {arguments}. Exit code: {result.ExitCode}, {result.Errors}");
+                    this.tracer.RelatedError($"{nameof(this.LaunchProcess)} ERROR: {executablePath} {arguments}. Exit code: {result.ExitCode}, {result.Errors}");
                     return false;
                 }
 

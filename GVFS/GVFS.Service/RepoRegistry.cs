@@ -186,7 +186,7 @@ namespace GVFS.Service
                 foreach (RepoRegistration repo in activeRepos)
                 {
                     // TODO #1043088: We need to respect the elevation level of the original mount
-                    if (this.repoMounter.MountRepository(repo.EnlistmentRoot, sessionId, activity))
+                    if (this.repoMounter.MountRepository(repo.EnlistmentRoot, sessionId))
                     {
                         this.SendNotification(sessionId, "GVFS AutoMount", "The following GVFS repo is now mounted: \n{0}", repo.EnlistmentRoot);
                     }

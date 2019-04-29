@@ -65,7 +65,7 @@ namespace GVFS.UnitTests.Mac.Service
         public void RepoRegistryMountsOnlyRegisteredRepos()
         {
             Mock<IRepoMounter> mountProcessMock = new Mock<IRepoMounter>(MockBehavior.Strict);
-            mountProcessMock.Setup(mp => mp.MountRepository(ExpectedActiveRepoPath, ExpectedActiveUserId, It.IsAny<ITracer>())).Returns(true);
+            mountProcessMock.Setup(mp => mp.MountRepository(ExpectedActiveRepoPath, ExpectedActiveUserId)).Returns(true);
 
             this.CreateTestRepos(this.fileSystem, ServiceDataLocation);
 
@@ -88,12 +88,11 @@ namespace GVFS.UnitTests.Mac.Service
             string gvfsBinPath = Path.Combine("/", "usr", "local", "vfsforgit", "gvfs");
             string expectedArgs = $"asuser {ExpectedActiveUserId} {gvfsBinPath} mount {ExpectedActiveRepoPath}";
 
-            Mock<GVFSMountProcess.MountLauncher> mountLauncherMock = new Mock<GVFSMountProcess.MountLauncher>(MockBehavior.Strict);
+            Mock<GVFSMountProcess.MountLauncher> mountLauncherMock = new Mock<GVFSMountProcess.MountLauncher>(MockBehavior.Strict, this.tracer);
             mountLauncherMock.Setup(mp => mp.LaunchProcess(
                 executable,
                 expectedArgs,
-                ExpectedActiveRepoPath,
-                It.IsAny<ITracer>()))
+                ExpectedActiveRepoPath))
                 .Returns(true);
 
             string errorString = null;
@@ -103,8 +102,8 @@ namespace GVFS.UnitTests.Mac.Service
                 out errorString))
                 .Returns(true);
 
-            GVFSMountProcess mountProcess = new GVFSMountProcess(mountLauncherMock.Object, this.gvfsPlatformMock.Object);
-            mountProcess.MountRepository(ExpectedActiveRepoPath, ExpectedActiveUserId, this.tracer);
+            GVFSMountProcess mountProcess = new GVFSMountProcess(this.tracer, mountLauncherMock.Object, this.gvfsPlatformMock.Object);
+            mountProcess.MountRepository(ExpectedActiveRepoPath, ExpectedActiveUserId);
 
             mountLauncherMock.VerifyAll();
         }
