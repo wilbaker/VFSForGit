@@ -1,5 +1,4 @@
-﻿using GVFS.Common;
-using GVFS.Common.FileSystem;
+﻿using GVFS.Common.FileSystem;
 using GVFS.Platform.Mac;
 using GVFS.Service;
 using GVFS.UnitTests.Mock.Common;
@@ -8,7 +7,7 @@ using Moq;
 using NUnit.Framework;
 using System.IO;
 
-namespace GVFS.UnitTests.Service
+namespace GVFS.UnitTests.Service.Mac
 {
     [TestFixture]
     [NonParallelizable]
@@ -22,14 +21,14 @@ namespace GVFS.UnitTests.Service
 
         private MockFileSystem fileSystem;
         private MockTracer tracer;
-        private Mock<GVFSPlatform> gvfsPlatformMock;
+        private Mock<MacPlatform> gvfsPlatformMock;
 
         [SetUp]
         public void SetUp()
         {
             this.tracer = new MockTracer();
             this.fileSystem = new MockFileSystem(new MockDirectory(ServiceDataLocation, null, null));
-            this.gvfsPlatformMock = new Mock<GVFSPlatform>();
+            this.gvfsPlatformMock = new Mock<MacPlatform>();
             this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ExpectedActiveUserId.ToString());
             this.gvfsPlatformMock.SetupGet(p => p.FileSystem).Returns(new MockPlatformFileSystem());
             this.gvfsPlatformMock.SetupGet(p => p.Constants).Returns(new MacPlatform.MacPlatformConstants());

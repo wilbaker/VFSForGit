@@ -153,6 +153,10 @@
       <Project>{1dac3da6-3d21-4917-b9a8-d60c8712252a}</Project>
       <Name>GVFS.Platform.Mac</Name>
     </ProjectReference>
+    <ProjectReference Include="..\GVFS.Platform.POSIX\GVFS.Platform.POSIX.csproj">
+      <Project>{15fae44c-0d21-4312-9fd3-28f05a5ab7a6}</Project>
+      <Name>GVFS.Platform.POSIX</Name>
+    </ProjectReference>
     <ProjectReference Include="..\GVFS.Platform.Windows\GVFS.Platform.Windows.csproj">
       <Project>{4ce404e7-d3fc-471c-993c-64615861ea63}</Project>
       <Name>GVFS.Platform.Windows</Name>
