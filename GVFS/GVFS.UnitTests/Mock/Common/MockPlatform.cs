@@ -27,7 +27,7 @@ namespace GVFS.UnitTests.Mock.Common
 
         public override string Name { get => "Mock"; }
 
-        public override GVFSPlatformConstants Constants { get; } = new GVFSPlatformConstants(executableExtension: ".mockexe", installerExtension: ".mockexe");
+        public override GVFSPlatformConstants Constants { get; } = new MockPlatformConstants();
 
         public HashSet<int> ActiveProcesses { get; } = new HashSet<int>();
 
@@ -149,6 +149,19 @@ namespace GVFS.UnitTests.Mock.Common
             error = null;
             exitCode = 0;
             return true;
+        }
+
+        public class MockPlatformConstants : GVFSPlatformConstants
+        {
+            public override string ExecutableExtension
+            {
+                get { return ".mockexe"; }
+            }
+
+            public override string InstallerExtension
+            {
+                get { return ".mockexe"; }
+            }
         }
     }
 }

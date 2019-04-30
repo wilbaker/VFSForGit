@@ -12,7 +12,8 @@ namespace GVFS.Service
 {
     public class GVFSService
     {
-        private const string ServiceNameArgPrefix = "--servicename=";
+        public const string ServiceNameArgPrefix = "--servicename=";
+
         private const string EtwArea = nameof(GVFSService);
 
         private ITracer tracer;
@@ -39,45 +40,11 @@ namespace GVFS.Service
             this.requestHandler = new RequestHandler(this.tracer, EtwArea, this.repoRegistry);
         }
 
-        public static void CreateAndRun(JsonTracer tracer, string[] args)
-        {
-            string serviceName = args.FirstOrDefault(arg => arg.StartsWith(ServiceNameArgPrefix, StringComparison.OrdinalIgnoreCase));
-            if (serviceName != null)
-            {
-                serviceName = serviceName.Substring(ServiceNameArgPrefix.Length);
-            }
-            else
-            {
-                serviceName = GVFSConstants.Service.ServiceName;
-            }
-
-            GVFSPlatform gvfsPlatform = GVFSPlatform.Instance;
-
-            string logFilePath = Path.Combine(
-                gvfsPlatform.GetDataRootForGVFSComponent(serviceName),
-                GVFSConstants.Service.LogDirectory);
-            Directory.CreateDirectory(logFilePath);
-
-            tracer.AddLogFileEventListener(
-                GVFSEnlistment.GetNewGVFSLogFileName(logFilePath, GVFSConstants.LogFileTypes.Service),
-                EventLevel.Verbose,
-                Keywords.Any);
-
-            string serviceDataLocation = gvfsPlatform.GetDataRootForGVFSComponent(serviceName);
-            RepoRegistry repoRegistry = new RepoRegistry(
-                tracer,
-                new PhysicalFileSystem(),
-                serviceDataLocation,
-                new GVFSMountProcess(tracer));
-
-            new GVFSService(tracer, serviceName, repoRegistry, gvfsPlatform).RunWithArgs(args);
-        }
-
-        public void RunWithArgs(string[] args)
+        public void Run()
         {
             try
             {
-                this.RunRepoRegistryTasks();
+                this.AutoMountReposForUser();
 
                 if (!string.IsNullOrEmpty(this.serviceName))
                 {
@@ -100,7 +67,7 @@ namespace GVFS.Service
             }
             catch (Exception e)
             {
-                this.LogExceptionAndExit(e, nameof(this.RunWithArgs));
+                this.LogExceptionAndExit(e, nameof(this.Run));
             }
         }
 
@@ -121,7 +88,7 @@ namespace GVFS.Service
             }
         }
 
-        private void RunRepoRegistryTasks()
+        private void AutoMountReposForUser()
         {
             int currentUser;
             if (int.TryParse(this.gvfsPlatform.GetCurrentUser(), out currentUser))
@@ -132,7 +99,7 @@ namespace GVFS.Service
             }
             else
             {
-                this.tracer.RelatedError($"{nameof(this.RunRepoRegistryTasks)} Error: could not parse current user info from RepoRegistry.");
+                this.tracer.RelatedError($"{nameof(this.AutoMountReposForUser)} Error: could not parse current user info from RepoRegistry.");
             }
         }
 

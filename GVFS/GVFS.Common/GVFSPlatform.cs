@@ -87,18 +87,11 @@ namespace GVFS.Common
             return true;
         }
 
-        public class GVFSPlatformConstants
+        public abstract class GVFSPlatformConstants
         {
             public static readonly char PathSeparator = Path.DirectorySeparatorChar;
-
-            public GVFSPlatformConstants(string executableExtension, string installerExtension)
-            {
-                this.ExecutableExtension = executableExtension;
-                this.InstallerExtension = installerExtension;
-            }
-
-            public string ExecutableExtension { get; }
-            public string InstallerExtension { get; }
+            public abstract string ExecutableExtension { get; }
+            public abstract string InstallerExtension { get; }
 
             public virtual string GVFSBinDirectoryPath
             {

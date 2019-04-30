@@ -34,7 +34,7 @@ namespace GVFS.Platform.Windows
         public override IDiskLayoutUpgradeData DiskLayoutUpgrade { get; } = new WindowsDiskLayoutUpgradeData();
         public override IPlatformFileSystem FileSystem { get; } = new WindowsFileSystem();
         public override string Name { get => "Windows"; }
-        public override GVFSPlatformConstants Constants { get; } = new GVFSPlatformConstants(executableExtension: ".exe", installerExtension: ".exe");
+        public override GVFSPlatformConstants Constants { get; } = new WindowsPlatformConstants();
 
         public static string GetStringFromRegistry(string key, string valueName)
         {
@@ -392,6 +392,19 @@ namespace GVFS.Platform.Windows
 
             object value = localKeySub == null ? null : localKeySub.GetValue(valueName);
             return value;
+        }
+
+        public class WindowsPlatformConstants : GVFSPlatformConstants
+        {
+            public override string ExecutableExtension
+            {
+                get { return ".exe"; }
+            }
+
+            public override string InstallerExtension
+            {
+                get { return ".exe"; }
+            }
         }
     }
 }

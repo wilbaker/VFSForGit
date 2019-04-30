@@ -22,7 +22,7 @@ namespace GVFS.Platform.POSIX
 
         public override IGitInstallation GitInstallation { get; } = new POSIXGitInstallation();
         public override IPlatformFileSystem FileSystem { get; } = new POSIXFileSystem();
-        public override GVFSPlatformConstants Constants { get; } = new GVFSPlatformConstants(executableExtension: string.Empty, installerExtension: ".dmg");
+        public override GVFSPlatformConstants Constants { get; } = new POSIXPlatformConstants();
         public override void ConfigureVisualStudio(string gitBinPath, ITracer tracer)
         {
         }
@@ -185,5 +185,18 @@ namespace GVFS.Platform.POSIX
 
         [DllImport("libc", EntryPoint = "getuid", SetLastError = true)]
         private static extern int Getuid();
+
+        public class POSIXPlatformConstants : GVFSPlatformConstants
+        {
+            public override string ExecutableExtension
+            {
+                get { return string.Empty; }
+            }
+
+            public override string InstallerExtension
+            {
+                get { return ".deb"; }
+            }
+        }
     }
 }

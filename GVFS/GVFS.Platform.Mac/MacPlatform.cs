@@ -42,8 +42,14 @@ namespace GVFS.Platform.Mac
 
         public class MacPlatformConstants : GVFSPlatformConstants
         {
-            public MacPlatformConstants() : base(executableExtension: string.Empty, installerExtension: ".dmg")
+            public override string ExecutableExtension
             {
+                get { return string.Empty; }
+            }
+
+            public override string InstallerExtension
+            {
+                get { return ".dmg"; }
             }
 
             public override string GVFSBinDirectoryPath

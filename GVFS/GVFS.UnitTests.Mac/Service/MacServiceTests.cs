@@ -48,7 +48,7 @@ namespace GVFS.UnitTests.Mac.Service
                 repoRegistry: repoRegistry.Object,
                 gvfsPlatform: this.gvfsPlatformMock.Object);
 
-            service.RunWithArgs(new string[] { $"--servicename={GVFSServiceName}" });
+            service.Run();
 
             repoRegistry.VerifyAll();
         }
