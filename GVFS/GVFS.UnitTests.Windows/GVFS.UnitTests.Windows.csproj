@@ -161,10 +161,6 @@
       <Project>{03769a07-f216-456b-886b-e07caf6c5e81}</Project>
       <Name>GVFS.Service.Mac</Name>
     </ProjectReference>
-    <ProjectReference Include="..\GVFS.Service\GVFS.Service.Windows.csproj">
-      <Project>{b8c1dfba-cafd-4f7e-a1a3-e11907b5467b}</Project>
-      <Name>GVFS.Service.Windows</Name>
-    </ProjectReference>
     <ProjectReference Include="..\GVFS.Tests\GVFS.Tests.csproj">
       <Project>{72701bc3-5da9-4c7a-bf10-9e98c9fc8eac}</Project>
       <Name>GVFS.Tests</Name>

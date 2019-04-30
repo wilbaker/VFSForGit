@@ -5,7 +5,7 @@
     <RootNamespace>GVFS.Service</RootNamespace>
     <AssemblyName>GVFS.Service</AssemblyName>
     <!-- Target netstandard2.0 as well so that .NET Framework unit tests can consume this assembly -->
-    <TargetFrameworks>netstandard2.0;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.1; netstandard2.0</TargetFrameworks>
     <Platforms>x64</Platforms>
     <RunTimeIdentifiers>osx-x64</RunTimeIdentifiers>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
