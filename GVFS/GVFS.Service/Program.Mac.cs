@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace GVFS.Service.Mac
+namespace GVFS.Service
 {
     public static class Program
     {

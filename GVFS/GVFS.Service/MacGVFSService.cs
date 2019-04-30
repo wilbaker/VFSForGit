@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 
-namespace GVFS.Service.Mac
+namespace GVFS.Service
 {
     public class MacGVFSService
     {

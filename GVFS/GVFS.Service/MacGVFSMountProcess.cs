@@ -3,7 +3,7 @@ using GVFS.Common.Tracing;
 using System.Diagnostics;
 using System.IO;
 
-namespace GVFS.Service.Mac
+namespace GVFS.Service
 {
     public class MacGVFSMountProcess : IRepoMounter
     {
