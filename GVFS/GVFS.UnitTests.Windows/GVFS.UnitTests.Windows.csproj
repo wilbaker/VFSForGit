@@ -163,7 +163,7 @@
     </ProjectReference>
     <ProjectReference Include="..\GVFS.Service\GVFS.Service.Windows.csproj">
       <Project>{b8c1dfba-cafd-4f7e-a1a3-e11907b5467b}</Project>
-      <Name>GVFS.Service</Name>
+      <Name>GVFS.Service.Windows</Name>
     </ProjectReference>
     <ProjectReference Include="..\GVFS.Tests\GVFS.Tests.csproj">
       <Project>{72701bc3-5da9-4c7a-bf10-9e98c9fc8eac}</Project>
@@ -205,6 +205,9 @@
   <ItemGroup>
     <Analyzer Include="..\..\..\packages\StyleCop.Analyzers.1.0.2\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
     <Analyzer Include="..\..\..\packages\StyleCop.Analyzers.1.0.2\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

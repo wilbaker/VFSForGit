@@ -2,12 +2,11 @@
 using GVFS.Common.FileSystem;
 using GVFS.Common.Tracing;
 using GVFS.PlatformLoader;
-using GVFS.Service.Mac;
 using System;
 using System.IO;
 using System.Linq;
 
-namespace GVFS.Service
+namespace GVFS.Service.Mac
 {
     public static class Program
     {

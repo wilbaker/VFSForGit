@@ -2,7 +2,7 @@
   <Import Project="..\GVFS.Build\GVFS.cs.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RootNamespace>GVFS.Service</RootNamespace>
+    <RootNamespace>GVFS.Service.Mac</RootNamespace>
     <AssemblyName>GVFS.Service</AssemblyName>
     <!-- Target netstandard2.0 as well so that .NET Framework unit tests can consume this assembly -->
     <TargetFrameworks>netcoreapp2.1;netstandard2.0</TargetFrameworks>
