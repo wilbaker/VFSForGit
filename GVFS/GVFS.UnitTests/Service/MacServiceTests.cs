@@ -2,7 +2,6 @@
 using GVFS.Common.FileSystem;
 using GVFS.Platform.Mac;
 using GVFS.Service;
-using GVFS.Service.Mac;
 using GVFS.UnitTests.Mock.Common;
 using GVFS.UnitTests.Mock.FileSystem;
 using Moq;

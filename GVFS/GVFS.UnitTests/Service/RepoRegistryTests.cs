@@ -1,6 +1,4 @@
-﻿using GVFS.Common;
-using GVFS.Service;
-using GVFS.Service.Mac;
+﻿using GVFS.Service;
 using GVFS.Tests.Should;
 using GVFS.UnitTests.Mock.Common;
 using GVFS.UnitTests.Mock.FileSystem;
@@ -9,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace GVFS.UnitTests.Service
 {
