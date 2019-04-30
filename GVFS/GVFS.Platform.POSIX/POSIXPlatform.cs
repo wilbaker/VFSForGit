@@ -97,7 +97,7 @@ namespace GVFS.Platform.POSIX
 
         public override string GetUserIdFromLoginSessionId(int sessionId, ITracer tracer)
         {
-            // There are no separate User and Session Ids on non-Windows platforms.
+            // There are no separate User and Session Ids on POSIX platforms.
             return sessionId.ToString();
         }
 

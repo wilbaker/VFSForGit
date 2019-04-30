@@ -35,14 +35,6 @@ namespace GVFS.UnitTests.Mac.Service
             this.gvfsPlatformMock.SetupGet(p => p.Constants).Returns(new MacPlatform.MacPlatformConstants());
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            this.gvfsPlatformMock = null;
-            this.fileSystem = null;
-            this.tracer = null;
-        }
-
         [TestCase]
         public void ServiceStartTriggersAutoMountForCurrentUser()
         {
