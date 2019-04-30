@@ -20,8 +20,8 @@
   <ItemGroup>
     <Compile Include="..\GVFS.PlatformLoader\PlatformLoader.Mac.cs" Link="Mac\PlatformLoader.Mac.cs" />
     <Compile Include="Configuration.cs" />
-    <Compile Include="MacGVFSMountProcess.cs" />
-    <Compile Include="MacGVFSService.cs" />
+    <Compile Include="GVFSMountProcess.Mac.cs" />
+    <Compile Include="GVFSService.Mac.cs" />
     <Compile Include="Handlers\NotificationHandler.Mac.cs" />
     <Compile Include="Handlers\RequestHandler.cs" />
     <Compile Include="Handlers\GetActiveRepoListHandler.cs" />

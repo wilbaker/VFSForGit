@@ -10,11 +10,11 @@ using System.Threading;
 
 namespace GVFS.Service
 {
-    public class MacGVFSService
+    public class GVFSService
     {
         public const string ServiceNameArgPrefix = "--servicename=";
 
-        private const string EtwArea = nameof(MacGVFSService);
+        private const string EtwArea = nameof(GVFSService);
 
         private ITracer tracer;
         private Thread serviceThread;
@@ -24,7 +24,7 @@ namespace GVFS.Service
         private RequestHandler requestHandler;
         private GVFSPlatform gvfsPlatform;
 
-        public MacGVFSService(
+        public GVFSService(
             ITracer tracer,
             string serviceName,
             IRepoRegistry repoRegistry,
@@ -77,7 +77,7 @@ namespace GVFS.Service
             {
                 EventMetadata metadata = new EventMetadata();
                 metadata.Add("Version", ProcessHelper.GetCurrentProcessVersion());
-                this.tracer.RelatedEvent(EventLevel.Informational, $"{nameof(MacGVFSService)}_{nameof(this.ServiceThreadMain)}", metadata);
+                this.tracer.RelatedEvent(EventLevel.Informational, $"{nameof(GVFSService)}_{nameof(this.ServiceThreadMain)}", metadata);
 
                 this.serviceStopped.WaitOne();
                 this.serviceStopped.Dispose();

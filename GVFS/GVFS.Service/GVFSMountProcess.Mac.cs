@@ -5,7 +5,7 @@ using System.IO;
 
 namespace GVFS.Service
 {
-    public class MacGVFSMountProcess : IRepoMounter
+    public class GVFSMountProcess : IRepoMounter
     {
         private const string ExecutablePath = "/bin/launchctl";
 
@@ -13,7 +13,7 @@ namespace GVFS.Service
         private GVFSPlatform platform;
         private ITracer tracer;
 
-        public MacGVFSMountProcess(ITracer tracer, MountLauncher processLauncher = null, GVFSPlatform platform = null)
+        public GVFSMountProcess(ITracer tracer, MountLauncher processLauncher = null, GVFSPlatform platform = null)
         {
             this.tracer = tracer;
             this.processLauncher = processLauncher ?? new MountLauncher(tracer);

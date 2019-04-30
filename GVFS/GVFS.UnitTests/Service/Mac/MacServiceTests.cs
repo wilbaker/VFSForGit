@@ -41,7 +41,7 @@ namespace GVFS.UnitTests.Service.Mac
             repoRegistry.Setup(r => r.AutoMountRepos(ExpectedActiveUserId.ToString(), ExpectedSessionId));
             repoRegistry.Setup(r => r.TraceStatus());
 
-            MacGVFSService service = new MacGVFSService(
+            GVFSService service = new GVFSService(
                 this.tracer,
                 serviceName: null,
                 repoRegistry: repoRegistry.Object,
@@ -78,7 +78,7 @@ namespace GVFS.UnitTests.Service.Mac
             string gvfsBinPath = Path.Combine("/", "usr", "local", "vfsforgit", "gvfs");
             string expectedArgs = $"asuser {ExpectedActiveUserId} {gvfsBinPath} mount {ExpectedActiveRepoPath}";
 
-            Mock<MacGVFSMountProcess.MountLauncher> mountLauncherMock = new Mock<MacGVFSMountProcess.MountLauncher>(MockBehavior.Strict, this.tracer);
+            Mock<GVFSMountProcess.MountLauncher> mountLauncherMock = new Mock<GVFSMountProcess.MountLauncher>(MockBehavior.Strict, this.tracer);
             mountLauncherMock.Setup(mp => mp.LaunchProcess(
                 executable,
                 expectedArgs,
@@ -92,7 +92,7 @@ namespace GVFS.UnitTests.Service.Mac
                 out errorString))
                 .Returns(true);
 
-            MacGVFSMountProcess mountProcess = new MacGVFSMountProcess(this.tracer, mountLauncherMock.Object, this.gvfsPlatformMock.Object);
+            GVFSMountProcess mountProcess = new GVFSMountProcess(this.tracer, mountLauncherMock.Object, this.gvfsPlatformMock.Object);
             mountProcess.MountRepository(ExpectedActiveRepoPath, ExpectedActiveUserId);
 
             mountLauncherMock.VerifyAll();
