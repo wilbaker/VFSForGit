@@ -22,19 +22,16 @@ namespace GVFS.Service
         private PhysicalFileSystem fileSystem;
         private object repoLock = new object();
         private IRepoMounter repoMounter;
-        private GVFSPlatform gvfsPlatform;
 
         public RepoRegistry(
             ITracer tracer,
             PhysicalFileSystem fileSystem,
             string serviceDataLocation,
-            GVFSPlatform gvfsPlatform,
             IRepoMounter repoMounter)
         {
             this.tracer = tracer;
             this.fileSystem = fileSystem;
             this.registryParentFolderPath = serviceDataLocation;
-            this.gvfsPlatform = gvfsPlatform;
             this.repoMounter = repoMounter;
 
             EventMetadata metadata = new EventMetadata();
@@ -171,11 +168,11 @@ namespace GVFS.Service
             return false;
         }
 
-        public void AutoMountRepos(int sessionId)
+        public void AutoMountRepos(string userId, int sessionId)
         {
             using (ITracer activity = this.tracer.StartActivity("AutoMount", EventLevel.Informational))
             {
-                List<RepoRegistration> activeRepos = this.GetActiveReposForUser(this.gvfsPlatform.GetUserIdFromLoginSessionId(sessionId, activity));
+                List<RepoRegistration> activeRepos = this.GetActiveReposForUser(userId);
                 if (activeRepos.Count == 0)
                 {
                     return;
@@ -239,7 +236,7 @@ namespace GVFS.Service
 
                                 string errorMessage;
                                 string normalizedEnlistmentRootPath = registration.EnlistmentRoot;
-                                if (this.gvfsPlatform.FileSystem.TryGetNormalizedPath(registration.EnlistmentRoot, out normalizedEnlistmentRootPath, out errorMessage))
+                                if (this.fileSystem.TryGetNormalizedPath(registration.EnlistmentRoot, out normalizedEnlistmentRootPath, out errorMessage))
                                 {
                                     if (!normalizedEnlistmentRootPath.Equals(registration.EnlistmentRoot, StringComparison.OrdinalIgnoreCase))
                                     {

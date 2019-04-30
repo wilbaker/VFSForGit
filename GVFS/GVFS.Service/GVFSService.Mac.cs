@@ -68,7 +68,6 @@ namespace GVFS.Service
                 tracer,
                 new PhysicalFileSystem(),
                 serviceDataLocation,
-                gvfsPlatform,
                 new GVFSMountProcess(tracer));
 
             new GVFSService(tracer, serviceName, repoRegistry, gvfsPlatform).RunWithArgs(args);
@@ -127,7 +126,8 @@ namespace GVFS.Service
             int currentUser;
             if (int.TryParse(this.gvfsPlatform.GetCurrentUser(), out currentUser))
             {
-                this.repoRegistry.AutoMountRepos(currentUser);
+                // On Mac, there is no separate session Id. currentUser is used as sessionId
+                this.repoRegistry.AutoMountRepos(currentUser.ToString(), currentUser);
                 this.repoRegistry.TraceStatus();
             }
             else

@@ -16,6 +16,7 @@ namespace GVFS.UnitTests.Mac.Service
     {
         private const string GVFSServiceName = "GVFS.Service";
         private const int ExpectedActiveUserId = 502;
+        private const int ExpectedSessionId = 502;
         private static readonly string ExpectedActiveRepoPath = Path.Combine("mock:", "code", "repo2");
         private static readonly string ServiceDataLocation = Path.Combine("mock:", "registryDataFolder");
 
@@ -30,7 +31,6 @@ namespace GVFS.UnitTests.Mac.Service
             this.fileSystem = new MockFileSystem(new MockDirectory(ServiceDataLocation, null, null));
             this.gvfsPlatformMock = new Mock<MacPlatform>();
             this.gvfsPlatformMock.Setup(p => p.GetCurrentUser()).Returns(ExpectedActiveUserId.ToString());
-            this.gvfsPlatformMock.Setup(p => p.GetUserIdFromLoginSessionId(ExpectedActiveUserId, It.IsAny<ITracer>())).Returns<int, ITracer>((x, y) => x.ToString());
             this.gvfsPlatformMock.SetupGet(p => p.FileSystem).Returns(new MockPlatformFileSystem());
             this.gvfsPlatformMock.SetupGet(p => p.Constants).Returns(new MacPlatform.MacPlatformConstants());
         }
@@ -39,7 +39,7 @@ namespace GVFS.UnitTests.Mac.Service
         public void ServiceStartTriggersAutoMountForCurrentUser()
         {
             Mock<IRepoRegistry> repoRegistry = new Mock<IRepoRegistry>(MockBehavior.Strict);
-            repoRegistry.Setup(r => r.AutoMountRepos(ExpectedActiveUserId));
+            repoRegistry.Setup(r => r.AutoMountRepos(ExpectedActiveUserId.ToString(), ExpectedSessionId));
             repoRegistry.Setup(r => r.TraceStatus());
 
             GVFSService service = new GVFSService(
@@ -65,10 +65,9 @@ namespace GVFS.UnitTests.Mac.Service
                 this.tracer,
                 this.fileSystem,
                 ServiceDataLocation,
-                this.gvfsPlatformMock.Object,
                 mountProcessMock.Object);
 
-            repoRegistry.AutoMountRepos(ExpectedActiveUserId);
+            repoRegistry.AutoMountRepos(ExpectedActiveUserId.ToString(), ExpectedSessionId);
 
             mountProcessMock.VerifyAll();
         }
