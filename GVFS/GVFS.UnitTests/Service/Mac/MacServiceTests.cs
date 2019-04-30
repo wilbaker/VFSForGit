@@ -1,5 +1,4 @@
 ﻿using GVFS.Common.FileSystem;
-using GVFS.Common.Tracing;
 using GVFS.Platform.Mac;
 using GVFS.Service;
 using GVFS.UnitTests.Mock.Common;
@@ -8,7 +7,7 @@ using Moq;
 using NUnit.Framework;
 using System.IO;
 
-namespace GVFS.UnitTests.Mac.Service
+namespace GVFS.UnitTests.Service.Mac
 {
     [TestFixture]
     [NonParallelizable]

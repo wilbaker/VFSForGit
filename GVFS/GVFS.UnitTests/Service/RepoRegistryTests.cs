@@ -1,27 +1,40 @@
-﻿using GVFS.Common;
-using GVFS.Service;
+﻿using GVFS.Service;
 using GVFS.Tests.Should;
 using GVFS.UnitTests.Mock.Common;
 using GVFS.UnitTests.Mock.FileSystem;
+using Moq;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace GVFS.UnitTests.Service
 {
     [TestFixture]
     public class RepoRegistryTests
     {
+        private Mock<IRepoMounter> mockRepoMounter;
+
+        [SetUp]
+        public void Setup()
+        {
+            this.mockRepoMounter = new Mock<IRepoMounter>(MockBehavior.Strict);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            this.mockRepoMounter.VerifyAll();
+        }
+
         [TestCase]
         public void TryRegisterRepo_EmptyRegistry()
         {
             string dataLocation = Path.Combine("mock:", "registryDataFolder");
 
             MockFileSystem fileSystem = new MockFileSystem(new MockDirectory(dataLocation, null, null));
-            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, new GVFSMountProcess(new MockTracer()));
+            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, this.mockRepoMounter.Object);
 
             string repoRoot = Path.Combine("c:", "test");
             string ownerSID = Guid.NewGuid().ToString();
@@ -51,7 +64,7 @@ $@"1
 {{""EnlistmentRoot"":""{repo2.Replace("\\", "\\\\")}"",""IsActive"":true}}
 ");
 
-            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, new GVFSMountProcess(new MockTracer()));
+            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, this.mockRepoMounter.Object);
             registry.Upgrade();
 
             Dictionary<string, RepoRegistration> repos = registry.ReadRegistry();
@@ -66,7 +79,7 @@ $@"1
         {
             string dataLocation = Path.Combine("mock:", "registryDataFolder");
             MockFileSystem fileSystem = new MockFileSystem(new MockDirectory(dataLocation, null, null));
-            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, new GVFSMountProcess(new MockTracer()));
+            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, this.mockRepoMounter.Object);
             registry.Upgrade();
 
             Dictionary<string, RepoRegistration> repos = registry.ReadRegistry();
@@ -78,7 +91,7 @@ $@"1
         {
             string dataLocation = Path.Combine("mock:", "registryDataFolder");
             MockFileSystem fileSystem = new MockFileSystem(new MockDirectory(dataLocation, null, null));
-            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, new GVFSMountProcess(new MockTracer()));
+            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, this.mockRepoMounter.Object);
 
             string repo1Root = Path.Combine("mock:", "test", "repo1");
             string owner1SID = Guid.NewGuid().ToString();
@@ -126,7 +139,7 @@ $@"1
         {
             string dataLocation = Path.Combine("mock:", "registryDataFolder");
             MockFileSystem fileSystem = new MockFileSystem(new MockDirectory(dataLocation, null, null));
-            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, new GVFSMountProcess(new MockTracer()));
+            RepoRegistry registry = new RepoRegistry(new MockTracer(), fileSystem, dataLocation, this.mockRepoMounter.Object);
 
             string repo1Root = Path.Combine("mock:", "test", "repo1");
             string owner1SID = Guid.NewGuid().ToString();
@@ -165,7 +178,7 @@ $@"1
             string dataLocation = Path.Combine("mock:", "registryDataFolder");
             MockFileSystem fileSystem = new MockFileSystem(new MockDirectory(dataLocation, null, null));
             MockTracer tracer = new MockTracer();
-            RepoRegistry registry = new RepoRegistry(tracer, fileSystem, dataLocation, new GVFSMountProcess(new MockTracer()));
+            RepoRegistry registry = new RepoRegistry(tracer, fileSystem, dataLocation, this.mockRepoMounter.Object);
 
             string repo1Root = Path.Combine("mock:", "test", "repo1");
             string owner1SID = Guid.NewGuid().ToString();
