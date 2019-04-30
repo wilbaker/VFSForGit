@@ -7,7 +7,7 @@ namespace GVFS.Service
 {
     public class GVFSMountProcess : IRepoMounter
     {
-        private ITracer tracer;
+        private readonly ITracer tracer;
 
         public GVFSMountProcess(ITracer tracer)
         {

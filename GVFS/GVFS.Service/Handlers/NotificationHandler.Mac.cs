@@ -22,7 +22,7 @@ namespace GVFS.Service.Handlers
         public void SendNotification(ITracer tracer, int sessionId, NamedPipeMessages.Notification.Request request)
         {
             // Log the notification till platform specific notifications become available.
-            tracer.RelatedInfo($"{request.Title} - {request.Message}.");
+            tracer.RelatedInfo($"MacOS notification: {request.Title} - {request.Message}.");
         }
     }
 }

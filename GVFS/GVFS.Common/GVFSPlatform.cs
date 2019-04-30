@@ -95,7 +95,12 @@ namespace GVFS.Common
 
             public virtual string GVFSBinDirectoryPath
             {
-                get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), this.GVFSBinDirectoryName); }
+                get
+                {
+                    return Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                        this.GVFSBinDirectoryName);
+                }
             }
 
             public virtual string GVFSBinDirectoryName
