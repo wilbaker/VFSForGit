@@ -22,12 +22,12 @@ namespace GVFS.Service
             }
         }
 
-        private static GVFSService CreateService(JsonTracer tracer, string[] args)
+        private static MacGVFSService CreateService(JsonTracer tracer, string[] args)
         {
-            string serviceName = args.FirstOrDefault(arg => arg.StartsWith(GVFSService.ServiceNameArgPrefix, StringComparison.OrdinalIgnoreCase));
+            string serviceName = args.FirstOrDefault(arg => arg.StartsWith(MacGVFSService.ServiceNameArgPrefix, StringComparison.OrdinalIgnoreCase));
             if (serviceName != null)
             {
-                serviceName = serviceName.Substring(GVFSService.ServiceNameArgPrefix.Length);
+                serviceName = serviceName.Substring(MacGVFSService.ServiceNameArgPrefix.Length);
             }
             else
             {
@@ -51,9 +51,9 @@ namespace GVFS.Service
                 tracer,
                 new PhysicalFileSystem(),
                 serviceDataLocation,
-                new GVFSMountProcess(tracer));
+                new MacGVFSMountProcess(tracer));
 
-            return new GVFSService(tracer, serviceName, repoRegistry, gvfsPlatform);
+            return new MacGVFSService(tracer, serviceName, repoRegistry, gvfsPlatform);
         }
 
         private static void UnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs e)

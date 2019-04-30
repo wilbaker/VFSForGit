@@ -27,16 +27,13 @@
     <Compile Include="Handlers\MessageHandler.cs" />
     <Compile Include="Handlers\RegisterRepoHandler.cs" />
     <Compile Include="Handlers\UnregisterRepoHandler.cs" />
-    <Compile Include="IRepoMounter.cs" />
-    <Compile Include="IRepoRegistry.cs" />
     <Compile Include="Program.Mac.cs" />
-    <Compile Include="RepoRegistration.cs" />
-    <Compile Include="RepoRegistry.cs" />
   </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\GVFS.Platform.Mac\GVFS.Platform.Mac.csproj" />
     <ProjectReference Include="..\GVFS.Common\GVFS.Common.csproj" />
+    <ProjectReference Include="..\GVFS.Service.Common\GVFS.Service.Common.csproj" />
   </ItemGroup>
   
   <ItemGroup>

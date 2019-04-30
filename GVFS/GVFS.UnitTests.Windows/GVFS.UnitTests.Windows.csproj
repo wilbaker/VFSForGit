@@ -193,11 +193,6 @@
       <Link>Readme.md</Link>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
-    <EmbeddedResource Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
-    <None Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <Analyzer Include="..\..\..\packages\StyleCop.Analyzers.1.0.2\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />

@@ -68,13 +68,9 @@
     <Compile Include="Handlers\RequestHandler.Windows.cs" />
     <Compile Include="Handlers\UnregisterRepoHandler.cs" />
     <Compile Include="Handlers\RegisterRepoHandler.cs" />
-    <Compile Include="IRepoMounter.cs" />
-    <Compile Include="IRepoRegistry.cs" />
     <Compile Include="ProductUpgradeTimer.cs" />
     <Compile Include="Program.Windows.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RepoRegistration.cs" />
-    <Compile Include="RepoRegistry.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GVFS.Common\GVFS.Common.csproj">
@@ -84,6 +80,10 @@
     <ProjectReference Include="..\GVFS.Platform.Windows\GVFS.Platform.Windows.csproj">
       <Project>{4ce404e7-d3fc-471c-993c-64615861ea63}</Project>
       <Name>GVFS.Platform.Windows</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\GVFS.Service.Common\GVFS.Service.Common.csproj">
+      <Project>{471298ab-cfef-442b-9264-ae675510d722}</Project>
+      <Name>GVFS.Service.Common</Name>
     </ProjectReference>
     <ProjectReference Include="..\GVFS.Service.UI\GVFS.Service.UI.csproj">
       <Project>{93b403fd-dafb-46c5-9636-b122792a548a}</Project>
