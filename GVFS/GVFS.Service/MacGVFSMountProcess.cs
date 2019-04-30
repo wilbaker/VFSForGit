@@ -3,9 +3,9 @@ using GVFS.Common.Tracing;
 using System.Diagnostics;
 using System.IO;
 
-namespace GVFS.Service
+namespace GVFS.Service.Mac
 {
-    public class GVFSMountProcess : IRepoMounter
+    public class MacGVFSMountProcess : IRepoMounter
     {
         private const string ExecutablePath = "/bin/launchctl";
 
@@ -13,7 +13,7 @@ namespace GVFS.Service
         private GVFSPlatform platform;
         private ITracer tracer;
 
-        public GVFSMountProcess(ITracer tracer, MountLauncher processLauncher = null, GVFSPlatform platform = null)
+        public MacGVFSMountProcess(ITracer tracer, MountLauncher processLauncher = null, GVFSPlatform platform = null)
         {
             this.tracer = tracer;
             this.processLauncher = processLauncher ?? new MountLauncher(tracer);

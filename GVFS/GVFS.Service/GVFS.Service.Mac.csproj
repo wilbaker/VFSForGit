@@ -4,7 +4,8 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>GVFS.Service</RootNamespace>
     <AssemblyName>GVFS.Service</AssemblyName>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <!-- Target netstandard2.0 as well so that .NET Framework unit tests can consume this assembly -->
+    <TargetFrameworks>netcoreapp2.1;netstandard2.0</TargetFrameworks>
     <Platforms>x64</Platforms>
     <RunTimeIdentifiers>osx-x64</RunTimeIdentifiers>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -19,8 +20,8 @@
   <ItemGroup>
     <Compile Include="..\GVFS.PlatformLoader\PlatformLoader.Mac.cs" Link="Mac\PlatformLoader.Mac.cs" />
     <Compile Include="Configuration.cs" />
-    <Compile Include="GVFSMountProcess.Mac.cs" />
-    <Compile Include="GVFSService.Mac.cs" />
+    <Compile Include="MacGVFSMountProcess.cs" />
+    <Compile Include="MacGVFSService.cs" />
     <Compile Include="Handlers\NotificationHandler.Mac.cs" />
     <Compile Include="Handlers\RequestHandler.cs" />
     <Compile Include="Handlers\GetActiveRepoListHandler.cs" />

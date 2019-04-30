@@ -157,6 +157,10 @@
       <Project>{4ce404e7-d3fc-471c-993c-64615861ea63}</Project>
       <Name>GVFS.Platform.Windows</Name>
     </ProjectReference>
+    <ProjectReference Include="..\GVFS.Service\GVFS.Service.Mac.csproj">
+      <Project>{03769a07-f216-456b-886b-e07caf6c5e81}</Project>
+      <Name>GVFS.Service.Mac</Name>
+    </ProjectReference>
     <ProjectReference Include="..\GVFS.Service\GVFS.Service.Windows.csproj">
       <Project>{b8c1dfba-cafd-4f7e-a1a3-e11907b5467b}</Project>
       <Name>GVFS.Service</Name>
@@ -193,12 +197,11 @@
       <Link>Readme.md</Link>
     </None>
   </ItemGroup>
-  <ItemGroup>
+  <!-- <ItemGroup>
     <Compile Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
     <EmbeddedResource Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
     <None Remove="..\GVFS.UnitTests\Service\MacServiceTests.cs" />
-  </ItemGroup>
-
+  </ItemGroup> -->
   <ItemGroup>
     <Analyzer Include="..\..\..\packages\StyleCop.Analyzers.1.0.2\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
     <Analyzer Include="..\..\..\packages\StyleCop.Analyzers.1.0.2\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
