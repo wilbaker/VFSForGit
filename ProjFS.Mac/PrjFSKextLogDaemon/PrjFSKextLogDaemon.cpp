@@ -16,6 +16,7 @@ static const int INVALID_SOCKET_FD = -1;
 
 static os_log_t s_daemonLogger, s_kextLogger;
 static IONotificationPortRef s_notificationPort;
+
 static int s_messageListenerSocket = INVALID_SOCKET_FD;
 static string s_messageListenerSocketPath = "/usr/local/GitService/pipe/vfs-c780ac06-135a-4e9e-ab6c-d41e2d265baa";
 
