@@ -9,6 +9,7 @@
 #include <sys/un.h>
 
 using std::string;
+using std::to_string;
 
 static const char PrjFSKextLogDaemon_OSLogSubsystem[] = "org.vfsforgit.prjfs.PrjFSKextLogDaemon";
 static const int INVALID_SOCKET_FD = -1;
@@ -24,7 +25,7 @@ static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection);
 static bool TryFetchAndLogKextHealthData(io_connect_t connection);
 
 static void CreatePipeToMessageListener();
-static void WriteToMessageListener(const string& message);
+static void WriteJsonToMessageListener(const string& jsonMessage);
 
 int main(int argc, const char* argv[])
 {
@@ -39,7 +40,7 @@ int main(int argc, const char* argv[])
     os_log(s_daemonLogger, "PrjFSKextLogDaemon starting up\n");
     
     CreatePipeToMessageListener();
-    WriteToMessageListener("Test message in startup");
+    WriteJsonToMessageListener("{\"message\":\"Starting up\"}");
 
     s_notificationPort = IONotificationPortCreate(kIOMasterPortDefault);
     IONotificationPortSetDispatchQueue(s_notificationPort, dispatch_get_main_queue());
@@ -205,7 +206,6 @@ static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection)
         10 * NSEC_PER_SEC);     // leeway
     dispatch_source_set_event_handler(timer, ^{
         CreatePipeToMessageListener();
-        WriteToMessageListener("Test message in timer");
         TryFetchAndLogKextHealthData(connection);
     });
     dispatch_resume(timer);
@@ -219,6 +219,7 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
     IOReturn ret = IOConnectCallStructMethod(connection, LogSelector_FetchVnodeCacheHealth, nullptr, 0, &healthData, &out_size);
     if (ret == kIOReturnUnsupported)
     {
+        WriteJsonToMessageListener("{\"ErrorMessage\":\"IOConnectCallStructMethod failed for LogSelector_FetchVnodeCacheHealth, kIOReturnUnsupported \"}");
         return false;
     }
     else if (ret == kIOReturnSuccess)
@@ -236,9 +237,30 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
             healthData.totalFindRootForVnodeMisses,
             healthData.totalRefreshRootForVnode,
             healthData.totalInvalidateVnodeRoot);
+        
+        WriteJsonToMessageListener(
+        "{"
+            "\"Message\":\"Vnode cache health\","
+            "\"CacheCapacity\":\"" + to_string(healthData.cacheCapacity) + "\","
+            "\"CacheEntries\":\"" + to_string(healthData.cacheEntries) + "\","
+            "\"InvalidationCount\":\"" + to_string(healthData.invalidateEntireCacheCount) + "\","
+            "\"CacheLookups\":\"" + to_string(healthData.totalCacheLookups) + "\","
+            "\"LookupCollisions\":\"" + to_string(healthData.totalLookupCollisions) + "\","
+            "\"FindRootHits\":\"" + to_string(healthData.totalFindRootForVnodeHits) + "\","
+            "\"FindRootMisses\":\"" + to_string(healthData.totalFindRootForVnodeMisses) + "\","
+            "\"RefreshRoot\":\"" + to_string(healthData.totalRefreshRootForVnode) + "\","
+            "\"InvalidateRoot\":\"" + to_string(healthData.totalInvalidateVnodeRoot) + "\","
+        "}");
+        
     }
     else
     {
+        WriteJsonToMessageListener(
+        "{"
+            "\"ErrorMessage\":\"Fetching profiling data from kernel failed\","
+            "\"ret\":\"" + to_string(ret) + "\","
+        "}");
+        
         fprintf(stderr, "fetching profiling data from kernel failed: 0x%x\n", ret);
         return false;
     }
@@ -337,10 +359,10 @@ ClosePipeAndCleanup:
     }
 }
 
-static void WriteToMessageListener(const string& message)
+static void WriteJsonToMessageListener(const string& jsonMessage)
 {
     printf("WriteToMessageListener: %s\n",
-        message.c_str(),
+        jsonMessage.c_str(),
         errno);
     fflush(stdout);
 
@@ -349,10 +371,16 @@ static void WriteToMessageListener(const string& message)
         return;
     }
 
-    //string jsonMessage = "{\\\"version\\\":\\\"0.2.173.2\\\",\\\"providerName\\\":\\\"Microsoft.Git.GVFS\\\",\\\"eventName\\\":\\\"PrjFSKextLogDaemon\\\",\\\"eventLevel\\\":2,\\\"eventOpcode\\\":0,\\\"payload\\\":{\\\"enlistmentId\\\":null,\\\"mountId\\\":null,\\\"gitCommandSessionId\\\":null,\\\"json\\\":\\\"{\\\\\\\"Version\\\\\\\":\\\\\\\"0.2.173.2\\\\\\\",\\\\\\\"Message\\\\\\\":\\\\\\\"" + message + "\\\\\\\"}\\\"}}";
-
     // TODO: Properly version Mac native binaries
-    string jsonMessage = "{\"version\":\"0.6.XXX.X\",\"providerName\":\"Microsoft.Git.GVFS\", \"eventName\":\"PrjFSKextLogDaemon\",\"eventLevel\":2, \"eventOpcode\":0,\"payload\":{\"message\":\"" + message + "\"}}\n";
+    string fullMessage =
+    "{\""
+        "version\":\"0.6.XXX.X\","
+        "\"providerName\":\"Microsoft.Git.GVFS\","
+        "\"eventName\":\"PrjFSKextLogDaemon\","
+        "\"eventLevel\":2,"
+        "\"eventOpcode\":0,"
+        "\"payload\":" + jsonMessage + ""
+    "}\n";
 
     size_t bytesWritten;
     
@@ -361,25 +389,25 @@ static void WriteToMessageListener(const string& message)
     
     do
     {
-        bytesWritten = write(s_messageListenerSocket, jsonMessage.c_str(), jsonMessage.length());
+        bytesWritten = write(s_messageListenerSocket, fullMessage.c_str(), fullMessage.length());
     } while (bytesWritten == -1 && errno == EINTR);
     
     printf("Message written, num bytes: %lu\n", bytesWritten);
     fflush(stdout);
     
     int error = errno;
-    if (bytesWritten != jsonMessage.length())
+    if (bytesWritten != fullMessage.length())
     {
         os_log_with_type(
             s_kextLogger,
             OS_LOG_TYPE_DEFAULT,
             "Failed to write message '%s' to listener.  Error: %d, Bytes written: %lu",
-            jsonMessage.c_str(),
+            fullMessage.c_str(),
             error,
             bytesWritten);
         
         printf("Failed to write message '%s' to listener.  Error: %d, Bytes written: %lu",
-            jsonMessage.c_str(),
+            fullMessage.c_str(),
             error,
             bytesWritten);
         fflush(stdout);
