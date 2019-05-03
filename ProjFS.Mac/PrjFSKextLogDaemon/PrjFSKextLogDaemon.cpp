@@ -5,16 +5,28 @@
 #include <OS/log.h>
 #include <IOKit/IOKitLib.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+using std::string;
+using std::to_string;
 
 static const char PrjFSKextLogDaemon_OSLogSubsystem[] = "org.vfsforgit.prjfs.PrjFSKextLogDaemon";
+static const int INVALID_SOCKET_FD = -1;
 
 static os_log_t s_daemonLogger, s_kextLogger;
 static IONotificationPortRef s_notificationPort;
+
+static int s_messageListenerSocket = INVALID_SOCKET_FD;
+static string s_messageListenerSocketPath = "/usr/local/GitService/pipe/vfs-c780ac06-135a-4e9e-ab6c-d41e2d265baa";
 
 static void StartLoggingKextMessages(io_connect_t connection, io_service_t service, os_log_t daemonLogger, os_log_t kextLogger);
 static void SetupExitSignalHandler();
 static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection);
 static bool TryFetchAndLogKextHealthData(io_connect_t connection);
+
+static void CreatePipeToMessageListener();
+static void WriteJsonToMessageListener(const string& jsonMessage);
 
 int main(int argc, const char* argv[])
 {
@@ -27,6 +39,9 @@ int main(int argc, const char* argv[])
     s_kextLogger = os_log_create(PrjFSKextLogDaemon_OSLogSubsystem, "kext");
     
     os_log(s_daemonLogger, "PrjFSKextLogDaemon starting up");
+    
+    CreatePipeToMessageListener();
+    WriteJsonToMessageListener("{\"message\":\"PrjFSKextLogDaemon starting up\"}");
 
     s_notificationPort = IONotificationPortCreate(kIOMasterPortDefault);
     IONotificationPortSetDispatchQueue(s_notificationPort, dispatch_get_main_queue());
@@ -191,6 +206,8 @@ static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection)
         30 * 60 * NSEC_PER_SEC, // interval
         10 * NSEC_PER_SEC);     // leeway
     dispatch_source_set_event_handler(timer, ^{
+        // Every time the timer fires attempt to connect (if not already connected)
+        CreatePipeToMessageListener();
         TryFetchAndLogKextHealthData(connection);
     });
     dispatch_resume(timer);
@@ -204,6 +221,7 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
     IOReturn ret = IOConnectCallStructMethod(connection, LogSelector_FetchVnodeCacheHealth, nullptr, 0, &healthData, &out_size);
     if (ret == kIOReturnUnsupported)
     {
+        WriteJsonToMessageListener("{\"ErrorMessage\":\"IOConnectCallStructMethod failed for LogSelector_FetchVnodeCacheHealth, kIOReturnUnsupported \"}");
         return false;
     }
     else if (ret == kIOReturnSuccess)
@@ -221,12 +239,141 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
             healthData.totalFindRootForVnodeMisses,
             healthData.totalRefreshRootForVnode,
             healthData.totalInvalidateVnodeRoot);
+        
+        WriteJsonToMessageListener(
+        "{"
+            "\"Message\":\"Vnode cache health\","
+            "\"CacheCapacity\":\"" + to_string(healthData.cacheCapacity) + "\","
+            "\"CacheEntries\":\"" + to_string(healthData.cacheEntries) + "\","
+            "\"InvalidationCount\":\"" + to_string(healthData.invalidateEntireCacheCount) + "\","
+            "\"CacheLookups\":\"" + to_string(healthData.totalCacheLookups) + "\","
+            "\"LookupCollisions\":\"" + to_string(healthData.totalLookupCollisions) + "\","
+            "\"FindRootHits\":\"" + to_string(healthData.totalFindRootForVnodeHits) + "\","
+            "\"FindRootMisses\":\"" + to_string(healthData.totalFindRootForVnodeMisses) + "\","
+            "\"RefreshRoot\":\"" + to_string(healthData.totalRefreshRootForVnode) + "\","
+            "\"InvalidateRoot\":\"" + to_string(healthData.totalInvalidateVnodeRoot) + "\","
+        "}");
+        
     }
     else
     {
+        WriteJsonToMessageListener(
+        "{"
+            "\"ErrorMessage\":\"Fetching profiling data from kernel failed\","
+            "\"ret\":\"" + to_string(ret) + "\","
+        "}");
+        
         fprintf(stderr, "fetching profiling data from kernel failed: 0x%x\n", ret);
         return false;
     }
     
     return true;
+}
+
+static void CreatePipeToMessageListener()
+{
+    if (INVALID_SOCKET_FD != s_messageListenerSocket)
+    {
+        // Already connected
+        return;
+    }
+
+    s_messageListenerSocket = socket(PF_UNIX, SOCK_STREAM, 0);
+    if (s_messageListenerSocket < 0)
+    {
+        os_log_with_type(
+            s_kextLogger,
+            OS_LOG_TYPE_DEFAULT,
+            "Failed to create a new socket, path: %s, error: %d",
+            s_messageListenerSocketPath.c_str(),
+            errno);
+        
+        s_messageListenerSocket = INVALID_SOCKET_FD;
+        return;
+    }
+    
+    struct sockaddr_un socket_address;
+    memset(&socket_address, 0, sizeof(struct sockaddr_un));
+    
+    socket_address.sun_family = AF_UNIX;
+    size_t resultLength = strlcpy(socket_address.sun_path, s_messageListenerSocketPath.c_str(), sizeof(socket_address.sun_path));
+    
+    if (resultLength >= sizeof(socket_address.sun_path))
+    {
+        os_log_with_type(
+            s_kextLogger,
+            OS_LOG_TYPE_DEFAULT,
+            "Could not copy socket path: %s, insufficient buffer. resultLength: %lu, sizeof(socket_address.sun_path): %lu",
+            s_messageListenerSocketPath.c_str(),
+            resultLength,
+            sizeof(socket_address.sun_path));
+        
+        goto ClosePipeAndCleanup;
+    }
+    
+    if(0 == connect(s_messageListenerSocket, (struct sockaddr *) &socket_address, sizeof(struct sockaddr_un)))
+    {
+        os_log_with_type(
+            s_kextLogger,
+            OS_LOG_TYPE_DEFAULT,
+            "Connected to message listener on socket '%s'",
+            s_messageListenerSocketPath.c_str());
+        return;
+    }
+    
+    os_log_with_type(
+        s_kextLogger,
+        OS_LOG_TYPE_DEFAULT,
+        "Failed to connect socket, pipeName: %s, error: %d",
+        s_messageListenerSocketPath.c_str(),
+        errno);
+    
+ClosePipeAndCleanup:
+
+    if (INVALID_SOCKET_FD != s_messageListenerSocket)
+    {
+        close(s_messageListenerSocket);
+        s_messageListenerSocket = INVALID_SOCKET_FD;
+    }
+}
+
+static void WriteJsonToMessageListener(const string& jsonMessage)
+{
+    if (INVALID_SOCKET_FD == s_messageListenerSocket)
+    {
+        return;
+    }
+
+    // TODO: Properly version PrjFSKextLogDaemon and other Mac binaries
+    string fullMessage =
+    "{\""
+        "version\":\"0.6.XXX.X\","
+        "\"providerName\":\"Microsoft.Git.GVFS\","
+        "\"eventName\":\"PrjFSKextLogDaemon\","
+        "\"eventLevel\":2,"
+        "\"eventOpcode\":0,"
+        "\"payload\":" + jsonMessage + ""
+    "}\n";
+
+    size_t bytesWritten;
+    do
+    {
+        bytesWritten = write(s_messageListenerSocket, fullMessage.c_str(), fullMessage.length());
+    } while (bytesWritten == -1 && errno == EINTR);
+    
+    int error = errno;
+    if (bytesWritten != fullMessage.length())
+    {
+        os_log_with_type(
+            s_kextLogger,
+            OS_LOG_TYPE_DEFAULT,
+            "Failed to write message '%s' to listener.  Error: %d, Bytes written: %lu",
+            fullMessage.c_str(),
+            error,
+            bytesWritten);
+
+        // If anything goes wrong close the socket.  The next time the timer fires we'll re-connect
+        close(s_messageListenerSocket);
+        s_messageListenerSocket = INVALID_SOCKET_FD;
+    }
 }
