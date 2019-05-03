@@ -121,7 +121,7 @@ PIPE_HANDLE CreatePipeToGVFS(const PATH_STRING& pipeName)
     if (resultLength >= sizeof(socket_address.sun_path))
     {
         die(ReturnCode::PipeConnectError,
-            "Could not copy pipeName: %ls, insufficient buffer. resultLength: %d, sizeof(socket_address.sun_path): %d\n",
+            "Could not copy pipeName: %s, insufficient buffer. resultLength: %lu, sizeof(socket_address.sun_path): %lu\n",
             pipeName.c_str(),
             resultLength,
             sizeof(socket_address.sun_path));
@@ -142,7 +142,11 @@ void DisableCRLFTranslationOnStdPipes()
 
 bool WriteToPipe(PIPE_HANDLE pipe, const char* message, size_t messageLength, /* out */ size_t* bytesWritten, /* out */ int* error)
 {
-    *bytesWritten = write(pipe, message, messageLength);
+    do
+    {
+        *bytesWritten = write(pipe, message, messageLength);
+    } while (*bytesWritten == -1 && errno == EINTR);
+
     bool success = *bytesWritten == messageLength;
     *error = success ? 0 : errno;
     return success;

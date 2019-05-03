@@ -5,16 +5,26 @@
 #include <OS/log.h>
 #include <IOKit/IOKitLib.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+using std::string;
 
 static const char PrjFSKextLogDaemon_OSLogSubsystem[] = "org.vfsforgit.prjfs.PrjFSKextLogDaemon";
+static const int INVALID_SOCKET_FD = -1;
 
 static os_log_t s_daemonLogger, s_kextLogger;
 static IONotificationPortRef s_notificationPort;
+static int s_messageListenerSocket = INVALID_SOCKET_FD;
+static string s_messageListenerSocketPath = "/usr/local/GitService/pipe/git-c780ac06-135a-4e9e-ab6c-d41e2d265baa";
 
 static void StartLoggingKextMessages(io_connect_t connection, io_service_t service, os_log_t daemonLogger, os_log_t kextLogger);
 static void SetupExitSignalHandler();
 static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection);
 static bool TryFetchAndLogKextHealthData(io_connect_t connection);
+
+static void CreatePipeToMessageListener();
+static void WriteToMessageListener(const string& message);
 
 int main(int argc, const char* argv[])
 {
@@ -188,9 +198,10 @@ static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection)
     dispatch_source_set_timer(
         timer,
         DISPATCH_TIME_NOW,      // start
-        30 * 60 * NSEC_PER_SEC, // interval
+        30 /* * 60 */ * NSEC_PER_SEC, // interval
         10 * NSEC_PER_SEC);     // leeway
     dispatch_source_set_event_handler(timer, ^{
+        CreatePipeToMessageListener();
         TryFetchAndLogKextHealthData(connection);
     });
     dispatch_resume(timer);
@@ -221,6 +232,8 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
             healthData.totalFindRootForVnodeMisses,
             healthData.totalRefreshRootForVnode,
             healthData.totalInvalidateVnodeRoot);
+        
+        WriteToMessageListener("Test message");
     }
     else
     {
@@ -229,4 +242,101 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
     }
     
     return true;
+}
+
+static void CreatePipeToMessageListener()
+{
+    if (INVALID_SOCKET_FD != s_messageListenerSocket)
+    {
+        // Already connected
+        return;
+    }
+
+    s_messageListenerSocket = socket(PF_UNIX, SOCK_STREAM, 0);
+    if (s_messageListenerSocket < 0)
+    {
+        os_log_with_type(
+            s_kextLogger,
+            OS_LOG_TYPE_DEFAULT,
+            "Failed to create a new socket, path: %s, error: %d",
+            s_messageListenerSocketPath.c_str(),
+            errno);
+        
+        s_messageListenerSocket = INVALID_SOCKET_FD;
+        return;
+    }
+    
+    struct sockaddr_un socket_address;
+    memset(&socket_address, 0, sizeof(struct sockaddr_un));
+    
+    socket_address.sun_family = AF_UNIX;
+    size_t resultLength = strlcpy(socket_address.sun_path, s_messageListenerSocketPath.c_str(), sizeof(socket_address.sun_path));
+    
+    if (resultLength >= sizeof(socket_address.sun_path))
+    {
+        os_log_with_type(
+            s_kextLogger,
+            OS_LOG_TYPE_DEFAULT,
+            "Could not copy socket path: %s, insufficient buffer. resultLength: %lu, sizeof(socket_address.sun_path): %lu",
+            s_messageListenerSocketPath.c_str(),
+            resultLength,
+            sizeof(socket_address.sun_path));
+        
+        goto ClosePipeAndCleanup;
+    }
+    
+    if(0 == connect(s_messageListenerSocket, (struct sockaddr *) &socket_address, sizeof(struct sockaddr_un)))
+    {
+        os_log_with_type(
+            s_kextLogger,
+            OS_LOG_TYPE_DEFAULT,
+            "Connected to message listener on socket '%s'",
+            s_messageListenerSocketPath.c_str());
+    
+        return;
+    }
+    
+    os_log_with_type(
+        s_kextLogger,
+        OS_LOG_TYPE_DEFAULT,
+        "Failed to connect socket, pipeName: %s, error: %d",
+        s_messageListenerSocketPath.c_str(),
+        errno);
+    
+ClosePipeAndCleanup:
+
+    if (INVALID_SOCKET_FD != s_messageListenerSocket)
+    {
+        close(s_messageListenerSocket);
+        s_messageListenerSocket = INVALID_SOCKET_FD;
+    }
+}
+
+static void WriteToMessageListener(const string& message)
+{
+    if (INVALID_SOCKET_FD == s_messageListenerSocket)
+    {
+        return;
+    }
+
+    string jsonMessage = "{\\\"version\\\":\\\"0.2.173.2\\\",\\\"providerName\\\":\\\"Microsoft.Git.GVFS\\\",\\\"eventName\\\":\\\"PrjFSKextLogDaemon\\\",\\\"eventLevel\\\":2,\\\"eventOpcode\\\":0,\\\"payload\\\":{\\\"enlistmentId\\\":null,\\\"mountId\\\":null,\\\"gitCommandSessionId\\\":null,\\\"json\\\":\\\"{\\\\\\\"Version\\\\\\\":\\\\\\\"0.2.173.2\\\\\\\",\\\\\\\"Message\\\\\\\":\\\\\\\"" + message + "\\\\\\\"}\\\"}}";
+
+    size_t bytesWritten;
+    
+    do
+    {
+        bytesWritten = write(s_messageListenerSocket, jsonMessage.c_str(), jsonMessage.length());
+    } while (bytesWritten == -1 && errno == EINTR);
+    
+    int error = errno;
+    if (bytesWritten != jsonMessage.length())
+    {
+        os_log_with_type(
+            s_kextLogger,
+            OS_LOG_TYPE_DEFAULT,
+            "Failed to write message '%s' to listener.  Error: %d, Bytes written: %lu",
+            jsonMessage.c_str(),
+            error,
+            bytesWritten);
+    }
 }
