@@ -16,7 +16,7 @@ static const int INVALID_SOCKET_FD = -1;
 static os_log_t s_daemonLogger, s_kextLogger;
 static IONotificationPortRef s_notificationPort;
 static int s_messageListenerSocket = INVALID_SOCKET_FD;
-static string s_messageListenerSocketPath = "/usr/local/GitService/pipe/git-c780ac06-135a-4e9e-ab6c-d41e2d265baa";
+static string s_messageListenerSocketPath = "/usr/local/GitService/pipe/vfs-c780ac06-135a-4e9e-ab6c-d41e2d265baa";
 
 static void StartLoggingKextMessages(io_connect_t connection, io_service_t service, os_log_t daemonLogger, os_log_t kextLogger);
 static void SetupExitSignalHandler();
@@ -36,7 +36,10 @@ int main(int argc, const char* argv[])
     s_daemonLogger = os_log_create(PrjFSKextLogDaemon_OSLogSubsystem, "daemon");
     s_kextLogger = os_log_create(PrjFSKextLogDaemon_OSLogSubsystem, "kext");
     
-    os_log(s_daemonLogger, "PrjFSKextLogDaemon starting up");
+    os_log(s_daemonLogger, "PrjFSKextLogDaemon starting up\n");
+    
+    CreatePipeToMessageListener();
+    WriteToMessageListener("Test message in startup");
 
     s_notificationPort = IONotificationPortCreate(kIOMasterPortDefault);
     IONotificationPortSetDispatchQueue(s_notificationPort, dispatch_get_main_queue());
@@ -153,9 +156,6 @@ static void StartLoggingKextMessages(io_connect_t connection, io_service_t prjfs
         timer = StartKextHealthDataPolling(connection);
     }
 
-    CreatePipeToMessageListener();
-    WriteToMessageListener("Test message in startup");
-
     PrjFSService_WatchForServiceTermination(
         prjfsService,
         s_notificationPort,
@@ -248,6 +248,9 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
 
 static void CreatePipeToMessageListener()
 {
+    printf("CreatePipeToMessageListener");
+    fflush(stdout);
+    
     if (INVALID_SOCKET_FD != s_messageListenerSocket)
     {
         // Already connected
@@ -263,6 +266,11 @@ static void CreatePipeToMessageListener()
             "Failed to create a new socket, path: %s, error: %d",
             s_messageListenerSocketPath.c_str(),
             errno);
+        
+        printf("Failed to create a new socket, path: %s, error: %d\n",
+            s_messageListenerSocketPath.c_str(),
+            errno);
+        fflush(stdout);
         
         s_messageListenerSocket = INVALID_SOCKET_FD;
         return;
@@ -284,6 +292,12 @@ static void CreatePipeToMessageListener()
             resultLength,
             sizeof(socket_address.sun_path));
         
+        printf("Could not copy socket path: %s, insufficient buffer. resultLength: %lu, sizeof(socket_address.sun_path): %lu\n",
+            s_messageListenerSocketPath.c_str(),
+            resultLength,
+            sizeof(socket_address.sun_path));
+        fflush(stdout);
+        
         goto ClosePipeAndCleanup;
     }
     
@@ -295,6 +309,10 @@ static void CreatePipeToMessageListener()
             "Connected to message listener on socket '%s'",
             s_messageListenerSocketPath.c_str());
     
+        printf("Connected to message listener on socket '%s'\n",
+                s_messageListenerSocketPath.c_str());
+        fflush(stdout);
+    
         return;
     }
     
@@ -304,6 +322,11 @@ static void CreatePipeToMessageListener()
         "Failed to connect socket, pipeName: %s, error: %d",
         s_messageListenerSocketPath.c_str(),
         errno);
+    
+    printf("Failed to connect socket, pipeName: %s, error: %d\n",
+        s_messageListenerSocketPath.c_str(),
+        errno);
+    fflush(stdout);
     
 ClosePipeAndCleanup:
 
@@ -316,19 +339,33 @@ ClosePipeAndCleanup:
 
 static void WriteToMessageListener(const string& message)
 {
+    printf("WriteToMessageListener: %s\n",
+        message.c_str(),
+        errno);
+    fflush(stdout);
+
     if (INVALID_SOCKET_FD == s_messageListenerSocket)
     {
         return;
     }
 
-    string jsonMessage = "{\\\"version\\\":\\\"0.2.173.2\\\",\\\"providerName\\\":\\\"Microsoft.Git.GVFS\\\",\\\"eventName\\\":\\\"PrjFSKextLogDaemon\\\",\\\"eventLevel\\\":2,\\\"eventOpcode\\\":0,\\\"payload\\\":{\\\"enlistmentId\\\":null,\\\"mountId\\\":null,\\\"gitCommandSessionId\\\":null,\\\"json\\\":\\\"{\\\\\\\"Version\\\\\\\":\\\\\\\"0.2.173.2\\\\\\\",\\\\\\\"Message\\\\\\\":\\\\\\\"" + message + "\\\\\\\"}\\\"}}";
+    //string jsonMessage = "{\\\"version\\\":\\\"0.2.173.2\\\",\\\"providerName\\\":\\\"Microsoft.Git.GVFS\\\",\\\"eventName\\\":\\\"PrjFSKextLogDaemon\\\",\\\"eventLevel\\\":2,\\\"eventOpcode\\\":0,\\\"payload\\\":{\\\"enlistmentId\\\":null,\\\"mountId\\\":null,\\\"gitCommandSessionId\\\":null,\\\"json\\\":\\\"{\\\\\\\"Version\\\\\\\":\\\\\\\"0.2.173.2\\\\\\\",\\\\\\\"Message\\\\\\\":\\\\\\\"" + message + "\\\\\\\"}\\\"}}";
+
+    // TODO: Properly version Mac native binaries
+    string jsonMessage = "{\"version\":\"0.6.XXX.X\",\"providerName\":\"Microsoft.Git.GVFS\", \"eventName\":\"PrjFSKextLogDaemon\",\"eventLevel\":2, \"eventOpcode\":0,\"payload\":{\"message\":\"" + message + "\"}}\n";
 
     size_t bytesWritten;
+    
+    printf("Writing message\n");
+    fflush(stdout);
     
     do
     {
         bytesWritten = write(s_messageListenerSocket, jsonMessage.c_str(), jsonMessage.length());
     } while (bytesWritten == -1 && errno == EINTR);
+    
+    printf("Message written, num bytes: %lu\n", bytesWritten);
+    fflush(stdout);
     
     int error = errno;
     if (bytesWritten != jsonMessage.length())
@@ -340,5 +377,14 @@ static void WriteToMessageListener(const string& message)
             jsonMessage.c_str(),
             error,
             bytesWritten);
+        
+        printf("Failed to write message '%s' to listener.  Error: %d, Bytes written: %lu",
+            jsonMessage.c_str(),
+            error,
+            bytesWritten);
+        fflush(stdout);
+        
+        close(s_messageListenerSocket);
+        s_messageListenerSocket = INVALID_SOCKET_FD;
     }
 }
