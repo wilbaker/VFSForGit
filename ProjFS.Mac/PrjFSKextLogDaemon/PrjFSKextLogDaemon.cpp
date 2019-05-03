@@ -153,6 +153,9 @@ static void StartLoggingKextMessages(io_connect_t connection, io_service_t prjfs
         timer = StartKextHealthDataPolling(connection);
     }
 
+    CreatePipeToMessageListener();
+    WriteToMessageListener("Test message in startup");
+
     PrjFSService_WatchForServiceTermination(
         prjfsService,
         s_notificationPort,
@@ -202,6 +205,7 @@ static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection)
         10 * NSEC_PER_SEC);     // leeway
     dispatch_source_set_event_handler(timer, ^{
         CreatePipeToMessageListener();
+        WriteToMessageListener("Test message in timer");
         TryFetchAndLogKextHealthData(connection);
     });
     dispatch_resume(timer);
@@ -232,8 +236,6 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
             healthData.totalFindRootForVnodeMisses,
             healthData.totalRefreshRootForVnode,
             healthData.totalInvalidateVnodeRoot);
-        
-        WriteToMessageListener("Test message");
     }
     else
     {
