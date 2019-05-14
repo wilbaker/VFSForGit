@@ -61,6 +61,49 @@ void JsonWriter::AddKey(const string& key)
 
 void JsonWriter::AddStringValue(const string& value)
 {
-    // TODO: Escape characters properly
-    this->jsonBuffer += "\"" + value + "\"";
+    this->jsonBuffer += "\"";
+    
+    for (char c : value)
+    {
+        if (c == '"')
+        {
+            this->jsonBuffer += "\\\"";
+        }
+        else if (c == '\\')
+        {
+            this->jsonBuffer += "\\\\";
+        }
+        else if (c == '\n')
+        {
+            this->jsonBuffer += "\\n";
+        }
+        else if (c == '\r')
+        {
+            this->jsonBuffer += "\\r";
+        }
+        else if (c == '\t')
+        {
+            this->jsonBuffer += "\\t";
+        }
+        else if (c == '\f')
+        {
+            this->jsonBuffer += "\\f";
+        }
+        else if (c == '\b')
+        {
+            this->jsonBuffer += "\\b";
+        }
+        else if (static_cast<unsigned char>(c) < 0x20)
+        {
+            char buffer[16];
+            snprintf(buffer, sizeof(buffer), "\\u%04x", c);
+            this->jsonBuffer += buffer;
+        }
+        else
+        {
+            this->jsonBuffer += c;
+        }
+    }
+    
+    this->jsonBuffer += "\"";
 }
