@@ -30,6 +30,7 @@
 		264758CE21FA71140095B9F8 /* VnodeCacheTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 264758CD21FA71140095B9F8 /* VnodeCacheTests.mm */; };
 		264758CF21FA71E10095B9F8 /* VnodeCache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 264758C721EFBA8B0095B9F8 /* VnodeCache.cpp */; };
 		265504D0224ADE11005FAD74 /* MockPerfTracing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 265504CE224ADE11005FAD74 /* MockPerfTracing.cpp */; };
+		26786AE7228B816E00F53311 /* JsonWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26786AE6228B816E00F53311 /* JsonWriter.cpp */; };
 		43057C5E21E439C700487681 /* prjfs-log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43057C5B21E439C700487681 /* prjfs-log.cpp */; };
 		43057C5F21E439C700487681 /* kext-perf-tracing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43057C5C21E439C700487681 /* kext-perf-tracing.cpp */; };
 		4391F8A821E42AC50008103C /* Locks.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 4391F88E21E42AC40008103C /* Locks.hpp */; };
@@ -157,6 +158,8 @@
 		264758CB21FA709B0095B9F8 /* VnodeCacheTestable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VnodeCacheTestable.hpp; sourceTree = "<group>"; };
 		264758CD21FA71140095B9F8 /* VnodeCacheTests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VnodeCacheTests.mm; sourceTree = "<group>"; };
 		265504CE224ADE11005FAD74 /* MockPerfTracing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MockPerfTracing.cpp; sourceTree = "<group>"; };
+		26786AE5228B815E00F53311 /* JsonWriter.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = JsonWriter.hpp; sourceTree = "<group>"; };
+		26786AE6228B816E00F53311 /* JsonWriter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = JsonWriter.cpp; sourceTree = "<group>"; };
 		43057C5B21E439C700487681 /* prjfs-log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "prjfs-log.cpp"; sourceTree = "<group>"; };
 		43057C5C21E439C700487681 /* kext-perf-tracing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "kext-perf-tracing.cpp"; sourceTree = "<group>"; };
 		43057C5D21E439C700487681 /* kext-perf-tracing.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = "kext-perf-tracing.hpp"; sourceTree = "<group>"; };
@@ -387,6 +390,8 @@
 				4A08257221E77BDD00E21AFD /* Info.plist */,
 				4A08257021E77BDD00E21AFD /* org.vfsforgit.prjfs.PrjFSKextLogDaemon.plist */,
 				4A08257121E77BDD00E21AFD /* PrjFSKextLogDaemon.cpp */,
+				26786AE5228B815E00F53311 /* JsonWriter.hpp */,
+				26786AE6228B816E00F53311 /* JsonWriter.cpp */,
 			);
 			path = PrjFSKextLogDaemon;
 			sourceTree = "<group>";
@@ -705,6 +710,7 @@
 			files = (
 				4A08257821E77C5400E21AFD /* PrjFSUser.cpp in Sources */,
 				4A08257321E77BDD00E21AFD /* PrjFSKextLogDaemon.cpp in Sources */,
+				26786AE7228B816E00F53311 /* JsonWriter.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
