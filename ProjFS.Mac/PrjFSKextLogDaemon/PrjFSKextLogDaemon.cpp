@@ -2,12 +2,15 @@
 #include "../PrjFSKext/public/PrjFSVnodeCacheHealth.h"
 #include "../PrjFSLib/PrjFSUser.hpp"
 #include <iostream>
+#include <mutex>
 #include <OS/log.h>
 #include <IOKit/IOKitLib.h>
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
+using std::lock_guard;
+using std::mutex;
 using std::string;
 using std::to_string;
 
@@ -19,6 +22,7 @@ static IONotificationPortRef s_notificationPort;
 
 static int s_messageListenerSocket = INVALID_SOCKET_FD;
 static string s_messageListenerSocketPath = "/usr/local/GitService/pipe/vfs-c780ac06-135a-4e9e-ab6c-d41e2d265baa";
+static mutex s_messageListenerMutex;
 
 static void StartLoggingKextMessages(io_connect_t connection, io_service_t service, os_log_t daemonLogger, os_log_t kextLogger);
 static void SetupExitSignalHandler();
@@ -257,6 +261,8 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
 
 static void CreatePipeToMessageListener()
 {
+    lock_guard<mutex> lock(s_messageListenerMutex);
+    
     if (INVALID_SOCKET_FD != s_messageListenerSocket)
     {
         // Already connected
@@ -362,6 +368,8 @@ static void WriteHealthDataToMessageListener(const PrjFSVnodeCacheHealth& health
 
 static void WriteJsonToMessageListener(const string& eventName, const string& jsonMessage)
 {
+    lock_guard<mutex> lock(s_messageListenerMutex);
+    
     if (INVALID_SOCKET_FD == s_messageListenerSocket)
     {
         return;
