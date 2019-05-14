@@ -26,7 +26,10 @@ static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection);
 static bool TryFetchAndLogKextHealthData(io_connect_t connection);
 
 static void CreatePipeToMessageListener();
-static void WriteJsonToMessageListener(const string& jsonMessage);
+static void WriteHealthDataToMessageListener(const PrjFSVnodeCacheHealth& healthData);
+static void WriteInfoMessageToMessageListener(const string& message);
+static void WriteErrorMessageToMessageListener(const string& message, const IOReturn ioReturn);
+static void WriteJsonToMessageListener(const string& eventName, const string& jsonMessage);
 
 int main(int argc, const char* argv[])
 {
@@ -41,7 +44,7 @@ int main(int argc, const char* argv[])
     os_log(s_daemonLogger, "PrjFSKextLogDaemon starting up");
     
     CreatePipeToMessageListener();
-    WriteJsonToMessageListener("{\"message\":\"PrjFSKextLogDaemon starting up\"}");
+    WriteInfoMessageToMessageListener("PrjFSKextLogDaemon starting up");
 
     s_notificationPort = IONotificationPortCreate(kIOMasterPortDefault);
     IONotificationPortSetDispatchQueue(s_notificationPort, dispatch_get_main_queue());
@@ -221,7 +224,7 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
     IOReturn ret = IOConnectCallStructMethod(connection, LogSelector_FetchVnodeCacheHealth, nullptr, 0, &healthData, &out_size);
     if (ret == kIOReturnUnsupported)
     {
-        WriteJsonToMessageListener("{\"ErrorMessage\":\"IOConnectCallStructMethod failed for LogSelector_FetchVnodeCacheHealth, kIOReturnUnsupported \"}");
+        WriteErrorMessageToMessageListener("IOConnectCallStructMethod failed for LogSelector_FetchVnodeCacheHealth", ret);
         return false;
     }
     else if (ret == kIOReturnSuccess)
@@ -240,29 +243,11 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
             healthData.totalRefreshRootForVnode,
             healthData.totalInvalidateVnodeRoot);
         
-        WriteJsonToMessageListener(
-        "{"
-            "\"Message\":\"Vnode cache health\","
-            "\"CacheCapacity\":\"" + to_string(healthData.cacheCapacity) + "\","
-            "\"CacheEntries\":\"" + to_string(healthData.cacheEntries) + "\","
-            "\"InvalidationCount\":\"" + to_string(healthData.invalidateEntireCacheCount) + "\","
-            "\"CacheLookups\":\"" + to_string(healthData.totalCacheLookups) + "\","
-            "\"LookupCollisions\":\"" + to_string(healthData.totalLookupCollisions) + "\","
-            "\"FindRootHits\":\"" + to_string(healthData.totalFindRootForVnodeHits) + "\","
-            "\"FindRootMisses\":\"" + to_string(healthData.totalFindRootForVnodeMisses) + "\","
-            "\"RefreshRoot\":\"" + to_string(healthData.totalRefreshRootForVnode) + "\","
-            "\"InvalidateRoot\":\"" + to_string(healthData.totalInvalidateVnodeRoot) + "\","
-        "}");
-        
+        WriteHealthDataToMessageListener(healthData);
     }
     else
     {
-        WriteJsonToMessageListener(
-        "{"
-            "\"ErrorMessage\":\"Fetching profiling data from kernel failed\","
-            "\"ret\":\"" + to_string(ret) + "\","
-        "}");
-        
+        WriteErrorMessageToMessageListener("Fetching profiling data from kernel failed", ret);
         fprintf(stderr, "fetching profiling data from kernel failed: 0x%x\n", ret);
         return false;
     }
@@ -296,20 +281,21 @@ static void CreatePipeToMessageListener()
     memset(&socket_address, 0, sizeof(struct sockaddr_un));
     
     socket_address.sun_family = AF_UNIX;
-    size_t resultLength = strlcpy(socket_address.sun_path, s_messageListenerSocketPath.c_str(), sizeof(socket_address.sun_path));
-    
-    if (resultLength >= sizeof(socket_address.sun_path))
+    size_t pathLength = s_messageListenerSocketPath.length();
+    if (pathLength + 1 >= sizeof(socket_address.sun_path))
     {
         os_log_with_type(
             s_kextLogger,
             OS_LOG_TYPE_DEFAULT,
-            "Could not copy socket path: %s, insufficient buffer. resultLength: %lu, sizeof(socket_address.sun_path): %lu",
+            "Could not copy socket path: %s, insufficient buffer. pathLength: %lu, sizeof(socket_address.sun_path): %lu",
             s_messageListenerSocketPath.c_str(),
-            resultLength,
+            pathLength,
             sizeof(socket_address.sun_path));
         
         goto ClosePipeAndCleanup;
     }
+    
+    strlcpy(socket_address.sun_path, s_messageListenerSocketPath.c_str(), sizeof(socket_address.sun_path));
     
     if(0 == connect(s_messageListenerSocket, (struct sockaddr *) &socket_address, sizeof(struct sockaddr_un)))
     {
@@ -337,7 +323,44 @@ ClosePipeAndCleanup:
     }
 }
 
-static void WriteJsonToMessageListener(const string& jsonMessage)
+static void WriteInfoMessageToMessageListener(const string& message)
+{
+    WriteJsonToMessageListener(
+        "info",
+        "{"
+            "\"Message\":\"" + message + "\""
+        "}");
+}
+
+static void WriteErrorMessageToMessageListener(const string& message, const IOReturn ioReturn)
+{
+    WriteJsonToMessageListener(
+        "error",
+        "{"
+            "\"Message\":\"" + message + """\","
+            "\"ret\":" + to_string(ioReturn) + + ""
+        "}");
+}
+
+static void WriteHealthDataToMessageListener(const PrjFSVnodeCacheHealth& healthData)
+{
+    WriteJsonToMessageListener(
+        "health",
+        "{"
+            "\"Message\":\"Vnode cache health\","
+            "\"CacheCapacity\":" + to_string(healthData.cacheCapacity) + ","
+            "\"CacheEntries\":" + to_string(healthData.cacheEntries) + ","
+            "\"InvalidationCount\":" + to_string(healthData.invalidateEntireCacheCount) + ","
+            "\"CacheLookups\":" + to_string(healthData.totalCacheLookups) + ","
+            "\"LookupCollisions\":" + to_string(healthData.totalLookupCollisions) + ","
+            "\"FindRootHits\":" + to_string(healthData.totalFindRootForVnodeHits) + ","
+            "\"FindRootMisses\":" + to_string(healthData.totalFindRootForVnodeMisses) + ","
+            "\"RefreshRoot\":" + to_string(healthData.totalRefreshRootForVnode) + ","
+            "\"InvalidateRoot\":" + to_string(healthData.totalInvalidateVnodeRoot) + ""
+        "}");
+}
+
+static void WriteJsonToMessageListener(const string& eventName, const string& jsonMessage)
 {
     if (INVALID_SOCKET_FD == s_messageListenerSocket)
     {
@@ -346,12 +369,10 @@ static void WriteJsonToMessageListener(const string& jsonMessage)
 
     // TODO: Properly version PrjFSKextLogDaemon and other Mac binaries
     string fullMessage =
-    "{\""
-        "version\":\"0.6.XXX.X\","
+    "{"
+        "\"version\":\"0.6.XXX.X\","
         "\"providerName\":\"Microsoft.Git.GVFS\","
-        "\"eventName\":\"PrjFSKextLogDaemon\","
-        "\"eventLevel\":2,"
-        "\"eventOpcode\":0,"
+        "\"eventName\":\"kext." + eventName + "\","
         "\"payload\":" + jsonMessage + ""
     "}\n";
 
