@@ -5,6 +5,11 @@ if [ -z $CONFIGURATION ]; then
   CONFIGURATION=Debug
 fi
 
+VERSION=$2
+if [ -z $VERSION ]; then
+  VERSION="0.2.173.2"
+fi
+
 SCRIPTDIR=$(dirname ${BASH_SOURCE[0]})
 SRCDIR=$SCRIPTDIR/../..
 ROOTDIR=$SRCDIR/..
@@ -12,6 +17,9 @@ PACKAGES=$ROOTDIR/packages
 COVERAGEDIR=$ROOTDIR/BuildOutput/ProjFS.Mac/Coverage
 
 PROJFS=$SRCDIR/ProjFS.Mac
+
+echo "Generating PrjFSVersion.h as $VERSION..."
+$SCRIPTDIR/GeneratePrjFSVersionHeader.sh $VERSION || exit 1
 
 xcodebuild -configuration $CONFIGURATION -project $PROJFS/PrjFS.xcodeproj  -scheme 'Build All' -derivedDataPath $ROOTDIR/BuildOutput/ProjFS.Mac/Native build || exit 1
 

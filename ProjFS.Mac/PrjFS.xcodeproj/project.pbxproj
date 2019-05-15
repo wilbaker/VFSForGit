@@ -827,7 +827,10 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 				SYMROOT = "$(SRCROOT)/../../BuildOutput/ProjFS.Mac/Native";
-				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../";
+				USER_HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../",
+					"$(BUILD_ROOT)/../../",
+				);
 				WARNING_CFLAGS = (
 					"-Werror=undefined-internal",
 					"-Werror",
@@ -952,7 +955,10 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				SYMROOT = "$(SRCROOT)/../../BuildOutput/ProjFS.Mac/Native";
-				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../";
+				USER_HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../",
+					"$(BUILD_ROOT)/../../",
+				);
 				WARNING_CFLAGS = (
 					"-Werror=undefined-internal",
 					"-Werror",
@@ -1013,7 +1019,10 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 				SYMROOT = "$(SRCROOT)/../../BuildOutput/ProjFS.Mac/Native";
-				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../";
+				USER_HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../",
+					"$(BUILD_ROOT)/../../",
+				);
 				WARNING_CFLAGS = (
 					"-Werror=undefined-internal",
 					"-Werror",

@@ -388,9 +388,8 @@ static void WriteJsonToMessageListener(const string& eventName, const JsonWriter
         return;
     }
 
-    // TODO: Properly version PrjFSKextLogDaemon and other Mac binaries
     JsonWriter fullMessageWriter;
-    fullMessageWriter.Add("version", "0.6.XXX.X");
+    fullMessageWriter.Add("version", PrjFSKextVersion);
     fullMessageWriter.Add("providerName", "Microsoft.Git.GVFS");
     fullMessageWriter.Add("eventName", "kext." + eventName);
     fullMessageWriter.Add("payload", jsonMessage);
