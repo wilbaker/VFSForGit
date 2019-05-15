@@ -15,7 +15,7 @@ void JsonWriter::Add(const string& key, const JsonWriter& value)
 {
     this->AddCommaIfNeeded();
     this->AddKey(key);
-    this->jsonBuffer += "\"" + value.ToString() + "\"";
+    this->jsonBuffer += value.ToString();
 }
 
 void JsonWriter::Add(const string& key, const string& value)
