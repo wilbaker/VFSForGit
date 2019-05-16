@@ -4,14 +4,17 @@
 #include "JsonWriter.hpp"
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <OS/log.h>
 #include <IOKit/IOKitLib.h>
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
+using std::hex;
 using std::lock_guard;
 using std::mutex;
+using std::ostringstream;
 using std::string;
 
 static const char PrjFSKextLogDaemon_OSLogSubsystem[] = "org.vfsforgit.prjfs.PrjFSKextLogDaemon";
@@ -23,25 +26,23 @@ static IONotificationPortRef s_notificationPort;
 static int s_messageListenerSocket = INVALID_SOCKET_FD;
 static const string MessageListenerSocketPath = "/usr/local/GitService/pipe/vfs-c780ac06-135a-4e9e-ab6c-d41e2d265baa";
 static const string InfoMessageEventName = "info";
-static const string ErrorMessageEventName = "info";
+static const string ErrorMessageEventName = "error";
 static const string HealthMessageEventName = "health";
 static const string MessageKey = "message";
 static mutex s_messageListenerMutex;
 
-static void StartLoggingKextMessages(io_connect_t connection, io_service_t service, os_log_t daemonLogger, os_log_t kextLogger);
+static void StartLoggingKextMessages(io_connect_t connection, io_service_t service);
 static void SetupExitSignalHandler();
 static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection);
 static bool TryFetchAndLogKextHealthData(io_connect_t connection);
 
+static void LogDaemonError(const string& message);
 static void LogKextMessage(os_log_type_t messageLogType, const char* message, int messageLength);
 static void LogKextHealthData(const PrjFSVnodeCacheHealth& healthData);
 
 static void CreatePipeToMessageListener();
 static void ClosePipeToMessageListener_Locked();
 
-static void WriteInfoToMessageListener(const string& message);
-static void WriteErrorToMessageListener(const string& message);
-static void WriteErrorToMessageListener(const string& message, const IOReturn ioReturn);
 static void WriteJsonToMessageListener(const string& eventName, const JsonWriter& jsonMessage);
 
 int main(int argc, const char* argv[])
@@ -57,7 +58,9 @@ int main(int argc, const char* argv[])
     os_log(s_daemonLogger, "PrjFSKextLogDaemon starting up");
     
     CreatePipeToMessageListener();
-    WriteInfoToMessageListener("PrjFSKextLogDaemon starting up");
+    JsonWriter messageWriter;
+    messageWriter.Add(MessageKey, "PrjFSKextLogDaemon starting up");
+    WriteJsonToMessageListener(InfoMessageEventName, messageWriter);
 
     s_notificationPort = IONotificationPortCreate(kIOMasterPortDefault);
     IONotificationPortSetDispatchQueue(s_notificationPort, dispatch_get_main_queue());
@@ -85,20 +88,19 @@ int main(int argc, const char* argv[])
                 }
                 else
                 {
-                    os_log_error(
-                        s_daemonLogger,
-                        "Failed to connect to newly matched PrjFS kernel service at '%{public}s'; connecting failed with error 0x%x",
-                        servicePath, connectResult);
+                    ostringstream errorMessage;
+                    errorMessage << "Failed to connect to newly matched PrjFS kernel service at '" << servicePath << "'; connecting failed with error 0x" << hex << connectResult;
+                    LogDaemonError(errorMessage.str());
                 }
              }
              else
              {
-                 StartLoggingKextMessages(connection, service, s_daemonLogger, s_kextLogger);
+                 StartLoggingKextMessages(connection, service);
              }
          });
     if (nullptr == watchContext)
     {
-        os_log_error(s_daemonLogger, "Failed to register for service notifications.");
+        LogDaemonError("PrjFSKextLogDaemon failed to register for service notifications.");
         return 1;
     }
     
@@ -134,7 +136,7 @@ static os_log_type_t KextLogLevelAsOSLogType(KextLog_Level level)
     }
 }
 
-static void StartLoggingKextMessages(io_connect_t connection, io_service_t prjfsService, os_log_t daemonLogger, os_log_t kextLogger)
+static void StartLoggingKextMessages(io_connect_t connection, io_service_t prjfsService)
 {
     uint64_t prjfsServiceEntryID = 0;
     IORegistryEntryGetRegistryEntryID(prjfsService, &prjfsServiceEntryID);
@@ -142,7 +144,9 @@ static void StartLoggingKextMessages(io_connect_t connection, io_service_t prjfs
     std::shared_ptr<DataQueueResources> logDataQueue(new DataQueueResources {});
     if (!PrjFSService_DataQueueInit(logDataQueue.get(), connection, LogPortType_MessageQueue, LogMemoryType_MessageQueue, dispatch_get_main_queue()))
     {
-        os_log_error(s_daemonLogger, "Failed to set up log message data queue an connection to service with registry entry 0x%llx", prjfsServiceEntryID);
+        ostringstream errorMessage;
+        errorMessage << "StartLoggingKextMessages: Failed to set up log message data queue an connection to service with registry entry 0x" << hex << prjfsServiceEntryID;
+        LogDaemonError(errorMessage.str());
         IOServiceClose(connection);
         return;
     }
@@ -165,7 +169,10 @@ static void StartLoggingKextMessages(io_connect_t connection, io_service_t prjfs
             }
             else
             {
-                os_log_error(s_daemonLogger, "Malformed message received from kext. messageSize = %d, expecting %zu or more", messageSize, sizeof(KextLog_MessageHeader) + 2);
+                ostringstream errorMessage;
+                errorMessage << "StartLoggingKextMessages: Malformed message received from kext. messageSize = " << messageSize
+                             << ", expecting " << sizeof(KextLog_MessageHeader) + 2 << "or more";
+                LogDaemonError(errorMessage.str());
             }
 
             DataQueue_Dequeue(logDataQueue->queueMemory, nullptr, nullptr);
@@ -242,7 +249,7 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
     IOReturn ret = IOConnectCallStructMethod(connection, LogSelector_FetchVnodeCacheHealth, nullptr, 0, &healthData, &out_size);
     if (ret == kIOReturnUnsupported)
     {
-        WriteErrorToMessageListener("IOConnectCallStructMethod failed for LogSelector_FetchVnodeCacheHealth", ret);
+        LogDaemonError("TryFetchAndLogKextHealthData: IOConnectCallStructMethod failed for LogSelector_FetchVnodeCacheHealth, ret: kIOReturnUnsupported");
         return false;
     }
     else if (ret == kIOReturnSuccess)
@@ -251,12 +258,22 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
     }
     else
     {
-        WriteErrorToMessageListener("Fetching profiling data from kernel failed", ret);
-        fprintf(stderr, "fetching profiling data from kernel failed: 0x%x\n", ret);
+        ostringstream errorMessage;
+        errorMessage << "TryFetchAndLogKextHealthData: Fetching profiling data from kernel failed, ret: 0x" << hex << ret;
+        LogDaemonError(errorMessage.str());
         return false;
     }
     
     return true;
+}
+
+static void LogDaemonError(const string& message)
+{
+    os_log_error(s_daemonLogger, "%{public}s", message.c_str());
+
+    JsonWriter messageWriter;
+    messageWriter.Add(MessageKey, message);
+    WriteJsonToMessageListener(ErrorMessageEventName, messageWriter);
 }
 
 static void LogKextMessage(os_log_type_t messageLogType, const char* message, int messageLength)
@@ -264,20 +281,23 @@ static void LogKextMessage(os_log_type_t messageLogType, const char* message, in
     os_log_with_type(s_kextLogger, messageLogType, "%{public}.*s", messageLength, message);
     switch (messageLogType)
     {
-    case OS_LOG_TYPE_ERROR:
-        WriteErrorToMessageListener(string(message, messageLength));
-        break;
+        case OS_LOG_TYPE_ERROR:
+        {
+            JsonWriter messageWriter;
+            messageWriter.Add(MessageKey, string(message, messageLength));
+            WriteJsonToMessageListener(ErrorMessageEventName, messageWriter);
+            break;
+        }
 
-    default:
-        break;
+        default:
+            break;
     }
 }
 
 static void LogKextHealthData(const PrjFSVnodeCacheHealth& healthData)
 {
-    os_log_with_type(
+    os_log(
         s_kextLogger,
-        OS_LOG_TYPE_DEFAULT,
         "PrjFS Vnode Cache Health: CacheCapacity=%u, CacheEntries=%u, InvalidationCount=%llu, CacheLookups=%llu, LookupCollisions=%llu, FindRootHits=%llu, FindRootMisses=%llu, RefreshRoot=%llu, InvalidateRoot=%llu",
         healthData.cacheCapacity,
         healthData.cacheEntries,
@@ -313,16 +333,13 @@ static void CreatePipeToMessageListener()
         return;
     }
 
+    int error = 0;
+
     s_messageListenerSocket = socket(PF_UNIX, SOCK_STREAM, 0);
     if (s_messageListenerSocket < 0)
     {
-        os_log_with_type(
-            s_daemonLogger,
-            OS_LOG_TYPE_DEFAULT,
-            "Failed to create a new socket, path: %s, error: %d",
-            MessageListenerSocketPath.c_str(),
-            errno);
-        
+        error = errno;
+        os_log(s_daemonLogger, "CreatePipeToMessageListener: Failed to create socket, error: %d", error);
         s_messageListenerSocket = INVALID_SOCKET_FD;
         return;
     }
@@ -334,14 +351,7 @@ static void CreatePipeToMessageListener()
     size_t pathLength = MessageListenerSocketPath.length();
     if (pathLength + 1 >= sizeof(socket_address.sun_path))
     {
-        os_log_with_type(
-            s_daemonLogger,
-            OS_LOG_TYPE_DEFAULT,
-            "Could not copy socket path: %{public}s, insufficient buffer. pathLength: %lu, sizeof(socket_address.sun_path): %lu",
-            MessageListenerSocketPath.c_str(),
-            pathLength,
-            sizeof(socket_address.sun_path));
-        
+        os_log(s_daemonLogger, "CreatePipeToMessageListener: Failed to copy socket path, insufficient buffer. Buffer size: %lu", sizeof(socket_address.sun_path));
         goto ClosePipeAndCleanup;
     }
     
@@ -349,45 +359,15 @@ static void CreatePipeToMessageListener()
     
     if(0 == connect(s_messageListenerSocket, (struct sockaddr *) &socket_address, sizeof(struct sockaddr_un)))
     {
-        os_log_with_type(
-            s_daemonLogger,
-            OS_LOG_TYPE_DEFAULT,
-            "Connected to message listener on socket '%{public}s'",
-            MessageListenerSocketPath.c_str());
+        os_log(s_daemonLogger, "CreatePipeToMessageListener: Connected to message listener");
         return;
     }
     
-    os_log_with_type(
-        s_daemonLogger,
-        OS_LOG_TYPE_DEFAULT,
-        "Failed to connect socket, pipeName: %{public}s, error: %d",
-        MessageListenerSocketPath.c_str(),
-        errno);
+    error = errno;
+    os_log(s_daemonLogger, "CreatePipeToMessageListener: Failed to connect socket, error: %d", error);
     
 ClosePipeAndCleanup:
     ClosePipeToMessageListener_Locked();
-}
-
-static void WriteInfoToMessageListener(const string& message)
-{
-    JsonWriter messageWriter;
-    messageWriter.Add(MessageKey, message);
-    WriteJsonToMessageListener(InfoMessageEventName, messageWriter);
-}
-
-static void WriteErrorToMessageListener(const string& message)
-{
-    JsonWriter messageWriter;
-    messageWriter.Add(MessageKey, message);
-    WriteJsonToMessageListener(ErrorMessageEventName, messageWriter);
-}
-
-static void WriteErrorToMessageListener(const string& message, const IOReturn ioReturn)
-{
-    JsonWriter messageWriter;
-    messageWriter.Add(MessageKey, message);
-    messageWriter.Add("ret", ioReturn);
-    WriteJsonToMessageListener(ErrorMessageEventName, messageWriter);
 }
 
 static void WriteJsonToMessageListener(const string& eventName, const JsonWriter& jsonMessage)
@@ -415,10 +395,9 @@ static void WriteJsonToMessageListener(const string& eventName, const JsonWriter
     int error = errno;
     if (bytesWritten != fullMessage.length())
     {
-        os_log_with_type(
+        os_log(
             s_daemonLogger,
-            OS_LOG_TYPE_DEFAULT,
-            "Failed to write message '%{public}s' to listener.  Error: %d, Bytes written: %lu",
+            "WriteJsonToMessageListener: Failed to write message '%{public}s' to listener. Error: %d, Bytes written: %lu",
             fullMessage.c_str(),
             error,
             bytesWritten);
