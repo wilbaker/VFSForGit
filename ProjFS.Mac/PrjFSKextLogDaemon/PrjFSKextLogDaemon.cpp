@@ -13,7 +13,6 @@
 using std::lock_guard;
 using std::mutex;
 using std::string;
-using std::to_string;
 
 static const char PrjFSKextLogDaemon_OSLogSubsystem[] = "org.vfsforgit.prjfs.PrjFSKextLogDaemon";
 static const int INVALID_SOCKET_FD = -1;
@@ -34,10 +33,12 @@ static void SetupExitSignalHandler();
 static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection);
 static bool TryFetchAndLogKextHealthData(io_connect_t connection);
 
+static void LogKextMessage(os_log_type_t messageLogType, const char* message, int messageLength);
+static void LogKextHealthData(const PrjFSVnodeCacheHealth& healthData);
+
 static void CreatePipeToMessageListener();
 static void ClosePipeToMessageListener_Locked();
 
-static void WriteHealthDataToMessageListener(const PrjFSVnodeCacheHealth& healthData);
 static void WriteInfoToMessageListener(const string& message);
 static void WriteErrorToMessageListener(const string& message);
 static void WriteErrorToMessageListener(const string& message, const IOReturn ioReturn);
@@ -160,15 +161,11 @@ static void StartLoggingKextMessages(io_connect_t connection, io_service_t prjfs
                 memcpy(&message, entry->data, sizeof(KextLog_MessageHeader));
                 int logStringLength = messageSize - sizeof(KextLog_MessageHeader) - 1;
                 os_log_type_t messageLogType = KextLogLevelAsOSLogType(message.level);
-                os_log_with_type(s_kextLogger, messageLogType, "%{public}.*s", logStringLength, entry->data + sizeof(KextLog_MessageHeader));
+                LogKextMessage(messageLogType, reinterpret_cast<char*>(entry->data + sizeof(KextLog_MessageHeader)), logStringLength);
             }
             else
             {
-                string errorMessage =
-                    "Malformed message received from kext. messageSize = " + to_string(messageSize) + ", "
-                    "expecting " + to_string(sizeof(KextLog_MessageHeader) + 2) + " or more";
-                os_log_error(s_daemonLogger, "%s", errorMessage.c_str());
-                WriteErrorToMessageListener(errorMessage);
+                os_log_error(s_daemonLogger, "Malformed message received from kext. messageSize = %d, expecting %zu or more", messageSize, sizeof(KextLog_MessageHeader) + 2);
             }
 
             DataQueue_Dequeue(logDataQueue->queueMemory, nullptr, nullptr);
@@ -250,21 +247,7 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
     }
     else if (ret == kIOReturnSuccess)
     {
-        os_log_with_type(
-            s_kextLogger,
-            OS_LOG_TYPE_DEFAULT,
-            "PrjFS Vnode Cache Health: CacheCapacity=%u, CacheEntries=%u, InvalidationCount=%llu, CacheLookups=%llu, LookupCollisions=%llu, FindRootHits=%llu, FindRootMisses=%llu, RefreshRoot=%llu, InvalidateRoot=%llu",
-            healthData.cacheCapacity,
-            healthData.cacheEntries,
-            healthData.invalidateEntireCacheCount,
-            healthData.totalCacheLookups,
-            healthData.totalLookupCollisions,
-            healthData.totalFindRootForVnodeHits,
-            healthData.totalFindRootForVnodeMisses,
-            healthData.totalRefreshRootForVnode,
-            healthData.totalInvalidateVnodeRoot);
-        
-        WriteHealthDataToMessageListener(healthData);
+        LogKextHealthData(healthData);
     }
     else
     {
@@ -274,6 +257,50 @@ static bool TryFetchAndLogKextHealthData(io_connect_t connection)
     }
     
     return true;
+}
+
+static void LogKextMessage(os_log_type_t messageLogType, const char* message, int messageLength)
+{
+    os_log_with_type(s_kextLogger, messageLogType, "%{public}.*s", messageLength, message);
+    switch (messageLogType)
+    {
+    case OS_LOG_TYPE_ERROR:
+        WriteErrorToMessageListener(string(message, messageLength));
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void LogKextHealthData(const PrjFSVnodeCacheHealth& healthData)
+{
+    os_log_with_type(
+        s_kextLogger,
+        OS_LOG_TYPE_DEFAULT,
+        "PrjFS Vnode Cache Health: CacheCapacity=%u, CacheEntries=%u, InvalidationCount=%llu, CacheLookups=%llu, LookupCollisions=%llu, FindRootHits=%llu, FindRootMisses=%llu, RefreshRoot=%llu, InvalidateRoot=%llu",
+        healthData.cacheCapacity,
+        healthData.cacheEntries,
+        healthData.invalidateEntireCacheCount,
+        healthData.totalCacheLookups,
+        healthData.totalLookupCollisions,
+        healthData.totalFindRootForVnodeHits,
+        healthData.totalFindRootForVnodeMisses,
+        healthData.totalRefreshRootForVnode,
+        healthData.totalInvalidateVnodeRoot);
+    
+    JsonWriter healthDataWriter;
+    healthDataWriter.Add(MessageKey, "Vnode cache health");
+    healthDataWriter.Add("CacheCapacity", healthData.cacheCapacity);
+    healthDataWriter.Add("CacheEntries", healthData.cacheEntries);
+    healthDataWriter.Add("InvalidationCount", healthData.invalidateEntireCacheCount);
+    healthDataWriter.Add("CacheLookups", healthData.totalCacheLookups);
+    healthDataWriter.Add("LookupCollisions", healthData.totalLookupCollisions);
+    healthDataWriter.Add("FindRootHits", healthData.totalFindRootForVnodeHits);
+    healthDataWriter.Add("FindRootMisses", healthData.totalFindRootForVnodeMisses);
+    healthDataWriter.Add("RefreshRoot", healthData.totalRefreshRootForVnode);
+    healthDataWriter.Add("InvalidateRoot", healthData.totalInvalidateVnodeRoot);
+    WriteJsonToMessageListener(HealthMessageEventName, healthDataWriter);
 }
 
 static void CreatePipeToMessageListener()
@@ -290,7 +317,7 @@ static void CreatePipeToMessageListener()
     if (s_messageListenerSocket < 0)
     {
         os_log_with_type(
-            s_kextLogger,
+            s_daemonLogger,
             OS_LOG_TYPE_DEFAULT,
             "Failed to create a new socket, path: %s, error: %d",
             MessageListenerSocketPath.c_str(),
@@ -308,9 +335,9 @@ static void CreatePipeToMessageListener()
     if (pathLength + 1 >= sizeof(socket_address.sun_path))
     {
         os_log_with_type(
-            s_kextLogger,
+            s_daemonLogger,
             OS_LOG_TYPE_DEFAULT,
-            "Could not copy socket path: %s, insufficient buffer. pathLength: %lu, sizeof(socket_address.sun_path): %lu",
+            "Could not copy socket path: %{public}s, insufficient buffer. pathLength: %lu, sizeof(socket_address.sun_path): %lu",
             MessageListenerSocketPath.c_str(),
             pathLength,
             sizeof(socket_address.sun_path));
@@ -323,17 +350,17 @@ static void CreatePipeToMessageListener()
     if(0 == connect(s_messageListenerSocket, (struct sockaddr *) &socket_address, sizeof(struct sockaddr_un)))
     {
         os_log_with_type(
-            s_kextLogger,
+            s_daemonLogger,
             OS_LOG_TYPE_DEFAULT,
-            "Connected to message listener on socket '%s'",
+            "Connected to message listener on socket '%{public}s'",
             MessageListenerSocketPath.c_str());
         return;
     }
     
     os_log_with_type(
-        s_kextLogger,
+        s_daemonLogger,
         OS_LOG_TYPE_DEFAULT,
-        "Failed to connect socket, pipeName: %s, error: %d",
+        "Failed to connect socket, pipeName: %{public}s, error: %d",
         MessageListenerSocketPath.c_str(),
         errno);
     
@@ -363,22 +390,6 @@ static void WriteErrorToMessageListener(const string& message, const IOReturn io
     WriteJsonToMessageListener(ErrorMessageEventName, messageWriter);
 }
 
-static void WriteHealthDataToMessageListener(const PrjFSVnodeCacheHealth& healthData)
-{
-    JsonWriter healthDataWriter;
-    healthDataWriter.Add(MessageKey, "Vnode cache health");
-    healthDataWriter.Add("CacheCapacity", healthData.cacheCapacity);
-    healthDataWriter.Add("CacheEntries", healthData.cacheEntries);
-    healthDataWriter.Add("InvalidationCount", healthData.invalidateEntireCacheCount);
-    healthDataWriter.Add("CacheLookups", healthData.totalCacheLookups);
-    healthDataWriter.Add("LookupCollisions", healthData.totalLookupCollisions);
-    healthDataWriter.Add("FindRootHits", healthData.totalFindRootForVnodeHits);
-    healthDataWriter.Add("FindRootMisses", healthData.totalFindRootForVnodeMisses);
-    healthDataWriter.Add("RefreshRoot", healthData.totalRefreshRootForVnode);
-    healthDataWriter.Add("InvalidateRoot", healthData.totalInvalidateVnodeRoot);
-    WriteJsonToMessageListener(HealthMessageEventName, healthDataWriter);
-}
-
 static void WriteJsonToMessageListener(const string& eventName, const JsonWriter& jsonMessage)
 {
     lock_guard<mutex> lock(s_messageListenerMutex);
@@ -405,9 +416,9 @@ static void WriteJsonToMessageListener(const string& eventName, const JsonWriter
     if (bytesWritten != fullMessage.length())
     {
         os_log_with_type(
-            s_kextLogger,
+            s_daemonLogger,
             OS_LOG_TYPE_DEFAULT,
-            "Failed to write message '%s' to listener.  Error: %d, Bytes written: %lu",
+            "Failed to write message '%{public}s' to listener.  Error: %d, Bytes written: %lu",
             fullMessage.c_str(),
             error,
             bytesWritten);
