@@ -32,17 +32,19 @@ static const string MessageKey = "message";
 static mutex s_messageListenerMutex;
 
 static void StartLoggingKextMessages(io_connect_t connection, io_service_t service);
+static void HandleSigterm(int sig, siginfo_t* info, void* uc);
 static void SetupExitSignalHandler();
+
 static dispatch_source_t StartKextHealthDataPolling(io_connect_t connection);
 static bool TryFetchAndLogKextHealthData(io_connect_t connection);
 
+// LogXXX functions will log to the OS as well as the message listener
 static void LogDaemonError(const string& message);
 static void LogKextMessage(os_log_type_t messageLogType, const char* message, int messageLength);
 static void LogKextHealthData(const PrjFSVnodeCacheHealth& healthData);
 
 static void CreatePipeToMessageListener();
 static void ClosePipeToMessageListener_Locked();
-
 static void WriteJsonToMessageListener(const string& eventName, const JsonWriter& jsonMessage);
 
 int main(int argc, const char* argv[])
@@ -81,6 +83,11 @@ int main(int argc, const char* argv[])
                         s_daemonLogger,
                         "Failed to connect to newly matched PrjFS kernel service at '%{public}s'; version mismatch. Expected %{public}s, kernel service version %{public}@",
                         servicePath, PrjFSKextVersion, kextVersionObj);
+                    
+                    JsonWriter messageWriter;
+                    messageWriter.Add(MessageKey, "Failed to connect to newly matched PrjFS kernel service at '" + string(servicePath) + "'; version mismatch.");
+                    WriteJsonToMessageListener(ErrorMessageEventName, messageWriter);
+    
                     if (kextVersionObj != nullptr)
                     {
                         CFRelease(kextVersionObj);
@@ -370,6 +377,15 @@ ClosePipeAndCleanup:
     ClosePipeToMessageListener_Locked();
 }
 
+static void ClosePipeToMessageListener_Locked()
+{
+    if (INVALID_SOCKET_FD != s_messageListenerSocket)
+    {
+        close(s_messageListenerSocket);
+        s_messageListenerSocket = INVALID_SOCKET_FD;
+    }
+}
+
 static void WriteJsonToMessageListener(const string& eventName, const JsonWriter& jsonMessage)
 {
     lock_guard<mutex> lock(s_messageListenerMutex);
@@ -404,14 +420,5 @@ static void WriteJsonToMessageListener(const string& eventName, const JsonWriter
 
         // If anything goes wrong close the socket.  The next time the timer fires we'll re-connect
         ClosePipeToMessageListener_Locked();
-    }
-}
-
-static void ClosePipeToMessageListener_Locked()
-{
-    if (INVALID_SOCKET_FD != s_messageListenerSocket)
-    {
-        close(s_messageListenerSocket);
-        s_messageListenerSocket = INVALID_SOCKET_FD;
     }
 }
