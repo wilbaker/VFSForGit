@@ -7,6 +7,17 @@
 	objects = {
 
 /* Begin PBXAggregateTarget section */
+		26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 26A7DE95229363EA004F6252 /* Build configuration list for PBXAggregateTarget "GeneratePrjFSVersion" */;
+			buildPhases = (
+				26A7DE96229363F2004F6252 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = GeneratePrjFSVersion;
+			productName = GeneratePrjFSVersion;
+		};
 		4391F90021E436210008103C /* Build All */ = {
 			isa = PBXAggregateTarget;
 			buildConfigurationList = 4391F90121E436210008103C /* Build configuration list for PBXAggregateTarget "Build All" */;
@@ -100,6 +111,55 @@
 			proxyType = 1;
 			remoteGlobalIDString = 4391F8D421E430CF0008103C;
 			remoteInfo = PrjFSLib;
+		};
+		26A7DE972293643F004F6252 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4391F87621E4278C0008103C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26A7DE91229363EA004F6252;
+			remoteInfo = GeneratePrjFSVersion;
+		};
+		26A7DE992293644B004F6252 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4391F87621E4278C0008103C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26A7DE91229363EA004F6252;
+			remoteInfo = GeneratePrjFSVersion;
+		};
+		26A7DE9B22936451004F6252 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4391F87621E4278C0008103C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26A7DE91229363EA004F6252;
+			remoteInfo = GeneratePrjFSVersion;
+		};
+		26A7DE9D22936459004F6252 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4391F87621E4278C0008103C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26A7DE91229363EA004F6252;
+			remoteInfo = GeneratePrjFSVersion;
+		};
+		26A7DEA122936473004F6252 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4391F87621E4278C0008103C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26A7DE91229363EA004F6252;
+			remoteInfo = GeneratePrjFSVersion;
+		};
+		26A7DEA322936496004F6252 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4391F87621E4278C0008103C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26A7DE91229363EA004F6252;
+			remoteInfo = GeneratePrjFSVersion;
+		};
+		26A7DEA52293649E004F6252 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4391F87621E4278C0008103C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26A7DE91229363EA004F6252;
+			remoteInfo = GeneratePrjFSVersion;
 		};
 		4391F90421E4362B0008103C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -519,6 +579,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				26A7DEA62293649E004F6252 /* PBXTargetDependency */,
 				264E724022930E660059E150 /* PBXTargetDependency */,
 			);
 			name = PrjFSLibTests;
@@ -530,7 +591,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4391F88721E4278C0008103C /* Build configuration list for PBXNativeTarget "PrjFSKext" */;
 			buildPhases = (
-				26786AEF228CD24F00F53311 /* ShellScript */,
 				4391F87B21E4278C0008103C /* Sources */,
 				4391F87C21E4278C0008103C /* Frameworks */,
 				4391F87A21E4278C0008103C /* Headers */,
@@ -540,6 +600,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				26A7DE982293643F004F6252 /* PBXTargetDependency */,
 			);
 			name = PrjFSKext;
 			productName = PrjFS;
@@ -550,7 +611,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4391F8D621E430CF0008103C /* Build configuration list for PBXNativeTarget "PrjFSLib" */;
 			buildPhases = (
-				26786AEE228CD24100F53311 /* ShellScript */,
 				4391F8D121E430CF0008103C /* Headers */,
 				4391F8D221E430CF0008103C /* Sources */,
 				4391F8D321E430CF0008103C /* Frameworks */,
@@ -558,6 +618,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				26A7DE9A2293644B004F6252 /* PBXTargetDependency */,
 			);
 			name = PrjFSLib;
 			productName = PrjFSLib;
@@ -568,7 +629,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4391F8F821E4355C0008103C /* Build configuration list for PBXNativeTarget "prjfs-log" */;
 			buildPhases = (
-				26786AF1228CD29300F53311 /* ShellScript */,
 				4391F8F021E4355C0008103C /* Sources */,
 				4391F8F121E4355C0008103C /* Frameworks */,
 				4391F8F221E4355C0008103C /* CopyFiles */,
@@ -576,6 +636,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				26A7DE9C22936451004F6252 /* PBXTargetDependency */,
 			);
 			name = "prjfs-log";
 			productName = "prjfs-log";
@@ -586,7 +647,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4A08256F21E77B7F00E21AFD /* Build configuration list for PBXNativeTarget "PrjFSKextLogDaemon" */;
 			buildPhases = (
-				26786AED228CD0F800F53311 /* ShellScript */,
 				4A08256421E77B7F00E21AFD /* Sources */,
 				4A08256521E77B7F00E21AFD /* Frameworks */,
 				4A08256621E77B7F00E21AFD /* CopyFiles */,
@@ -594,6 +654,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				26A7DE9E22936459004F6252 /* PBXTargetDependency */,
 			);
 			name = PrjFSKextLogDaemon;
 			productName = PrjFSKextLogDaemon;
@@ -604,7 +665,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4A8C13A421F23EE800002878 /* Build configuration list for PBXNativeTarget "PrjFSKextTestable" */;
 			buildPhases = (
-				26786AF0228CD27600F53311 /* ShellScript */,
 				4A8C139C21F23EE800002878 /* Headers */,
 				4A8C139D21F23EE800002878 /* Sources */,
 				4A8C139E21F23EE800002878 /* Frameworks */,
@@ -612,6 +672,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				26A7DEA222936473004F6252 /* PBXTargetDependency */,
 			);
 			name = PrjFSKextTestable;
 			productName = PrjFSKextTestable;
@@ -622,7 +683,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F5E39C7F21F1118D006D65C2 /* Build configuration list for PBXNativeTarget "PrjFSKextTests" */;
 			buildPhases = (
-				26786AF2228CD2A500F53311 /* ShellScript */,
 				F5E39C7321F1118D006D65C2 /* Sources */,
 				F5E39C7421F1118D006D65C2 /* Frameworks */,
 				F5E39C7521F1118D006D65C2 /* Resources */,
@@ -630,6 +690,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				26A7DEA422936496004F6252 /* PBXTargetDependency */,
 				4A8C13A821F241ED00002878 /* PBXTargetDependency */,
 			);
 			name = PrjFSKextTests;
@@ -647,6 +708,9 @@
 				ORGANIZATIONNAME = "Microsoft Corporation";
 				TargetAttributes = {
 					264E723822930E660059E150 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
+					26A7DE91229363EA004F6252 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
 					4391F87E21E4278C0008103C = {
@@ -692,6 +756,7 @@
 				F5E39C7621F1118D006D65C2 /* PrjFSKextTests */,
 				4A8C139F21F23EE800002878 /* PrjFSKextTestable */,
 				264E723822930E660059E150 /* PrjFSLibTests */,
+				26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */,
 			);
 		};
 /* End PBXProject section */
@@ -721,77 +786,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		26786AED228CD0F800F53311 /* ShellScript */ = {
+		26A7DE96229363F2004F6252 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ ! -f \"${BUILD_ROOT}/../../PrjFSVersion.h\" ]; then\n    \"${PROJECT_DIR}/Scripts/GeneratePrjFSVersionHeader.sh\"\nfi";
-		};
-		26786AEE228CD24100F53311 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ ! -f \"${BUILD_ROOT}/../../PrjFSVersion.h\" ]; then\n    \"${PROJECT_DIR}/Scripts/GeneratePrjFSVersionHeader.sh\"\nfi";
-		};
-		26786AEF228CD24F00F53311 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ ! -f \"${BUILD_ROOT}/../../PrjFSVersion.h\" ]; then\n    \"${PROJECT_DIR}/Scripts/GeneratePrjFSVersionHeader.sh\"\nfi";
-		};
-		26786AF0228CD27600F53311 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ ! -f \"${BUILD_ROOT}/../../PrjFSVersion.h\" ]; then\n    \"${PROJECT_DIR}/Scripts/GeneratePrjFSVersionHeader.sh\"\nfi";
-		};
-		26786AF1228CD29300F53311 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ ! -f \"${BUILD_ROOT}/../../PrjFSVersion.h\" ]; then\n    \"${PROJECT_DIR}/Scripts/GeneratePrjFSVersionHeader.sh\"\nfi";
-		};
-		26786AF2228CD2A500F53311 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
+				"${BUILD_ROOT}/../../PrjFSVersion.h",
 			);
 			outputPaths = (
 			);
@@ -914,6 +915,41 @@
 			target = 4391F8D421E430CF0008103C /* PrjFSLib */;
 			targetProxy = 264E723F22930E660059E150 /* PBXContainerItemProxy */;
 		};
+		26A7DE982293643F004F6252 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */;
+			targetProxy = 26A7DE972293643F004F6252 /* PBXContainerItemProxy */;
+		};
+		26A7DE9A2293644B004F6252 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */;
+			targetProxy = 26A7DE992293644B004F6252 /* PBXContainerItemProxy */;
+		};
+		26A7DE9C22936451004F6252 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */;
+			targetProxy = 26A7DE9B22936451004F6252 /* PBXContainerItemProxy */;
+		};
+		26A7DE9E22936459004F6252 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */;
+			targetProxy = 26A7DE9D22936459004F6252 /* PBXContainerItemProxy */;
+		};
+		26A7DEA222936473004F6252 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */;
+			targetProxy = 26A7DEA122936473004F6252 /* PBXContainerItemProxy */;
+		};
+		26A7DEA422936496004F6252 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */;
+			targetProxy = 26A7DEA322936496004F6252 /* PBXContainerItemProxy */;
+		};
+		26A7DEA62293649E004F6252 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 26A7DE91229363EA004F6252 /* GeneratePrjFSVersion */;
+			targetProxy = 26A7DEA52293649E004F6252 /* PBXContainerItemProxy */;
+		};
 		4391F90521E4362B0008103C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4391F87E21E4278C0008103C /* PrjFSKext */;
@@ -993,6 +1029,33 @@
 					"@loader_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.vfsforgit.PrjFSLibTests.PrjFSLibTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Profiling(Release)";
+		};
+		26A7DE92229363EA004F6252 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UBF8T346G9;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		26A7DE93229363EA004F6252 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UBF8T346G9;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		26A7DE94229363EA004F6252 /* Profiling(Release) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UBF8T346G9;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = "Profiling(Release)";
@@ -1547,6 +1610,16 @@
 				264E724222930E660059E150 /* Debug */,
 				264E724322930E660059E150 /* Release */,
 				264E724422930E660059E150 /* Profiling(Release) */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		26A7DE95229363EA004F6252 /* Build configuration list for PBXAggregateTarget "GeneratePrjFSVersion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				26A7DE92229363EA004F6252 /* Debug */,
+				26A7DE93229363EA004F6252 /* Release */,
+				26A7DE94229363EA004F6252 /* Profiling(Release) */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
