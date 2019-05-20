@@ -1,7 +1,7 @@
 #include "../PrjFSKext/public/PrjFSLogClientShared.h"
 #include "../PrjFSKext/public/PrjFSVnodeCacheHealth.h"
+#include "../PrjFSLib/Json/JsonWriter.hpp"
 #include "../PrjFSLib/PrjFSUser.hpp"
-#include "JsonWriter.hpp"
 #include <iostream>
 #include <mutex>
 #include <sstream>
