@@ -146,6 +146,22 @@ using std::vector;
         ("Expected result: " + expectedResult + " Result: " + jsonResult).c_str());
 }
 
+- (void) testEscapedCharactersInKeys {
+    string expectedResult =
+    "{"
+        "\"testKeyLine1\\r\\nTestKeyList2\":\"testValue\","
+        "\"\\f\\t key\":32"
+    "}";
+    JsonWriter writer;
+    writer.Add("testKeyLine1\r\nTestKeyList2", "testValue");
+    writer.Add("\f\t key", 32);
+    string jsonResult = writer.ToString();
+    XCTAssertTrue(
+        jsonResult == expectedResult,
+        "%s",
+        ("Expected result: " + expectedResult + " Result: " + jsonResult).c_str());
+}
+
 - (void) testNestedJson {
     {
         string expectedResult =

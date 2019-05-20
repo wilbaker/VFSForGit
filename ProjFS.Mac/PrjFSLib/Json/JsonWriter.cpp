@@ -22,7 +22,7 @@ void JsonWriter::Add(const string& key, const string& value)
 {
     this->AddCommaIfNeeded();
     this->AddKey(key);
-    this->AddStringValue(value);
+    this->AddString(value);
 }
 
 void JsonWriter::Add(const std::string& key, int32_t value)
@@ -55,11 +55,11 @@ void JsonWriter::AddCommaIfNeeded()
 
 void JsonWriter::AddKey(const string& key)
 {
-    this->jsonBuffer += "\"" + key + "\":";
+    this->AddString(key);
+    this->jsonBuffer += ":";
 }
 
-
-void JsonWriter::AddStringValue(const string& value)
+void JsonWriter::AddString(const string& value)
 {
     this->jsonBuffer += "\"";
     

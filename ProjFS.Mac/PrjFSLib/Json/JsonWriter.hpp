@@ -20,7 +20,7 @@ public:
 private:
     void AddCommaIfNeeded();
     void AddKey(const std::string& key);
-    void AddStringValue(const std::string& value);
+    void AddString(const std::string& value);
     
     template<typename T>
     void AddUnquoted(const std::string& key, T value);
