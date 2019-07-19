@@ -241,6 +241,7 @@
 		265504CE224ADE11005FAD74 /* MockPerfTracing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MockPerfTracing.cpp; sourceTree = "<group>"; };
 		26786AE5228B815E00F53311 /* JsonWriter.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = JsonWriter.hpp; sourceTree = "<group>"; };
 		26786AE6228B816E00F53311 /* JsonWriter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = JsonWriter.cpp; sourceTree = "<group>"; };
+		26BBD24B22E282EA007273D9 /* PrjFSConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = PrjFSConfig.xcconfig; sourceTree = "<group>"; };
 		43057C5B21E439C700487681 /* prjfs-log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "prjfs-log.cpp"; sourceTree = "<group>"; };
 		43057C5C21E439C700487681 /* kext-perf-tracing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "kext-perf-tracing.cpp"; sourceTree = "<group>"; };
 		43057C5D21E439C700487681 /* kext-perf-tracing.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = "kext-perf-tracing.hpp"; sourceTree = "<group>"; };
@@ -411,6 +412,7 @@
 		4391F87521E4278C0008103C = {
 			isa = PBXGroup;
 			children = (
+				26BBD24B22E282EA007273D9 /* PrjFSConfig.xcconfig */,
 				4391F8C221E4306D0008103C /* PrjFSLib */,
 				4391F88D21E42AA70008103C /* PrjFSKext */,
 				4A08256921E77B7F00E21AFD /* PrjFSKextLogDaemon */,
@@ -1096,6 +1098,7 @@
 		};
 		43057C5221E437F300487681 /* Profiling(Release) */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 26BBD24B22E282EA007273D9 /* PrjFSConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -1219,6 +1222,7 @@
 		};
 		4391F88521E4278C0008103C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 26BBD24B22E282EA007273D9 /* PrjFSConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -1290,6 +1294,7 @@
 		};
 		4391F88621E4278C0008103C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 26BBD24B22E282EA007273D9 /* PrjFSConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
