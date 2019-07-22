@@ -415,7 +415,8 @@ static bool TryAcquireGVFSLockForProcess(
         << fullCommand.length() << "|"
         << fullCommand << "|"
         << gitCommandSessionId.length() << "|"
-        << gitCommandSessionId;
+        << gitCommandSessionId
+        << static_cast<char>(0x03);
 
     std::string requestMessage = requestMessageStream.str();
 
