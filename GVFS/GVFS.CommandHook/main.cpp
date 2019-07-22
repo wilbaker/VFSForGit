@@ -541,7 +541,7 @@ static bool TryAcquireGVFSLockForProcess(
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
             unsigned long bytesWritten;
-            unsigned long messageLength = static_cast<unsigned long>(requestMessage.length() + 1);
+            unsigned long messageLength = static_cast<unsigned long>(requestMessage.length());
             int error = 0;
             bool success = WriteToPipe(
                 pipeClient,
@@ -650,12 +650,13 @@ void SendReleaseLock(
         << fullCommand.length() << "|"
         << fullCommand << "|"
         << 0 << "|" // gitCommandSessionId length
-        << ""; // gitCommandSessionId
+        << "" // gitCommandSessionId
+        << static_cast<char>(0x03);
 
     std::string requestMessage = requestMessageStream.str();
 
     unsigned long bytesWritten;
-    unsigned long messageLength = static_cast<unsigned long>(requestMessage.length() + 1);
+    unsigned long messageLength = static_cast<unsigned long>(requestMessage.length());
     int error = 0;
     bool success = WriteToPipe(
         pipeClient,
