@@ -673,7 +673,7 @@ void RunLockRequest(int argc, char *argv[], bool unattended, std::function<void(
         PIPE_HANDLE pipeHandle = CreatePipeToGVFS(pipeName);
 
         int pid = GetParentPid(argc, argv);
-        if (pid == InvalidProcessId || IsProcessActive(pid))
+        if (pid == InvalidProcessId || !IsProcessActive(pid))
         {
             die(InvalidCommand, "GVFS.Hooks: Unable to find parent git.exe process (PID: %d).", pid);
         }
