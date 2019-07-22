@@ -97,6 +97,55 @@ static std::string GetGitCommand(int argc, char* argv[])
     return command;
 }
 
+static bool ReadTerminatedMessageFromGVFS(PIPE_HANDLE pipeHandle, std::string& responseMessage)
+{
+    // Allow for 1 extra character in case we need to
+    // null terminate the message, and the message
+    // is PIPE_BUFFER_SIZE chars long.
+    char message[PIPE_BUFFER_SIZE + 1];
+    unsigned long bytesRead;
+    unsigned long messageLength;
+    int lastError;
+    bool finishedReading = false;
+    bool success;
+    std::ostringstream response;
+
+    do
+    {
+        success = ReadFromPipe(
+            pipeHandle,
+            message,
+            PIPE_BUFFER_SIZE,
+            &bytesRead,
+            &lastError);
+
+        if (!success)
+        {
+            break;
+        }
+
+        messageLength = bytesRead;
+
+        if (message[messageLength - 1] == '\x3')
+        {
+            finishedReading = true;
+            messageLength -= 1;
+        }
+
+        message[messageLength] = '\0';
+        response << message;
+
+    } while (success && !finishedReading);
+
+    if (!success)
+    {
+        return false;
+    }
+
+    responseMessage = response.str();
+    return true;
+}
+
 static bool IsProcessActive(int pid)
 {
     // TODO Implement
@@ -421,7 +470,7 @@ static bool TryAcquireGVFSLockForProcess(
     std::string requestMessage = requestMessageStream.str();
 
     unsigned long bytesWritten;
-    unsigned long messageLength = static_cast<unsigned long>(requestMessage.length() + 1);
+    unsigned long messageLength = static_cast<unsigned long>(requestMessage.length());
     int error = 0;
     bool success = WriteToPipe(
         pipeClient,
@@ -435,15 +484,8 @@ static bool TryAcquireGVFSLockForProcess(
         die(ReturnCode::PipeWriteFailed, "Failed to write to pipe (%d)\n", error);
     }
 
-    char message[PIPE_BUFFER_SIZE + 1];
-    unsigned long bytesRead;
-    int lastError;
-    success = ReadFromPipe(
-        pipeClient,
-        message,
-        PIPE_BUFFER_SIZE,
-        &bytesRead,
-        &lastError);
+    std::string response;
+    success = ReadTerminatedMessageFromGVFS(pipeClient, /* out */ response);
 
     if (!success)
     {
@@ -451,7 +493,6 @@ static bool TryAcquireGVFSLockForProcess(
         return false;
     }
 
-    std::string response(message);
     size_t headerSeparator = response.find('|');
     std::string responseHeader;
     if (headerSeparator != string::npos)
@@ -493,7 +534,7 @@ static bool TryAcquireGVFSLockForProcess(
         return false;
     }
 
-    auto waitForLock = [pipeClient, &requestMessage, &message, &bytesRead, &lastError, &result, checkAvailabilityOnly]() -> bool
+    auto waitForLock = [pipeClient, &requestMessage, &result, checkAvailabilityOnly]() -> bool
     {
         while (true)
         {
@@ -514,12 +555,8 @@ static bool TryAcquireGVFSLockForProcess(
                 die(ReturnCode::PipeWriteFailed, "Failed to write to pipe (%d)\n", error);
             }
 
-            success = ReadFromPipe(
-                pipeClient,
-                message,
-                PIPE_BUFFER_SIZE,
-                &bytesRead,
-                &lastError);
+            std::string response;
+            success = ReadTerminatedMessageFromGVFS(pipeClient, /* out */ response);
 
             if (!success)
             {
@@ -527,7 +564,6 @@ static bool TryAcquireGVFSLockForProcess(
                 return false;
             }
 
-            std::string response(message);
             size_t headerSeparator = response.find('|');
             std::string responseHeader;
             if (headerSeparator != string::npos)
@@ -633,15 +669,8 @@ void SendReleaseLock(
         die(ReturnCode::PipeWriteFailed, "Failed to write to pipe (%d)\n", error);
     }
 
-    char message[PIPE_BUFFER_SIZE + 1];
-    unsigned long bytesRead;
-    int lastError;
-    success = ReadFromPipe(
-        pipeClient,
-        message,
-        PIPE_BUFFER_SIZE,
-        &bytesRead,
-        &lastError);
+    std::string response;
+    success = ReadTerminatedMessageFromGVFS(pipeClient, /* out */ response);
 
     // TODO: Fancy response handling
     UNREFERENCED_PARAMETER(unattended);
