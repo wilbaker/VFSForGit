@@ -719,7 +719,7 @@ int main(int argc, char *argv[])
 
     DisableCRLFTranslationOnStdPipes();
 
-    HookType hookType = GetHookType(argv[2]);
+    HookType hookType = GetHookType(argv[1]);
     switch (hookType)
     {
     case HookType::PreCommand:
@@ -741,7 +741,7 @@ int main(int argc, char *argv[])
         break;
 
     default:
-        die(ReturnCode::InvalidArgCount, "Unrecognized hook: %s", argv[2]);
+        die(ReturnCode::InvalidArgCount, "Unrecognized hook: %s", argv[1]);
         break;
     }
 
