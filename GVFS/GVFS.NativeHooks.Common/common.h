@@ -31,6 +31,7 @@ enum ReturnCode
 	PipeReadFailed = 8,
 	FailureToDownload = 9,
 	PathNameError = 10,
+    InvalidCommand = 11,
 
 	LastError = PathNameError,	
 };

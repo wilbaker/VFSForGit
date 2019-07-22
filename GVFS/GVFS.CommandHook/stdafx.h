@@ -10,5 +10,11 @@
 #include <Windows.h>
 #endif
 
+#include <cctype>
 #include <string>
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <sstream>
+#include <thread>
 #include <stdarg.h>

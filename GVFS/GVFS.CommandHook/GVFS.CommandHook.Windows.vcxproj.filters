@@ -44,9 +44,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="packet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\GVFS.NativeHooks.Common\common.windows.cpp">
       <Filter>Shared Source Files</Filter>
     </ClCompile>

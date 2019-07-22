@@ -115,7 +115,6 @@
   <ItemGroup>
     <ClCompile Include="..\GVFS.NativeHooks.Common\common.windows.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="packet.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
