@@ -18,4 +18,6 @@
 #include <sstream>
 #include <thread>
 #include <unordered_set>
+#include <future>
+#include <array>
 #include <stdarg.h>

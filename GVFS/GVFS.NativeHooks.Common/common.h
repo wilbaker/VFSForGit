@@ -32,6 +32,7 @@ enum ReturnCode
 	FailureToDownload = 9,
 	PathNameError = 10,
     InvalidCommand = 11,
+    InvalidResponse = 12,
 
 	LastError = PathNameError,	
 };
@@ -43,6 +44,7 @@ inline void die(int err, const char *fmt, ...)
 	va_start(params, fmt);
 	vfprintf(stderr, fmt, params);
 	va_end(params);
+    fflush(stderr);
 	exit(err);
 }
 

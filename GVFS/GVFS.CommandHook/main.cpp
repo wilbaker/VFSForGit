@@ -2,6 +2,7 @@
 #include "common.h"
 
 using std::string;
+using std::vector;
 
 enum PostIndexChangedErrorReturnCode
 {
@@ -292,6 +293,56 @@ int GetParentPid(int argc, char* argv[])
     return InvalidProcessId;
 }
 
+static string ParseCommandFromLockResponse(const string& responseBody)
+{
+    if (!responseBody.empty())
+    {
+        // This mesage is stored using the MessageSeperator delimiter for performance reasons
+        // Format of the body uses length prefixed string so that the strings can have the delimiter in them
+        // Examples:
+        // "123|true|false|13|parsedCommand|9|sessionId"
+        // "321|false|true|30|parsedCommand with | delimiter|26|sessionId with | delimiter"
+        vector<string> dataParts;
+        size_t offset = 0;
+        size_t delimPos = responseBody.find('|');
+        while (delimPos != string::npos)
+        {
+            dataParts.emplace_back(responseBody.substr(offset, delimPos - offset));
+            offset = delimPos + 1;
+            delimPos = responseBody.find('|', offset);
+        }
+
+        dataParts.emplace_back(responseBody.substr(offset));
+       
+        if (dataParts.size() < 7)
+        {
+            die(ReturnCode::InvalidResponse, "Invalid lock message. Expected at least 7 parts, got: %zu from message: '%s'", dataParts.size(), responseBody.c_str());
+        }
+
+        int parsedCommandLength = 0;
+        try
+        {
+            parsedCommandLength = std::stoi(dataParts[3]);
+        }
+        catch (...)
+        {
+            die(ReturnCode::InvalidResponse, "Invalid lock message. Failed to parse command length: '%s'", dataParts[3].c_str());
+        }
+
+        // ParsedCommandLength should be the length of the string at the end of the message
+        // Add the length of the previous parts, plus delimiters
+        size_t commandStartingSpot = dataParts[0].length() + dataParts[1].length() + dataParts[2].length() + dataParts[3].length() + 4;
+        if ((commandStartingSpot + parsedCommandLength) >= responseBody.length())
+        {
+            die(ReturnCode::InvalidResponse, "Invalid lock message. The parsedCommand is an unexpected length, got: {0} from message: '{1}'", parsedCommandLength, responseBody.c_str());
+        }
+
+        return responseBody.substr(commandStartingSpot, parsedCommandLength);
+    }
+
+    return "";
+}
+
 static std::string GetGitCommand(int argc, char* argv[])
 {
     UNREFERENCED_PARAMETER(argc);
@@ -392,6 +443,87 @@ static bool IsGitEnvVarDisabled(string envVar)
     }
 
     return false;
+}
+
+static bool ShowStatusWhileRunning(
+    std::function<bool()> action,
+    const string& message,
+    bool showSpinner,
+    int initialDelayMs)
+{
+    bool result = false;
+    std::atomic<bool> initialMessageWritten = false;
+
+    if (!showSpinner)
+    {
+        printf("%s...", message.c_str());
+        fflush(stdout);
+        initialMessageWritten = true;
+        result = action();
+    }
+    else
+    {
+        std::promise<void> actionIsDonePromise;
+        std::future<void> actionIsDoneFuture(actionIsDonePromise.get_future());
+        std::future<void> spinnerThread = std::async(
+            std::launch::async, 
+            [&actionIsDoneFuture, initialDelayMs, &initialMessageWritten, &message]()
+        {
+            int retries = 0;
+
+            // TODO: use mdash instead of ndash
+            std::array<char, 4> waiting = { '-', '\\', '|', '/' };
+
+            bool isComplete = false;
+            while (!isComplete)
+            {
+                if (retries == 0)
+                {
+                    isComplete = actionIsDoneFuture.wait_for(std::chrono::milliseconds(initialDelayMs)) == std::future_status::ready;
+                }
+                else
+                {
+                    printf("\r%s...%c", message.c_str(), waiting[(retries / 2) % waiting.size()]);
+                    fflush(stdout);
+                    initialMessageWritten = true;
+                    isComplete = actionIsDoneFuture.wait_for(std::chrono::milliseconds(100)) == std::future_status::ready;
+                }
+
+                retries++;
+            }
+
+            if (initialMessageWritten)
+            {
+                // Clear out any trailing waiting character
+                printf("\r%s...", message.c_str());
+                fflush(stdout);
+            }
+        });
+
+        result = action();
+        actionIsDonePromise.set_value();
+        spinnerThread.wait();
+    }
+
+    if (result)
+    {
+        if (initialMessageWritten)
+        {
+            printf("Succeeded\n");
+        }
+    }
+    else
+    {
+        if (!initialMessageWritten)
+        {
+            printf("\r%s...", message.c_str());
+            fflush(stdout);
+        }
+
+        printf("Failed.\n");
+    }
+
+    return result;
 }
 
 static bool CheckGVFSLockAvailabilityOnly(int argc, char *argv[])
@@ -720,7 +852,8 @@ static bool TryAcquireGVFSLockForProcess(
     }
 
     size_t headerSeparator = response.find('|');
-    std::string responseHeader;
+    string responseHeader;
+    string message;
     if (headerSeparator != string::npos)
     {
         responseHeader = response.substr(0, headerSeparator);
@@ -746,17 +879,15 @@ static bool TryAcquireGVFSLockForProcess(
     }
     else if (responseHeader == DenyGVFSResult)
     {
-        // TODO
-        // message = response.DenyGVFSMessage;
+        message = response.substr(headerSeparator + 1);
     }
     else if (responseHeader == DenyGitResult)
     {
-        // TODO
-        // message = string.Format("Waiting for '{0}' to release the lock", response.ResponseData.ParsedCommand);
+        message = "Waiting for '" + ParseCommandFromLockResponse(response.substr(headerSeparator + 1)) + "' to release the lock";
     }
     else
     {
-        result = "Error when acquiring the lock. Unrecognized response: "; // +response.CreateMessage();
+        result = "Error when acquiring the lock. Unrecognized response: " + response;
         return false;
     }
 
@@ -812,24 +943,19 @@ static bool TryAcquireGVFSLockForProcess(
         }
     };
 
-    // TODO
-    UNREFERENCED_PARAMETER(unattended);
     bool isSuccessfulLockResult;
-    // if (unattended)
+    if (unattended)
     {
         isSuccessfulLockResult = waitForLock();
     }
-
-    UNREFERENCED_PARAMETER(isConsoleOutputRedirectedToFile);
-    /*else
+    else
     {
-        isSuccessfulLockResult = ConsoleHelper.ShowStatusWhileRunning(
+        isSuccessfulLockResult = ShowStatusWhileRunning(
             waitForLock,
             message,
-            output: Console.Out,
-            showSpinner : !isConsoleOutputRedirectedToFile,
-            gvfsLogEnlistmentRoot : gvfsEnlistmentRoot);
-    }*/
+            !isConsoleOutputRedirectedToFile, // showSpinner
+            0); // initialDelayMs
+    }
 
     result = "";
     return isSuccessfulLockResult;
