@@ -20,6 +20,7 @@ static const std::string PreCommandHook = "pre-command";
 static const std::string PostCommandHook = "post-command";
 static const std::string GitPidArg = "--git-pid=";
 static const int InvalidProcessId = -1;
+static const int PostCommandSpinnerDelayMs = 500;
 
 static const std::string AcquireRequest = "AcquireLock";
 static const std::string DenyGVFSResult = "LockDeniedGVFS";
@@ -1089,6 +1090,78 @@ void AcquireGVFSLockForProcess(bool unattended, int argc, char* argv[], int pid,
     }
 }
 
+void ReleaseReponseHandler(const std::string& rawResponse)
+{
+    size_t headerSeparator = rawResponse.find('|');
+    string responseHeader;
+    string responseBody;
+    if (headerSeparator != string::npos)
+    {
+        responseHeader = rawResponse.substr(0, headerSeparator);
+        responseBody = rawResponse.substr(headerSeparator + 1);
+    }
+    else
+    {
+        responseHeader = rawResponse;
+    }
+
+    if (!responseBody.empty())
+    {
+        vector<string> releaseLockSections;
+        size_t offset = 0;
+        size_t delimPos = responseBody.find('<');
+        while (delimPos != string::npos)
+        {
+            releaseLockSections.emplace_back(responseBody.substr(offset, delimPos - offset));
+            offset = delimPos + 1;
+            delimPos = responseBody.find('|', offset);
+        }
+
+        releaseLockSections.emplace_back(responseBody.substr(offset));
+
+        if (releaseLockSections.size() != 4)
+        {
+            printf("\nError communicating with GVFS: Run 'git status' to check the status of your repo\n");
+            printf("    DEBUG: releaseLockSections.size() %zu, %s\n", releaseLockSections.size(), rawResponse.c_str());
+            return;
+        }
+
+        int failedToUpdateCount = 0;
+        try
+        {
+            failedToUpdateCount = std::stoi(releaseLockSections[0]);
+        }
+        catch (...)
+        {
+            printf("\nError communicating with GVFS: Run 'git status' to check the status of your repo\n");
+            return;
+        }
+
+        int failedToDeleteCount = 0;
+        try
+        {
+            failedToDeleteCount = std::stoi(releaseLockSections[1]);
+        }
+        catch (...)
+        {
+            printf("\nError communicating with GVFS: Run 'git status' to check the status of your repo\n");
+            return;
+        }
+
+        if (failedToUpdateCount > 0 || failedToDeleteCount > 0)
+        {
+            if (failedToUpdateCount + failedToDeleteCount > 100)
+            {
+                printf("\nGVFS failed to update %d files, run 'git status' to check the status of files in the repo", failedToDeleteCount + failedToUpdateCount);
+            }
+            else
+            {
+                // TODO: Build failed to delete/update list
+            }
+        }
+    }
+}
+
 void SendReleaseLock(
     bool unattended,
     PIPE_HANDLE pipeClient,
@@ -1129,17 +1202,32 @@ void SendReleaseLock(
         die(ReturnCode::PipeWriteFailed, "Failed to write to pipe (%d)\n", error);
     }
 
-    std::string response;
-    success = ReadTerminatedMessageFromGVFS(pipeClient, /* out */ response);
-
-    // TODO: Fancy response handling
-    UNREFERENCED_PARAMETER(unattended);
-    UNREFERENCED_PARAMETER(isConsoleOutputRedirectedToFile);
-    if (!success)
+    auto releaseLock = [&pipeClient]() -> bool
     {
-        die(PipeReadFailed, "\nError communicating with GVFS: Run 'git status' to check the status of your repo");
-    }
+        std::string response;
+        if (!ReadTerminatedMessageFromGVFS(pipeClient, /* out */ response))
+        {
+            printf("\nError communicating with GVFS: Run 'git status' to check the status of your repo\n");
+            printf("    DEBUG: %s\n", response.c_str());
+            return true;
+        }
 
+        ReleaseReponseHandler(response);
+        return true;
+    };
+
+    if (unattended || isConsoleOutputRedirectedToFile)
+    {
+        releaseLock();
+    }
+    else
+    {
+        ShowStatusWhileRunning(
+            releaseLock,
+            "Waiting for GVFS to parse index and update placeholder files",
+            !isConsoleOutputRedirectedToFile, // showSpinner
+            PostCommandSpinnerDelayMs);
+    }
 }
 
 void ReleaseGVFSLock(bool unattended, int argc, char* argv[], int pid, PIPE_HANDLE pipeClient)
