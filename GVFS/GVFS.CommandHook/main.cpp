@@ -28,7 +28,215 @@ static const std::string AvailableResult = "LockAvailable";
 static const std::string MountNotReadyResult = "MountNotReady";
 static const std::string UnmountInProgressResult = "UnmountInProgress";
 
+static const std::string UnattendedEnvironmentVariable = "GVFS_UNATTENDED";
+
+static const std::unordered_set<std::string> KnownGitCommands(
+    {
+        "add",
+        "am",
+        "annotate",
+        "apply",
+        "archive",
+        "bisect--helper",
+        "blame",
+        "branch",
+        "bundle",
+        "cat-file",
+        "check-attr",
+        "check-ignore",
+        "check-mailmap",
+        "check-ref-format",
+        "checkout",
+        "checkout-index",
+        "cherry",
+        "cherry-pick",
+        "clean",
+        "clone",
+        "column",
+        "commit",
+        "commit-tree",
+        "config",
+        "count-objects",
+        "credential",
+        "describe",
+        "diff",
+        "diff-files",
+        "diff-index",
+        "diff-tree",
+        "fast-export",
+        "fetch",
+        "fetch-pack",
+        "fmt-merge-msg",
+        "for-each-ref",
+        "format-patch",
+        "fsck",
+        "fsck-objects",
+        "gc",
+        "get-tar-commit-id",
+        "grep",
+        "hash-object",
+        "help",
+        "index-pack",
+        "init",
+        "init-db",
+        "interpret-trailers",
+        "log",
+        "ls-files",
+        "ls-remote",
+        "ls-tree",
+        "mailinfo",
+        "mailsplit",
+        "merge",
+        "merge-base",
+        "merge-file",
+        "merge-index",
+        "merge-ours",
+        "merge-recursive",
+        "merge-recursive-ours",
+        "merge-recursive-theirs",
+        "merge-subtree",
+        "merge-tree",
+        "mktag",
+        "mktree",
+        "mv",
+        "name-rev",
+        "notes",
+        "pack-objects",
+        "pack-redundant",
+        "pack-refs",
+        "patch-id",
+        "pickaxe",
+        "prune",
+        "prune-packed",
+        "pull",
+        "push",
+        "read-tree",
+        "rebase",
+        "rebase--helper",
+        "receive-pack",
+        "reflog",
+        "remote",
+        "remote-ext",
+        "remote-fd",
+        "repack",
+        "replace",
+        "rerere",
+        "reset",
+        "rev-list",
+        "rev-parse",
+        "revert",
+        "rm",
+        "send-pack",
+        "shortlog",
+        "show",
+        "show-branch",
+        "show-ref",
+        "stage",
+        "status",
+        "stripspace",
+        "symbolic-ref",
+        "tag",
+        "unpack-file",
+        "unpack-objects",
+        "update-index",
+        "update-ref",
+        "update-server-info",
+        "upload-archive",
+        "upload-archive--writer",
+        "var",
+        "verify-commit",
+        "verify-pack",
+        "verify-tag",
+        "version",
+        "whatchanged",
+        "worktree",
+        "write-tree",
+
+        // Externals
+        "bisect",
+        "filter-branch",
+        "gui",
+        "merge-octopus",
+        "merge-one-file",
+        "merge-resolve",
+        "mergetool",
+        "parse-remote",
+        "quiltimport",
+        "rebase",
+        "submodule",
+    });
+
 const int PIPE_BUFFER_SIZE = 1024;
+
+bool GitCommandIsKnown(const std::string& gitCommand)
+{
+    return KnownGitCommands.find(gitCommand) != KnownGitCommands.end();
+}
+
+bool IsAlias(const std::string& gitCommand)
+{
+    // TODO
+    UNREFERENCED_PARAMETER(gitCommand);
+    return false;
+}
+
+static bool IsUnattended()
+{
+    char unattendedEnvVariable[2056];
+    size_t requiredSize;
+    if (getenv_s(&requiredSize, unattendedEnvVariable, UnattendedEnvironmentVariable.c_str()) == 0)
+    {
+        return 0 == strcmp(unattendedEnvVariable, "1");
+    }
+    
+    return false;
+}
+
+static std::string GetGitCommandSessionId()
+{
+    char gitEnvVariable[2056];
+    size_t requiredSize;
+
+    // TOOD: handle error codes
+    if (getenv_s(&requiredSize, gitEnvVariable, "GIT_TR2_PARENT_SID") == 0)
+    {
+        return gitEnvVariable;
+    }
+
+    return "";
+}
+
+static bool IsElevated()
+{
+    // https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
+    BOOL b;
+    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+    PSID AdministratorsGroup;
+    b = AllocateAndInitializeSid(
+        &NtAuthority,
+        2,
+        SECURITY_BUILTIN_DOMAIN_RID,
+        DOMAIN_ALIAS_RID_ADMINS,
+        0, 0, 0, 0, 0, 0,
+        &AdministratorsGroup);
+    if (b)
+    {
+        if (!CheckTokenMembership(NULL, AdministratorsGroup, &b))
+        {
+            b = FALSE;
+        }
+
+        FreeSid(AdministratorsGroup);
+    }
+
+    return(b);
+}
+
+static bool IsConsoleOutputRedirectedToFile()
+{
+    // Windows specific
+    return FILE_TYPE_DISK == GetFileType(GetStdHandle(STD_OUTPUT_HANDLE));
+}
 
 HookType GetHookType(const char* string)
 {
@@ -166,6 +374,8 @@ static bool IsProcessActive(int pid)
 
 static bool CheckGVFSLockAvailabilityOnly(int argc, char *argv[])
 {
+    // TODO
+
     /*try
     {
         // Don't acquire the GVFS lock if the git command is not acquiring locks.
@@ -193,7 +403,7 @@ static bool ShouldLock(int argc, char* argv[])
 
     switch (gitCommand[0])
     {
-        // Keep these alphabetically sorted
+    // Keep these alphabetically sorted
     case 'b':
         if (gitCommand == "blame" ||
             gitCommand == "branch")
@@ -367,11 +577,10 @@ static bool ShouldLock(int argc, char* argv[])
         }
     }
 
-    // TODO: Support these checks
-    /*if (!KnownGitCommands.Contains(gitCommand) && IsAlias(gitCommand))
+    if (!GitCommandIsKnown(gitCommand) && IsAlias(gitCommand))
     {
         return false;
-    }*/
+    }
 
     return true;
 }
@@ -403,20 +612,6 @@ static std::string GenerateFullCommand(int argc, char* argv[])
     }
 
     return fullGitCommand;
-}
-
-static std::string GetGitCommandSessionId()
-{
-    /*try
-    {
-        return Environment.GetEnvironmentVariable("GIT_TR2_PARENT_SID", EnvironmentVariableTarget.Process) ? ? string.Empty;
-    }
-    catch (Exception)
-    {
-        return string.Empty;
-    }*/
-
-    return "";
 }
 
 static bool CheckAcceptResponse(const string& responseHeader, bool checkAvailabilityOnly, string& message)
@@ -597,6 +792,7 @@ static bool TryAcquireGVFSLockForProcess(
         }
     };
 
+    // TODO
     UNREFERENCED_PARAMETER(unattended);
     bool isSuccessfulLockResult;
     // if (unattended)
@@ -631,9 +827,9 @@ void AcquireGVFSLockForProcess(bool unattended, int argc, char* argv[], int pid,
         pipeClient,
         fullCommand,
         pid,
-        false, // GVFSHooksPlatform.IsElevated(),
-        false, // isConsoleOutputRedirectedToFile: GVFSHooksPlatform.IsConsoleOutputRedirectedToFile(),
-        checkGvfsLockAvailabilityOnly, // checkAvailabilityOnly
+        IsElevated(),
+        IsConsoleOutputRedirectedToFile(),
+        checkGvfsLockAvailabilityOnly,
         gitCommandSessionId,
         result))
     {
@@ -703,8 +899,8 @@ void ReleaseGVFSLock(bool unattended, int argc, char* argv[], int pid, PIPE_HAND
         pipeClient,
         fullCommand,
         pid,
-        false, // GVFSHooksPlatform.IsElevated(),
-        false); // GVFSHooksPlatform.IsConsoleOutputRedirectedToFile(),
+        IsElevated(),
+        IsConsoleOutputRedirectedToFile());
 }
 
 void RunLockRequest(int argc, char *argv[], bool unattended, std::function<void(bool, int, char*[], int, PIPE_HANDLE)> requestToRun)
@@ -729,6 +925,7 @@ void RunPreCommands(int argc, char *argv[])
     UNREFERENCED_PARAMETER(argc);
     UNREFERENCED_PARAMETER(argv);
 
+    // TODO
     /*string command = GetGitCommand(args);
     switch (command)
     {
@@ -741,6 +938,8 @@ void RunPreCommands(int argc, char *argv[])
 
 void RunPostCommands()
 {
+    // TODO
+
     /*if (!unattended)
     {
         RemindUpgradeAvailable();
@@ -754,10 +953,15 @@ int main(int argc, char *argv[])
         die(ReturnCode::InvalidArgCount, "Usage: gvfs.hooks.exe --git-pid=<pid> <hook> <git verb> [<other arguments>]");
     }
 
-    // TODO: Check if unattended
-    bool unattended = false;
+    bool unattended = IsUnattended();
 
     // TODO: Exit with success if outside VFS4G repo
+    /*if (!GVFSHooksPlatform.TryGetGVFSEnlistmentRoot(Environment.CurrentDirectory, out enlistmentRoot, out errorMessage))
+    {
+        // Nothing to hook when being run outside of a GVFS repo.
+        // This is also the path when run with --git-dir outside of a GVFS directory, see Story #949665
+        Environment.Exit(0);
+    }*/
 
     DisableCRLFTranslationOnStdPipes();
 
