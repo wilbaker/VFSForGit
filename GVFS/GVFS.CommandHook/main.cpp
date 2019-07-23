@@ -148,9 +148,20 @@ static bool ReadTerminatedMessageFromGVFS(PIPE_HANDLE pipeHandle, std::string& r
 
 static bool IsProcessActive(int pid)
 {
-    // TODO Implement
-    UNREFERENCED_PARAMETER(pid);
-    return true;
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+    if (process != NULL)
+    {
+        DWORD exitCode;
+        if (GetExitCodeProcess(process, &exitCode) && exitCode == STILL_ACTIVE)
+        {
+            CloseHandle(process);
+            return true;
+        }
+
+        CloseHandle(process);
+    }
+     
+    return false;
 }
 
 static bool CheckGVFSLockAvailabilityOnly(int argc, char *argv[])

@@ -30,9 +30,6 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="packet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\GVFS.NativeHooks.Common\common.h">
       <Filter>Shared Header Files</Filter>
     </ClInclude>
