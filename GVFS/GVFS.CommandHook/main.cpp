@@ -30,6 +30,8 @@ static const std::string UnmountInProgressResult = "UnmountInProgress";
 
 static const std::string UnattendedEnvironmentVariable = "GVFS_UNATTENDED";
 
+static PATH_STRING s_pipeName;
+
 static const std::unordered_set<std::string> KnownGitCommands(
     {
         "add",
@@ -372,29 +374,47 @@ static bool IsProcessActive(int pid)
     return false;
 }
 
-static bool CheckGVFSLockAvailabilityOnly(int argc, char *argv[])
+static bool IsGitEnvVarDisabled(string envVar)
 {
-    // TODO
+    char gitEnvVariable[2056];
+    size_t requiredSize;
 
-    /*try
+    // TOOD: handle error codes
+    if (getenv_s(&requiredSize, gitEnvVariable, envVar.c_str()) == 0)
     {
-        // Don't acquire the GVFS lock if the git command is not acquiring locks.
-        // This enables tools to run status commands without to the index and
-        // blocking other commands from running. The git argument
-        // "--no-optional-locks" results in a 'negative'
-        // value GIT_OPTIONAL_LOCKS environment variable.
-        return GetGitCommand(args).Equals("status", StringComparison.OrdinalIgnoreCase) &&
-            (args.Any(arg = > arg.Equals("--no-lock-index", StringComparison.OrdinalIgnoreCase)) ||
-                IsGitEnvVarDisabled("GIT_OPTIONAL_LOCKS"));
+        if (_stricmp(gitEnvVariable, "false") == 0 ||
+            _stricmp(gitEnvVariable, "no") == 0 ||
+            _stricmp(gitEnvVariable, "off") == 0 ||
+            _stricmp(gitEnvVariable, "0") == 0)
+        {
+            return true;
+        }
     }
-    catch (Exception e)
-    {
-        ExitWithError("Failed to determine if GVFS should aquire GVFS lock: " + e.ToString());
-    }*/
-    UNREFERENCED_PARAMETER(argc);
-    UNREFERENCED_PARAMETER(argv);
 
     return false;
+}
+
+static bool CheckGVFSLockAvailabilityOnly(int argc, char *argv[])
+{
+    // Don't acquire the GVFS lock if the git command is not acquiring locks.
+    // This enables tools to run status commands without to the index and
+    // blocking other commands from running. The git argument
+    // "--no-optional-locks" results in a 'negative'
+    // value GIT_OPTIONAL_LOCKS environment variable.
+
+    if (_stricmp(GetGitCommand(argc, argv).c_str(), "status") != 0)
+    {
+        return false;
+    }
+
+    char** beginArgs = argv;
+    char** endArgs = beginArgs + argc;
+    if (endArgs != std::find_if(beginArgs, endArgs, [](char* argString) { return (0 == _stricmp(argString, "--no-lock-index")); }))
+    {
+        return true;
+    }
+
+    return IsGitEnvVarDisabled("GIT_OPTIONAL_LOCKS");
 }
 
 static bool ShouldLock(int argc, char* argv[])
@@ -907,8 +927,7 @@ void RunLockRequest(int argc, char *argv[], bool unattended, std::function<void(
 {
     if (ShouldLock(argc, argv))
     {
-        PATH_STRING pipeName(GetGVFSPipeName(argv[0]));
-        PIPE_HANDLE pipeHandle = CreatePipeToGVFS(pipeName);
+        PIPE_HANDLE pipeHandle = CreatePipeToGVFS(s_pipeName);
 
         int pid = GetParentPid(argc, argv);
         if (pid == InvalidProcessId || !IsProcessActive(pid))
@@ -955,13 +974,12 @@ int main(int argc, char *argv[])
 
     bool unattended = IsUnattended();
 
-    // TODO: Exit with success if outside VFS4G repo
-    /*if (!GVFSHooksPlatform.TryGetGVFSEnlistmentRoot(Environment.CurrentDirectory, out enlistmentRoot, out errorMessage))
+    if (!GetPipeNameIfInsideGVFSRepo(/*out*/ s_pipeName))
     {
         // Nothing to hook when being run outside of a GVFS repo.
         // This is also the path when run with --git-dir outside of a GVFS directory, see Story #949665
-        Environment.Exit(0);
-    }*/
+        die(ReturnCode::Success, "");
+    }
 
     DisableCRLFTranslationOnStdPipes();
 

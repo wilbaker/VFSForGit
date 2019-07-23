@@ -48,6 +48,7 @@ inline void die(int err, const char *fmt, ...)
 
 PATH_STRING GetFinalPathName(const PATH_STRING& path);
 PATH_STRING GetGVFSPipeName(const char *appName);
+bool GetPipeNameIfInsideGVFSRepo(PATH_STRING& pipeName);
 PIPE_HANDLE CreatePipeToGVFS(const PATH_STRING& pipeName);
 void DisableCRLFTranslationOnStdPipes();
 
