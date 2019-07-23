@@ -1176,7 +1176,7 @@ void RunPreCommands(int argc, char *argv[])
     string command = GetGitCommand(argc, argv);
     if (command == "fetch" || command == "pull")
     {
-        RunProcess("gvfs", "prefetch --commmits", /*redirectOutput*/ false);
+        RunProcess("gvfs", "prefetch --commits", /*redirectOutput*/ false);
     }
 }
 
