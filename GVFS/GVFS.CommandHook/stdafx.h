@@ -20,4 +20,6 @@
 #include <unordered_set>
 #include <future>
 #include <array>
+#include <locale>
+#include <codecvt>
 #include <stdarg.h>
