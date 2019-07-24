@@ -175,6 +175,7 @@ static const std::unordered_set<std::string> KnownGitCommands(
 
 const int PIPE_BUFFER_SIZE = 1024;
 
+// needs cross-plat
 string RunProcess(const string& processName, const string& args, bool redirectOutput)
 {
     // https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
