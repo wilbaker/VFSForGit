@@ -140,11 +140,11 @@ void SendReleaseLock(
         << "ReleaseLock" << "|"
         << pid << "|"
         << (isElevated ? "true" : "false") << "|"
-        << "false" << "|" // checkAvailabilityOnly
+        << "false" << "|"
         << fullCommand.length() << "|"
         << fullCommand << "|"
-        << 0 << "|" // gitCommandSessionId length
-        << "" // gitCommandSessionId
+        << 0 << "|"
+        << ""
         << TerminatorChar;
 
     std::string requestMessage = requestMessageStream.str();
@@ -164,9 +164,9 @@ void SendReleaseLock(
         die(ReturnCode::PipeWriteFailed, "Failed to write to pipe (%d)\n", error);
     }
 
-    auto releaseLock = [&pipeClient]() -> bool
+    auto releaseLock = [&pipeClient]()
     {
-        std::string response;
+        string response;
         if (!Messages_ReadTerminatedMessageFromGVFS(pipeClient, /* out */ response))
         {
             printf("\nError communicating with GVFS: Run 'git status' to check the status of your repo\n");
@@ -229,7 +229,6 @@ int main(int argc, char *argv[])
 
         RunPostCommands(unattended);
         break;
-        break;
 
     default:
         ExitWithError("Unrecognized hook: " + string(argv[1]));
@@ -263,7 +262,7 @@ static inline void RemindUpgradeAvailable()
     // command is run, check that the random number is between 0 and 10,
     // which will have a probability of 10/100 == 10%.
     std::mt19937 gen(static_cast<unsigned int>(std::time(nullptr) % UINT_MAX)); //Standard mersenne_twister_engine seeded with the current time
-    int reminderFrequency = 10;
+    const int reminderFrequency = 10;
     int randomValue = gen() % 100;
 
     if (randomValue <= reminderFrequency && Upgrader_IsLocalUpgradeAvailable())
@@ -420,6 +419,7 @@ static bool CheckGVFSLockAvailabilityOnly(int argc, char *argv[])
 
 static string BuildUpdatePlaceholderFailureMessage(vector<string>& fileList, const string& failedOperation, const string& recoveryCommand)
 {
+    // TODO (hack): Test this with non-ascii file names
     struct
     {
         bool operator()(const string& a, const string& b) const
@@ -634,7 +634,7 @@ static bool ShouldLock(int argc, char* argv[])
 
     if (gitCommand == "reset")
     {
-        if (endArgs != std::find_if(beginArgs, endArgs, [](char* argString) { return (0 == strcmp(argString, "--soft")); }))
+        if (endArgs != find_if(beginArgs, endArgs, [](char* argString) { return (0 == strcmp(argString, "--soft")); }))
         {
             return false;
         }
@@ -665,7 +665,11 @@ static inline HookType GetHookType(const char* string)
 static string GetGitCommand(char* argv[])
 {
     string command(argv[2]);
-    transform(command.begin(), command.end(), command.begin(), [](unsigned char c) -> unsigned char { return static_cast<unsigned char>(std::tolower(c)); });
+    transform(
+        command.begin(), 
+        command.end(), 
+        command.begin(), 
+        [](unsigned char c) { return static_cast<unsigned char>(std::tolower(c)); });
 
     if (command.length() >= 4 && command.substr(0, 4) == "git-")
     {

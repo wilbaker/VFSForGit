@@ -117,7 +117,7 @@ bool GVFSLock_TryAcquireGVFSLockForProcess(
         return false;
     }
 
-    auto waitForLock = [pipeClient, &requestMessage, &result, checkAvailabilityOnly]() -> bool
+    auto waitForLock = [pipeClient, &requestMessage, &result, checkAvailabilityOnly]()
     {
         while (true)
         {
