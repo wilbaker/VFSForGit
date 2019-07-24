@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 
     if (!GetPipeNameIfInsideGVFSRepo(/*out*/ s_pipeName))
     {
-        // TODO (hack): Use ExitWithError instead
+        // TODO (hack): Use ExitWithError instead inside of GetPipeNameIfInsideGVFSRepo
         // Nothing to hook when being run outside of a GVFS repo.
         // This is also the path when run with --git-dir outside of a GVFS directory, see Story #949665
         exit(0);
@@ -403,7 +403,7 @@ static bool CheckGVFSLockAvailabilityOnly(int argc, char *argv[])
     // "--no-optional-locks" results in a 'negative'
     // value GIT_OPTIONAL_LOCKS environment variable.
 
-    if (_stricmp(GetGitCommand(argv).c_str(), "status") != 0)
+    if (GetGitCommand(argv) != "status")
     {
         return false;
     }
