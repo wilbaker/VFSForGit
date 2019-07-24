@@ -2,6 +2,7 @@
 #include "common.h"
 #include "Console.h"
 #include "Messages.h"
+#include "String.h"
 
 using std::chrono::milliseconds;
 using std::function;
@@ -228,18 +229,7 @@ static string ParseCommandFromLockResponse(const string& responseBody)
         // Examples:
         // "123|true|false|13|parsedCommand|9|sessionId"
         // "321|false|true|30|parsedCommand with | delimiter|26|sessionId with | delimiter"
-        vector<string> dataParts;
-        size_t offset = 0;
-        size_t delimPos = responseBody.find('|');
-        while (delimPos != string::npos)
-        {
-            dataParts.emplace_back(responseBody.substr(offset, delimPos - offset));
-            offset = delimPos + 1;
-            delimPos = responseBody.find('|', offset);
-        }
-
-        dataParts.emplace_back(responseBody.substr(offset));
-
+        vector<string> dataParts(String_Split('|', responseBody));
         if (dataParts.size() < 7)
         {
             die(ReturnCode::InvalidResponse, "Invalid lock message. Expected at least 7 parts, got: %zu from message: '%s'", dataParts.size(), responseBody.c_str());

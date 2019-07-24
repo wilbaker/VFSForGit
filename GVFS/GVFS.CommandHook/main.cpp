@@ -7,6 +7,7 @@
 #include "Messages.h"
 #include "KnownGitCommands.h"
 #include "GVFSEnvironment.h"
+#include "String.h"
 
 using std::find_if;
 using std::function;
@@ -68,18 +69,7 @@ void ReleaseReponseHandler(const string& rawResponse)
 
     if (!responseBody.empty())
     {
-        vector<string> releaseLockSections;
-        size_t offset = 0;
-        size_t delimPos = responseBody.find('<');
-        while (delimPos != string::npos)
-        {
-            releaseLockSections.emplace_back(responseBody.substr(offset, delimPos - offset));
-            offset = delimPos + 1;
-            delimPos = responseBody.find('<', offset);
-        }
-
-        releaseLockSections.emplace_back(responseBody.substr(offset));
-
+        vector<string> releaseLockSections(String_Split('<', responseBody));
         if (releaseLockSections.size() != 4)
         {
             printf("\nError communicating with GVFS: Run 'git status' to check the status of your repo\n");
@@ -116,32 +106,8 @@ void ReleaseReponseHandler(const string& rawResponse)
             }
             else
             {
-                const string& failedUpdated = releaseLockSections[2];
-                vector<string> failedUpdateList;
-                offset = 0;
-                delimPos = failedUpdated.find('|');
-                while (delimPos != string::npos)
-                {
-                    failedUpdateList.emplace_back(failedUpdated.substr(offset, delimPos - offset));
-                    offset = delimPos + 1;
-                    delimPos = failedUpdated.find('|', offset);
-                }
-
-                failedUpdateList.emplace_back(failedUpdated.substr(offset));
-
-                const string& failedDeletes = releaseLockSections[3];
-                vector<string> failedDeleteList;
-                offset = 0;
-                delimPos = failedDeletes.find('|');
-                while (delimPos != string::npos)
-                {
-                    failedDeleteList.emplace_back(failedDeletes.substr(offset, delimPos - offset));
-                    offset = delimPos + 1;
-                    delimPos = failedDeletes.find('|', offset);
-                }
-
-                failedDeleteList.emplace_back(failedDeletes.substr(offset));
-
+                vector<string> failedUpdateList(String_Split('|', releaseLockSections[2]));
+                vector<string> failedDeleteList(String_Split('|', releaseLockSections[3]));;
                 if (!failedDeleteList.empty())
                 {
                     string deleteFailuresMessage = BuildUpdatePlaceholderFailureMessage(failedDeleteList, "delete", "git clean -f ");
