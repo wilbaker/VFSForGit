@@ -309,7 +309,7 @@ static inline void RemindUpgradeAvailable()
 static inline void ExitWithError(const std::string& error)
 {
     printf("%s\n", error.c_str());
-    die(1, "%s\n");
+    exit(1);
 }
 
 static inline void CheckForLegalCommands(char* argv[])
