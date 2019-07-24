@@ -605,6 +605,28 @@ static bool IsGitEnvVarDisabled(string envVar)
     return false;
 }
 
+static string BuildUpdatePlaceholderFailureMessage(vector<string>& fileList, const string& failedOperation, const string& recoveryCommand)
+{
+    struct 
+    {
+        bool operator()(const std::string& a, const std::string& b) const
+        {
+            return _stricmp(a.c_str(), b.c_str()) < 0;
+        }
+    } caseInsensitiveCompare;
+
+    std::sort(fileList.begin(), fileList.end(), caseInsensitiveCompare);
+
+    std::ostringstream message;
+    message << "\nGVFS was unable to " << failedOperation << " the following files. To recover, close all handles to the files and run these commands:";
+    for (const std::string& file : fileList)
+    {
+        message << "\n    " << recoveryCommand << file;
+    }
+
+    return message.str();
+}
+
 static bool ShowStatusWhileRunning(
     std::function<bool()> action,
     const string& message,
@@ -1167,7 +1189,7 @@ void ReleaseReponseHandler(const std::string& rawResponse)
         {
             releaseLockSections.emplace_back(responseBody.substr(offset, delimPos - offset));
             offset = delimPos + 1;
-            delimPos = responseBody.find('|', offset);
+            delimPos = responseBody.find('<', offset);
         }
 
         releaseLockSections.emplace_back(responseBody.substr(offset));
@@ -1209,7 +1231,43 @@ void ReleaseReponseHandler(const std::string& rawResponse)
             }
             else
             {
-                // TODO: Build failed to delete/update list
+                const std::string& failedUpdated = releaseLockSections[2];
+                vector<string> failedUpdateList;
+                offset = 0;
+                delimPos = failedUpdated.find('|');
+                while (delimPos != string::npos)
+                {
+                    failedUpdateList.emplace_back(failedUpdated.substr(offset, delimPos - offset));
+                    offset = delimPos + 1;
+                    delimPos = failedUpdated.find('|', offset);
+                }
+
+                failedUpdateList.emplace_back(failedUpdated.substr(offset));
+
+                const std::string& failedDeletes = releaseLockSections[3];
+                vector<string> failedDeleteList;
+                offset = 0;
+                delimPos = failedDeletes.find('|');
+                while (delimPos != string::npos)
+                {
+                    failedDeleteList.emplace_back(failedDeletes.substr(offset, delimPos - offset));
+                    offset = delimPos + 1;
+                    delimPos = failedDeletes.find('|', offset);
+                }
+
+                failedDeleteList.emplace_back(failedDeletes.substr(offset));
+
+                if (!failedDeleteList.empty())
+                {
+                    string deleteFailuresMessage = BuildUpdatePlaceholderFailureMessage(failedDeleteList, "delete", "git clean -f ");
+                    printf(deleteFailuresMessage.c_str());
+                }
+
+                if (!failedUpdateList.empty())
+                {
+                    string updateFailuresMessage = BuildUpdatePlaceholderFailureMessage(failedUpdateList, "update", "git checkout -- ");
+                    printf(updateFailuresMessage.c_str());
+                }
             }
         }
     }
