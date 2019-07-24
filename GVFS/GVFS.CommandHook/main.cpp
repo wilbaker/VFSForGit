@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "common.h"
+#include "Shlobj.h"
 
 using std::string;
 using std::vector;
@@ -31,6 +32,8 @@ static const std::string MountNotReadyResult = "MountNotReady";
 static const std::string UnmountInProgressResult = "UnmountInProgress";
 
 static const std::string UnattendedEnvironmentVariable = "GVFS_UNATTENDED";
+
+static const std::string ReminderNotification = "\nA new version of GVFS is available. Run `gvfs upgrade --confirm` from an elevated command prompt to upgrade.\n";
 
 static PATH_STRING s_pipeName;
 
@@ -274,9 +277,58 @@ string RunProcess(const string& processName, const string& args, bool redirectOu
     return output;
 }
 
+// needs cross-plat
+static PATH_STRING GetHighestAvailableVersionFilePath()
+{
+    PWSTR programDataPath;
+    HRESULT getPathResult = SHGetKnownFolderPath(
+        FOLDERID_ProgramData,  // rfid
+        KF_FLAG_CREATE,        // dwFlags
+        NULL,                  // hToken
+        &programDataPath);
+
+    if (SUCCEEDED(getPathResult))
+    {
+        wchar_t upgradeDirectory[MAX_PATH];
+        _snwprintf_s(upgradeDirectory, _TRUNCATE, L"%s\\GVFS\\GVFS.Upgrade\\HighestAvailableVersion", programDataPath);
+        CoTaskMemFree(programDataPath);
+        return PATH_STRING(upgradeDirectory);
+    }
+
+    return PATH_STRING();
+}
+
+// needs cross-plat
+bool FileExists(const PATH_STRING& path)
+{
+    DWORD attributes = GetFileAttributesW(path.c_str());
+    return (attributes != INVALID_FILE_ATTRIBUTES) && ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
+}
+
+static bool IsLocalUpgradeAvailable()
+{
+    PATH_STRING highestVersionFilePath(GetHighestAvailableVersionFilePath());
+    if (!highestVersionFilePath.empty())
+    {
+        return FileExists(highestVersionFilePath);
+    }
+
+    return false;
+}
+
 void RemindUpgradeAvailable()
 {
-    // TODO
+    // The idea is to generate a random number between 0 and 99. To make
+    // sure that the reminder is displayed only 10% of the times a git
+    // command is run, check that the random number is between 0 and 10,
+    // which will have a probability of 10/100 == 10%.
+    int reminderFrequency = 10;
+    int randomValue = rand() % 100;
+
+    if (randomValue <= reminderFrequency && IsLocalUpgradeAvailable())
+    {
+        printf(ReminderNotification.c_str());
+    }
 }
 
 bool GitCommandIsKnown(const std::string& gitCommand)
@@ -385,13 +437,13 @@ int GetParentPid(int argc, char* argv[])
         die(InvalidCommand, "Git did not supply the process Id.\nEnsure you are using the correct version of the git client.");
     }
 
-    // TODO: Error on duplicates
+    // TODO: Error on duplicates?
     std::string pidString(*pidArg);
     if (!pidString.empty())
     {
         pidString = pidString.substr(GitPidArg.length());
 
-        // TODO: Ensure string is value int value
+        // TODO: Ensure string is value int value?
         return std::atoi(pidString.c_str());
     }
 
