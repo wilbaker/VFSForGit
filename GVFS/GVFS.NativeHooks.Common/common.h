@@ -37,6 +37,8 @@ enum ReturnCode
 	LastError = PathNameError,	
 };
 
+const char TerminatorChar = '\x3';
+
 void die(int err, const char *fmt, ...) PRINTF_FMT(2,3);
 inline void die(int err, const char *fmt, ...)
 {

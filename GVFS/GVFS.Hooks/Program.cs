@@ -302,27 +302,6 @@ namespace GVFS.Hooks
             return message;
         }
 
-        private static bool TryRemoveArg(ref string[] args, string argName, out string output)
-        {
-            output = null;
-            int argIdx = Array.IndexOf(args, argName);
-            if (argIdx >= 0)
-            {
-                if (argIdx + 1 < args.Length)
-                {
-                    output = args[argIdx + 1];
-                    args = args.Take(argIdx).Concat(args.Skip(argIdx + 2)).ToArray();
-                    return true;
-                }
-                else
-                {
-                    ExitWithError("Missing value for {0}.", argName);
-                }
-            }
-
-            return false;
-        }
-
         private static bool IsGitEnvVarDisabled(string envVar)
         {
                 string envVarValue = Environment.GetEnvironmentVariable(envVar);
@@ -411,11 +390,6 @@ namespace GVFS.Hooks
             }
 
             return true;
-        }
-
-        private static bool ContainsArg(string[] actualArgs, string expectedArg)
-        {
-            return actualArgs.Contains(expectedArg, StringComparer.OrdinalIgnoreCase);
         }
 
         private static string GetHookType(string[] args)

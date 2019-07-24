@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "common.h"
-#include "upgrader.h"
+#include "Upgrader.h"
 #include "Shlobj.h"
 
 PATH_STRING Upgrader_GetHighestAvailableVersionFilePath()

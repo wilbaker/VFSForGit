@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "common.h"
-#include "process.h"
+#include "Process.h"
 
 using std::string;
 
@@ -81,7 +81,7 @@ string Process_Run(const string& processName, const string& args, bool redirectO
     std::wstring command = utf16conv.from_bytes(processName) + L" " + utf16conv.from_bytes(args);
     wchar_t buffer[4096];
 
-    // TODO: Handle buffer too small
+    // TODO (hack): Handle buffer too small
     wcscpy_s(buffer, command.c_str());
 
     // Create the child process. 
@@ -138,4 +138,22 @@ bool Process_IsConsoleOutputRedirectedToFile()
 {
     // Windows specific
     return FILE_TYPE_DISK == GetFileType(GetStdHandle(STD_OUTPUT_HANDLE));
+}
+
+bool Process_IsProcessActive(int pid)
+{
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+    if (process != NULL)
+    {
+        DWORD exitCode;
+        if (GetExitCodeProcess(process, &exitCode) && exitCode == STILL_ACTIVE)
+        {
+            CloseHandle(process);
+            return true;
+        }
+
+        CloseHandle(process);
+    }
+
+    return false;
 }

@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "common.h"
-#include "filesystem.h"
+#include "FileSystem.h"
 
 bool FileSystem_FileExists(const PATH_STRING& path)
 {

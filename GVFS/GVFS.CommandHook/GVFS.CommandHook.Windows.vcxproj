@@ -107,23 +107,32 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\GVFS.NativeHooks.Common\common.h" />
-    <ClInclude Include="filesystem.h" />
-    <ClInclude Include="process.h" />
+    <ClInclude Include="Console.h" />
+    <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="GVFSEnvironment.h" />
+    <ClInclude Include="GVFSLock.h" />
+    <ClInclude Include="KnownGitCommands.h" />
+    <ClInclude Include="Messages.h" />
+    <ClInclude Include="Process.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="upgrader.h" />
+    <ClInclude Include="Upgrader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\GVFS.NativeHooks.Common\common.windows.cpp" />
-    <ClCompile Include="filesystem.windows.cpp" />
+    <ClCompile Include="Console.cpp" />
+    <ClCompile Include="FileSystem.Windows.cpp" />
+    <ClCompile Include="GVFSLock.cpp" />
+    <ClCompile Include="KnownGitCommands.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="process.windows.cpp" />
+    <ClCompile Include="Messages.cpp" />
+    <ClCompile Include="Process.Windows.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="upgrader.windows.cpp" />
+    <ClCompile Include="Upgrader.Windows.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Version.rc" />
