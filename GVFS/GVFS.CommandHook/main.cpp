@@ -322,8 +322,9 @@ void RemindUpgradeAvailable()
     // sure that the reminder is displayed only 10% of the times a git
     // command is run, check that the random number is between 0 and 10,
     // which will have a probability of 10/100 == 10%.
+    std::mt19937 gen(static_cast<unsigned int>(std::time(nullptr) % UINT_MAX)); //Standard mersenne_twister_engine seeded with the current time
     int reminderFrequency = 10;
-    int randomValue = rand() % 100;
+    int randomValue = gen() % 100;
 
     if (randomValue <= reminderFrequency && IsLocalUpgradeAvailable())
     {

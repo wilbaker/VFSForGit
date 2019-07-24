@@ -22,4 +22,5 @@
 #include <array>
 #include <locale>
 #include <codecvt>
+#include <random>
 #include <stdarg.h>
