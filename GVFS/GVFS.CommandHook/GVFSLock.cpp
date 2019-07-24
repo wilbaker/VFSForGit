@@ -77,7 +77,7 @@ bool GVFSLock_TryAcquireGVFSLockForProcess(
         return false;
     }
 
-    size_t headerSeparator = response.find('|');
+    size_t headerSeparator = response.find(MessageSeparator);
     string responseHeader;
     string message;
     if (headerSeparator != string::npos)
@@ -147,7 +147,7 @@ bool GVFSLock_TryAcquireGVFSLockForProcess(
                 return false;
             }
 
-            size_t headerSeparator = response.find('|');
+            size_t headerSeparator = response.find(MessageSeparator);
             string responseHeader;
             if (headerSeparator != string::npos)
             {
@@ -229,7 +229,7 @@ static string ParseCommandFromLockResponse(const string& responseBody)
         // Examples:
         // "123|true|false|13|parsedCommand|9|sessionId"
         // "321|false|true|30|parsedCommand with | delimiter|26|sessionId with | delimiter"
-        vector<string> dataParts(String_Split('|', responseBody));
+        vector<string> dataParts(String_Split(MessageSeparator, responseBody));
         if (dataParts.size() < 7)
         {
             die(ReturnCode::InvalidResponse, "Invalid lock message. Expected at least 7 parts, got: %zu from message: '%s'", dataParts.size(), responseBody.c_str());

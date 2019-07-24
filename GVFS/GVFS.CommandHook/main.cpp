@@ -54,7 +54,7 @@ static string GetGitCommandSessionId();
 
 void ReleaseReponseHandler(const string& rawResponse)
 {
-    size_t headerSeparator = rawResponse.find('|');
+    size_t headerSeparator = rawResponse.find(MessageSeparator);
     string responseHeader;
     string responseBody;
     if (headerSeparator != string::npos)
