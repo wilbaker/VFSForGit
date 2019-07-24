@@ -204,7 +204,6 @@ void SendReleaseLock(
         if (!Messages_ReadTerminatedMessageFromGVFS(pipeClient, /* out */ response))
         {
             printf("\nError communicating with GVFS: Run 'git status' to check the status of your repo\n");
-            printf("    DEBUG: %s\n", response.c_str());
             return true;
         }
 
@@ -240,7 +239,7 @@ int main(int argc, char *argv[])
         // TODO (hack): Use ExitWithError instead
         // Nothing to hook when being run outside of a GVFS repo.
         // This is also the path when run with --git-dir outside of a GVFS directory, see Story #949665
-        die(ReturnCode::Success, "");
+        exit(0);
     }
 
     DisableCRLFTranslationOnStdPipes();
