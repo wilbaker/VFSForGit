@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "common.h"
-#include "Shlobj.h"
+#include "process.h"
+#include "upgrader.h"
 
 using std::string;
 using std::vector;
@@ -175,163 +176,9 @@ static const std::unordered_set<std::string> KnownGitCommands(
 
 const int PIPE_BUFFER_SIZE = 1024;
 
-// needs cross-plat
-string RunProcess(const string& processName, const string& args, bool redirectOutput)
-{
-    // https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
-    HANDLE g_hChildStd_OUT_Rd = NULL;
-    HANDLE g_hChildStd_OUT_Wr = NULL;
-
-    if (redirectOutput)
-    {
-        // Set the bInheritHandle flag so pipe handles are inherited.
-        SECURITY_ATTRIBUTES saAttr;
-        saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-        saAttr.bInheritHandle = TRUE;
-        saAttr.lpSecurityDescriptor = NULL;
-
-        // Create a pipe for the child process's STDOUT.
-        if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0))
-        {
-            die(ReturnCode::PipeConnectError, "StdoutRd CreatePipe");
-        }
-
-        // Ensure the read handle to the pipe for STDOUT is not inherited.
-        if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
-        {
-            die(ReturnCode::PipeConnectError, "Stdout SetHandleInformation");
-        }
-    }
-
-    PROCESS_INFORMATION piProcInfo;
-    STARTUPINFOW siStartInfo;
-    BOOL bSuccess = FALSE;
-
-    // Set up members of the PROCESS_INFORMATION structure. 
-    ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
-
-    // Set up members of the STARTUPINFO structure. 
-    // This structure specifies the STDIN and STDOUT handles for redirection.
-    ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
-    siStartInfo.cb = sizeof(STARTUPINFO);
-
-    if (redirectOutput)
-    {
-        siStartInfo.hStdError = INVALID_HANDLE_VALUE;
-        siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
-        siStartInfo.hStdInput = INVALID_HANDLE_VALUE;
-        siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
-    }
-
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> utf16conv;
-    std::wstring command = utf16conv.from_bytes(processName) + L" " + utf16conv.from_bytes(args);
-    wchar_t buffer[4096];
-
-    // TODO: Handle buffer too small
-    wcscpy_s(buffer, command.c_str());
-
-    // Create the child process. 
-    bSuccess = CreateProcessW(
-        NULL,
-        buffer,     // command line 
-        NULL,          // process security attributes 
-        NULL,          // primary thread security attributes 
-        TRUE,          // handles are inherited 
-        0,             // creation flags 
-        NULL,          // use parent's environment 
-        NULL,          // use parent's current directory 
-        &siStartInfo,  // STARTUPINFO pointer 
-        &piProcInfo);  // receives PROCESS_INFORMATION
-
-    // If an error occurs, exit the application. 
-    if (!bSuccess)
-        die(ReturnCode::LastError, "CreateProcess");
-
-    string output;
-    if (redirectOutput)
-    {
-        CloseHandle(g_hChildStd_OUT_Wr);
-
-        DWORD dwRead;
-        CHAR chBuf[4096] = {};
-        bSuccess = FALSE;
-        for (;;)
-        {
-            bSuccess = ReadFile(g_hChildStd_OUT_Rd, chBuf, 4096, &dwRead, NULL);
-            if (!bSuccess || dwRead == 0)
-            {
-                break;
-            }
-            else
-            {
-                output += chBuf;
-            }
-        }
-    }
-
-    // Wait until child process exits
-    WaitForSingleObject(piProcInfo.hProcess, INFINITE);
-
-    CloseHandle(piProcInfo.hProcess);
-    CloseHandle(piProcInfo.hThread);
-
-    return output;
-}
-
-// needs cross-plat
-static PATH_STRING GetHighestAvailableVersionFilePath()
-{
-    PWSTR programDataPath;
-    HRESULT getPathResult = SHGetKnownFolderPath(
-        FOLDERID_ProgramData,  // rfid
-        KF_FLAG_CREATE,        // dwFlags
-        NULL,                  // hToken
-        &programDataPath);
-
-    if (SUCCEEDED(getPathResult))
-    {
-        wchar_t upgradeDirectory[MAX_PATH];
-        _snwprintf_s(upgradeDirectory, _TRUNCATE, L"%s\\GVFS\\GVFS.Upgrade\\HighestAvailableVersion", programDataPath);
-        CoTaskMemFree(programDataPath);
-        return PATH_STRING(upgradeDirectory);
-    }
-
-    return PATH_STRING();
-}
-
-// needs cross-plat
-bool FileExists(const PATH_STRING& path)
-{
-    DWORD attributes = GetFileAttributesW(path.c_str());
-    return (attributes != INVALID_FILE_ATTRIBUTES) && ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
-}
-
-static bool IsLocalUpgradeAvailable()
-{
-    PATH_STRING highestVersionFilePath(GetHighestAvailableVersionFilePath());
-    if (!highestVersionFilePath.empty())
-    {
-        return FileExists(highestVersionFilePath);
-    }
-
-    return false;
-}
-
-void RemindUpgradeAvailable()
-{
-    // The idea is to generate a random number between 0 and 99. To make
-    // sure that the reminder is displayed only 10% of the times a git
-    // command is run, check that the random number is between 0 and 10,
-    // which will have a probability of 10/100 == 10%.
-    std::mt19937 gen(static_cast<unsigned int>(std::time(nullptr) % UINT_MAX)); //Standard mersenne_twister_engine seeded with the current time
-    int reminderFrequency = 10;
-    int randomValue = gen() % 100;
-
-    if (randomValue <= reminderFrequency && IsLocalUpgradeAvailable())
-    {
-        printf(ReminderNotification.c_str());
-    }
-}
+static inline void RunPreCommands(int argc, char *argv[]);
+static inline void RunPostCommands(bool unattended);
+static inline void RemindUpgradeAvailable();
 
 bool GitCommandIsKnown(const std::string& gitCommand)
 {
@@ -340,7 +187,7 @@ bool GitCommandIsKnown(const std::string& gitCommand)
 
 bool IsAlias(const std::string& gitCommand)
 {
-    string output = RunProcess("git", "config --get alias." + gitCommand, /*redirectOutput*/ true);
+    string output = Process_Run("git", "config --get alias." + gitCommand, /*redirectOutput*/ true);
     return !output.empty();
 }
 
@@ -368,38 +215,6 @@ static std::string GetGitCommandSessionId()
     }
 
     return "";
-}
-
-static bool IsElevated()
-{
-    // https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
-    BOOL b;
-    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
-    PSID AdministratorsGroup;
-    b = AllocateAndInitializeSid(
-        &NtAuthority,
-        2,
-        SECURITY_BUILTIN_DOMAIN_RID,
-        DOMAIN_ALIAS_RID_ADMINS,
-        0, 0, 0, 0, 0, 0,
-        &AdministratorsGroup);
-    if (b)
-    {
-        if (!CheckTokenMembership(NULL, AdministratorsGroup, &b))
-        {
-            b = FALSE;
-        }
-
-        FreeSid(AdministratorsGroup);
-    }
-
-    return(b);
-}
-
-static bool IsConsoleOutputRedirectedToFile()
-{
-    // Windows specific
-    return FILE_TYPE_DISK == GetFileType(GetStdHandle(STD_OUTPUT_HANDLE));
 }
 
 HookType GetHookType(const char* string)
@@ -1156,8 +971,8 @@ void AcquireGVFSLockForProcess(bool unattended, int argc, char* argv[], int pid,
         pipeClient,
         fullCommand,
         pid,
-        IsElevated(),
-        IsConsoleOutputRedirectedToFile(),
+        Process_IsElevated(),
+        Process_IsConsoleOutputRedirectedToFile(),
         checkGvfsLockAvailabilityOnly,
         gitCommandSessionId,
         result))
@@ -1351,8 +1166,8 @@ void ReleaseGVFSLock(bool unattended, int argc, char* argv[], int pid, PIPE_HAND
         pipeClient,
         fullCommand,
         pid,
-        IsElevated(),
-        IsConsoleOutputRedirectedToFile());
+        Process_IsElevated(),
+        Process_IsConsoleOutputRedirectedToFile());
 }
 
 void RunLockRequest(int argc, char *argv[], bool unattended, std::function<void(bool, int, char*[], int, PIPE_HANDLE)> requestToRun)
@@ -1368,23 +1183,6 @@ void RunLockRequest(int argc, char *argv[], bool unattended, std::function<void(
         }
 
         requestToRun(unattended, argc, argv, pid, pipeHandle);
-    }
-}
-
-void RunPreCommands(int argc, char *argv[])
-{
-    string command = GetGitCommand(argc, argv);
-    if (command == "fetch" || command == "pull")
-    {
-        RunProcess("gvfs", "prefetch --commits", /*redirectOutput*/ false);
-    }
-}
-
-void RunPostCommands(bool unattended)
-{
-    if (!unattended)
-    {
-        RemindUpgradeAvailable();
     }
 }
 
@@ -1435,3 +1233,35 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+static inline void RunPreCommands(int argc, char *argv[])
+{
+    string command = GetGitCommand(argc, argv);
+    if (command == "fetch" || command == "pull")
+    {
+        Process_Run("gvfs", "prefetch --commits", /*redirectOutput*/ false);
+    }
+}
+
+static inline void RunPostCommands(bool unattended)
+{
+    if (!unattended)
+    {
+        RemindUpgradeAvailable();
+    }
+}
+
+static inline void RemindUpgradeAvailable()
+{
+    // The idea is to generate a random number between 0 and 99. To make
+    // sure that the reminder is displayed only 10% of the times a git
+    // command is run, check that the random number is between 0 and 10,
+    // which will have a probability of 10/100 == 10%.
+    std::mt19937 gen(static_cast<unsigned int>(std::time(nullptr) % UINT_MAX)); //Standard mersenne_twister_engine seeded with the current time
+    int reminderFrequency = 10;
+    int randomValue = gen() % 100;
+
+    if (randomValue <= reminderFrequency && Upgrader_IsLocalUpgradeAvailable())
+    {
+        printf(ReminderNotification.c_str());
+    }
+}

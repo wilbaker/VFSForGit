@@ -33,6 +33,15 @@
     <ClInclude Include="..\GVFS.NativeHooks.Common\common.h">
       <Filter>Shared Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="process.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="upgrader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filesystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -43,6 +52,15 @@
     </ClCompile>
     <ClCompile Include="..\GVFS.NativeHooks.Common\common.windows.cpp">
       <Filter>Shared Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="process.windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="upgrader.windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filesystem.windows.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

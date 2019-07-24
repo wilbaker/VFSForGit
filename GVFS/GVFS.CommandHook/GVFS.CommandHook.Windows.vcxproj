@@ -107,17 +107,23 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\GVFS.NativeHooks.Common\common.h" />
+    <ClInclude Include="filesystem.h" />
+    <ClInclude Include="process.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="upgrader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\GVFS.NativeHooks.Common\common.windows.cpp" />
+    <ClCompile Include="filesystem.windows.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="process.windows.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="upgrader.windows.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Version.rc" />
