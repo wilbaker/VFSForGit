@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "common.h"
 #include "Process.h"
-#include "Upgrader.h"
+#include "upgrader.h"
 #include "GVFSLock.h"
 #include "Console.h"
 #include "Messages.h"
@@ -111,13 +111,13 @@ void ReleaseReponseHandler(const string& rawResponse)
                 if (!failedDeleteList.empty())
                 {
                     string deleteFailuresMessage = BuildUpdatePlaceholderFailureMessage(failedDeleteList, "delete", "git clean -f ");
-                    printf(deleteFailuresMessage.c_str());
+                    printf("%s", deleteFailuresMessage.c_str());
                 }
 
                 if (!failedUpdateList.empty())
                 {
                     string updateFailuresMessage = BuildUpdatePlaceholderFailureMessage(failedUpdateList, "update", "git checkout -- ");
-                    printf(updateFailuresMessage.c_str());
+                    printf("%s", updateFailuresMessage.c_str());
                 }
             }
         }
@@ -267,7 +267,7 @@ static inline void RemindUpgradeAvailable()
 
     if (randomValue <= reminderFrequency && Upgrader_IsLocalUpgradeAvailable())
     {
-        printf(ReminderNotification.c_str());
+        printf("%s", ReminderNotification.c_str());
     }
 }
 
@@ -409,7 +409,7 @@ static bool CheckGVFSLockAvailabilityOnly(int argc, char *argv[])
 
     char** beginArgs = argv;
     char** endArgs = beginArgs + argc;
-    if (endArgs != find_if(beginArgs, endArgs, [](char* argString) { return (0 == _stricmp(argString, "--no-lock-index")); }))
+    if (endArgs != find_if(beginArgs, endArgs, [](char* argString) { return (0 == STRICMP(argString, "--no-lock-index")); }))
     {
         return true;
     }
@@ -424,7 +424,7 @@ static string BuildUpdatePlaceholderFailureMessage(vector<string>& fileList, con
     {
         bool operator()(const string& a, const string& b) const
         {
-            return _stricmp(a.c_str(), b.c_str()) < 0;
+            return STRICMP(a.c_str(), b.c_str()) < 0;
         }
     } caseInsensitiveCompare;
 
@@ -442,16 +442,15 @@ static string BuildUpdatePlaceholderFailureMessage(vector<string>& fileList, con
 
 static bool IsGitEnvVarDisabled(const string& envVar)
 {
-    char gitEnvVariable[2056];
-    size_t requiredSize;
+    char* gitEnvVariable = getenv(envVar.c_str());
 
     // TOOD (hack): handle error codes
-    if (getenv_s(&requiredSize, gitEnvVariable, envVar.c_str()) == 0)
+    if (gitEnvVariable != nullptr)
     {
-        if (_stricmp(gitEnvVariable, "false") == 0 ||
-            _stricmp(gitEnvVariable, "no") == 0 ||
-            _stricmp(gitEnvVariable, "off") == 0 ||
-            _stricmp(gitEnvVariable, "0") == 0)
+        if (STRICMP(gitEnvVariable, "false") == 0 ||
+            STRICMP(gitEnvVariable, "no") == 0 ||
+            STRICMP(gitEnvVariable, "off") == 0 ||
+            STRICMP(gitEnvVariable, "0") == 0)
         {
             return true;
         }
@@ -687,11 +686,10 @@ static inline bool IsAlias(const string& gitCommand)
 
 static string GetGitCommandSessionId()
 {
-    char gitEnvVariable[2056];
-    size_t requiredSize;
+    char* gitEnvVariable = getenv("GIT_TR2_PARENT_SID");
 
     // TOOD (hack): handle error codes
-    if (getenv_s(&requiredSize, gitEnvVariable, "GIT_TR2_PARENT_SID") == 0)
+    if (gitEnvVariable != nullptr)
     {
         return gitEnvVariable;
     }

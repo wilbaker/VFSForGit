@@ -250,7 +250,7 @@ static string ParseCommandFromLockResponse(const string& responseBody)
         size_t commandStartingSpot = dataParts[0].length() + dataParts[1].length() + dataParts[2].length() + dataParts[3].length() + 4;
         if ((commandStartingSpot + parsedCommandLength) >= responseBody.length())
         {
-            die(ReturnCode::InvalidResponse, "Invalid lock message. The parsedCommand is an unexpected length, got: {0} from message: '{1}'", parsedCommandLength, responseBody.c_str());
+            die(ReturnCode::InvalidResponse, "Invalid lock message. The parsedCommand is an unexpected length, got: %d from message: '%s'", parsedCommandLength, responseBody.c_str());
         }
 
         return responseBody.substr(commandStartingSpot, parsedCommandLength);

@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		26C269B722E92773000308F8 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2673FD9520EBDAA900B64B7F /* main.cpp */; };
 		26C269B822E92779000308F8 /* common.posix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26E839D720FD29EC004E53CE /* common.posix.cpp */; };
-		26C269BE22E928B0000308F8 /* upgrader.windows.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269BA22E928B0000308F8 /* upgrader.windows.cpp */; };
 		26C269C822E928C4000308F8 /* Console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269BF22E928C3000308F8 /* Console.cpp */; };
 		26C269C922E928C4000308F8 /* Messages.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269C222E928C3000308F8 /* Messages.cpp */; };
 		26C269CA22E928C4000308F8 /* KnownGitCommands.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269C422E928C3000308F8 /* KnownGitCommands.cpp */; };
@@ -34,7 +33,6 @@
 		2673FD9D20EBDEAA00B64B7F /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = common.h; path = ../GVFS.NativeHooks.Common/common.h; sourceTree = SOURCE_ROOT; };
 		26C269B022E92689000308F8 /* GVFS.CommandHook */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = GVFS.CommandHook; sourceTree = BUILT_PRODUCTS_DIR; };
 		26C269B922E928B0000308F8 /* upgrader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = upgrader.h; sourceTree = "<group>"; };
-		26C269BA22E928B0000308F8 /* upgrader.windows.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = upgrader.windows.cpp; sourceTree = "<group>"; };
 		26C269BB22E928B0000308F8 /* filesystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filesystem.h; sourceTree = "<group>"; };
 		26C269BC22E928B0000308F8 /* String.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = String.h; sourceTree = "<group>"; };
 		26C269BD22E928B0000308F8 /* process.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = process.h; sourceTree = "<group>"; };
@@ -78,7 +76,6 @@
 				26C269BD22E928B0000308F8 /* process.h */,
 				26C269BC22E928B0000308F8 /* String.h */,
 				26C269B922E928B0000308F8 /* upgrader.h */,
-				26C269BA22E928B0000308F8 /* upgrader.windows.cpp */,
 				26E839DA20FD58B8004E53CE /* stdafx.h */,
 				26E839D720FD29EC004E53CE /* common.posix.cpp */,
 				2673FD9D20EBDEAA00B64B7F /* common.h */,
@@ -151,7 +148,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				26C269BE22E928B0000308F8 /* upgrader.windows.cpp in Sources */,
 				26C269B722E92773000308F8 /* main.cpp in Sources */,
 				26C269B822E92779000308F8 /* common.posix.cpp in Sources */,
 				26C269C822E928C4000308F8 /* Console.cpp in Sources */,

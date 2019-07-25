@@ -19,7 +19,7 @@ bool Console_ShowStatusWhileRunning(
     int initialDelayMs)
 {
     bool result = false;
-    atomic<bool> initialMessageWritten = false;
+    atomic<bool> initialMessageWritten(false);
 
     if (!showSpinner)
     {

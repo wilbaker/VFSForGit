@@ -5,10 +5,12 @@
 #ifdef __APPLE__
 typedef std::string PATH_STRING;
 typedef int PIPE_HANDLE;
+#define STRICMP strcasecmp
 #define PRINTF_FMT(X, Y) __attribute__((__format__ (printf, X, Y)))
 #elif _WIN32
 typedef std::wstring PATH_STRING;
 typedef HANDLE PIPE_HANDLE;
+#define STRICMP _stricmp
 #define PRINTF_FMT(X, Y)
 #else
 #error Unsupported platform

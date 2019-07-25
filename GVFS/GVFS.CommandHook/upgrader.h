@@ -1,6 +1,6 @@
 #pragma once
 #include "common.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 
 PATH_STRING Upgrader_GetHighestAvailableVersionFilePath();
 
