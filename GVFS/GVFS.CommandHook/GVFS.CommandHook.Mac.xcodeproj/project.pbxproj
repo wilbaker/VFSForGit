@@ -13,6 +13,7 @@
 		26C269C922E928C4000308F8 /* Messages.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269C222E928C3000308F8 /* Messages.cpp */; };
 		26C269CA22E928C4000308F8 /* KnownGitCommands.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269C422E928C3000308F8 /* KnownGitCommands.cpp */; };
 		26C269CB22E928C4000308F8 /* GVFSLock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269C522E928C3000308F8 /* GVFSLock.cpp */; };
+		26C269CD22E92D41000308F8 /* Process.Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269CC22E92D41000308F8 /* Process.Mac.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -45,6 +46,7 @@
 		26C269C522E928C3000308F8 /* GVFSLock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GVFSLock.cpp; sourceTree = "<group>"; };
 		26C269C622E928C3000308F8 /* GVFSLock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GVFSLock.h; sourceTree = "<group>"; };
 		26C269C722E928C4000308F8 /* Console.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Console.h; sourceTree = "<group>"; };
+		26C269CC22E92D41000308F8 /* Process.Mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Process.Mac.cpp; sourceTree = "<group>"; };
 		26E839D720FD29EC004E53CE /* common.posix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = common.posix.cpp; path = ../GVFS.NativeHooks.Common/common.posix.cpp; sourceTree = SOURCE_ROOT; };
 		26E839DA20FD58B8004E53CE /* stdafx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stdafx.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -63,6 +65,7 @@
 		2673FD7F20EBD81D00B64B7F = {
 			isa = PBXGroup;
 			children = (
+				26C269CC22E92D41000308F8 /* Process.Mac.cpp */,
 				26C269BF22E928C3000308F8 /* Console.cpp */,
 				26C269C722E928C4000308F8 /* Console.h */,
 				26C269C022E928C3000308F8 /* GVFSEnvironment.h */,
@@ -150,6 +153,7 @@
 			files = (
 				26C269B722E92773000308F8 /* main.cpp in Sources */,
 				26C269B822E92779000308F8 /* common.posix.cpp in Sources */,
+				26C269CD22E92D41000308F8 /* Process.Mac.cpp in Sources */,
 				26C269C822E928C4000308F8 /* Console.cpp in Sources */,
 				26C269CA22E928C4000308F8 /* KnownGitCommands.cpp in Sources */,
 				26C269C922E928C4000308F8 /* Messages.cpp in Sources */,
