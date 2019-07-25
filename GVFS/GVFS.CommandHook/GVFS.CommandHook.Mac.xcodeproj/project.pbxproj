@@ -7,13 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2673FD9620EBDAA900B64B7F /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2673FD9520EBDAA900B64B7F /* main.cpp */; };
-		2673FD9C20EBDEA500B64B7F /* packet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2673FD9B20EBDEA500B64B7F /* packet.cpp */; };
-		26E839D820FD387D004E53CE /* common.posix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26E839D720FD29EC004E53CE /* common.posix.cpp */; };
+		26C269B722E92773000308F8 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2673FD9520EBDAA900B64B7F /* main.cpp */; };
+		26C269B822E92779000308F8 /* common.posix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26E839D720FD29EC004E53CE /* common.posix.cpp */; };
+		26C269BE22E928B0000308F8 /* upgrader.windows.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269BA22E928B0000308F8 /* upgrader.windows.cpp */; };
+		26C269C822E928C4000308F8 /* Console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269BF22E928C3000308F8 /* Console.cpp */; };
+		26C269C922E928C4000308F8 /* Messages.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269C222E928C3000308F8 /* Messages.cpp */; };
+		26C269CA22E928C4000308F8 /* KnownGitCommands.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269C422E928C3000308F8 /* KnownGitCommands.cpp */; };
+		26C269CB22E928C4000308F8 /* GVFSLock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 26C269C522E928C3000308F8 /* GVFSLock.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		2673FD9020EBDAA900B64B7F /* CopyFiles */ = {
+		26C269AE22E92689000308F8 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -27,15 +31,28 @@
 /* Begin PBXFileReference section */
 		2673FD9220EBDAA900B64B7F /* GVFS.ReadObjectHook */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = GVFS.ReadObjectHook; sourceTree = BUILT_PRODUCTS_DIR; };
 		2673FD9520EBDAA900B64B7F /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = SOURCE_ROOT; };
-		2673FD9A20EBDEA500B64B7F /* packet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = packet.h; sourceTree = SOURCE_ROOT; };
-		2673FD9B20EBDEA500B64B7F /* packet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = packet.cpp; sourceTree = SOURCE_ROOT; };
 		2673FD9D20EBDEAA00B64B7F /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = common.h; path = ../GVFS.NativeHooks.Common/common.h; sourceTree = SOURCE_ROOT; };
+		26C269B022E92689000308F8 /* GVFS.CommandHook */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = GVFS.CommandHook; sourceTree = BUILT_PRODUCTS_DIR; };
+		26C269B922E928B0000308F8 /* upgrader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = upgrader.h; sourceTree = "<group>"; };
+		26C269BA22E928B0000308F8 /* upgrader.windows.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = upgrader.windows.cpp; sourceTree = "<group>"; };
+		26C269BB22E928B0000308F8 /* filesystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filesystem.h; sourceTree = "<group>"; };
+		26C269BC22E928B0000308F8 /* String.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = String.h; sourceTree = "<group>"; };
+		26C269BD22E928B0000308F8 /* process.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = process.h; sourceTree = "<group>"; };
+		26C269BF22E928C3000308F8 /* Console.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Console.cpp; sourceTree = "<group>"; };
+		26C269C022E928C3000308F8 /* GVFSEnvironment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GVFSEnvironment.h; sourceTree = "<group>"; };
+		26C269C122E928C3000308F8 /* KnownGitCommands.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KnownGitCommands.h; sourceTree = "<group>"; };
+		26C269C222E928C3000308F8 /* Messages.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Messages.cpp; sourceTree = "<group>"; };
+		26C269C322E928C3000308F8 /* Messages.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Messages.h; sourceTree = "<group>"; };
+		26C269C422E928C3000308F8 /* KnownGitCommands.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KnownGitCommands.cpp; sourceTree = "<group>"; };
+		26C269C522E928C3000308F8 /* GVFSLock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GVFSLock.cpp; sourceTree = "<group>"; };
+		26C269C622E928C3000308F8 /* GVFSLock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GVFSLock.h; sourceTree = "<group>"; };
+		26C269C722E928C4000308F8 /* Console.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Console.h; sourceTree = "<group>"; };
 		26E839D720FD29EC004E53CE /* common.posix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = common.posix.cpp; path = ../GVFS.NativeHooks.Common/common.posix.cpp; sourceTree = SOURCE_ROOT; };
 		26E839DA20FD58B8004E53CE /* stdafx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stdafx.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		2673FD8F20EBDAA900B64B7F /* Frameworks */ = {
+		26C269AD22E92689000308F8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -48,11 +65,23 @@
 		2673FD7F20EBD81D00B64B7F = {
 			isa = PBXGroup;
 			children = (
+				26C269BF22E928C3000308F8 /* Console.cpp */,
+				26C269C722E928C4000308F8 /* Console.h */,
+				26C269C022E928C3000308F8 /* GVFSEnvironment.h */,
+				26C269C522E928C3000308F8 /* GVFSLock.cpp */,
+				26C269C622E928C3000308F8 /* GVFSLock.h */,
+				26C269C422E928C3000308F8 /* KnownGitCommands.cpp */,
+				26C269C122E928C3000308F8 /* KnownGitCommands.h */,
+				26C269C222E928C3000308F8 /* Messages.cpp */,
+				26C269C322E928C3000308F8 /* Messages.h */,
+				26C269BB22E928B0000308F8 /* filesystem.h */,
+				26C269BD22E928B0000308F8 /* process.h */,
+				26C269BC22E928B0000308F8 /* String.h */,
+				26C269B922E928B0000308F8 /* upgrader.h */,
+				26C269BA22E928B0000308F8 /* upgrader.windows.cpp */,
 				26E839DA20FD58B8004E53CE /* stdafx.h */,
 				26E839D720FD29EC004E53CE /* common.posix.cpp */,
 				2673FD9D20EBDEAA00B64B7F /* common.h */,
-				2673FD9B20EBDEA500B64B7F /* packet.cpp */,
-				2673FD9A20EBDEA500B64B7F /* packet.h */,
 				2673FD9520EBDAA900B64B7F /* main.cpp */,
 				2673FD9320EBDAA900B64B7F /* Products */,
 			);
@@ -62,6 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				2673FD9220EBDAA900B64B7F /* GVFS.ReadObjectHook */,
+				26C269B022E92689000308F8 /* GVFS.CommandHook */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -69,21 +99,21 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2673FD9120EBDAA900B64B7F /* GVFS.ReadObjectHook */ = {
+		26C269AF22E92689000308F8 /* GVFS.CommandHook */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2673FD9720EBDAA900B64B7F /* Build configuration list for PBXNativeTarget "GVFS.ReadObjectHook" */;
+			buildConfigurationList = 26C269B622E92689000308F8 /* Build configuration list for PBXNativeTarget "GVFS.CommandHook" */;
 			buildPhases = (
-				2673FD8E20EBDAA900B64B7F /* Sources */,
-				2673FD8F20EBDAA900B64B7F /* Frameworks */,
-				2673FD9020EBDAA900B64B7F /* CopyFiles */,
+				26C269AC22E92689000308F8 /* Sources */,
+				26C269AD22E92689000308F8 /* Frameworks */,
+				26C269AE22E92689000308F8 /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = GVFS.ReadObjectHook;
-			productName = GVFS.ReadObjectHook;
-			productReference = 2673FD9220EBDAA900B64B7F /* GVFS.ReadObjectHook */;
+			name = GVFS.CommandHook;
+			productName = GVFS.CommandHook;
+			productReference = 26C269B022E92689000308F8 /* GVFS.CommandHook */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -94,12 +124,12 @@
 			attributes = {
 				LastUpgradeCheck = 0940;
 				TargetAttributes = {
-					2673FD9120EBDAA900B64B7F = {
+					26C269AF22E92689000308F8 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
 				};
 			};
-			buildConfigurationList = 2673FD8320EBD81D00B64B7F /* Build configuration list for PBXProject "GVFS.ReadObjectHook.Mac" */;
+			buildConfigurationList = 2673FD8320EBD81D00B64B7F /* Build configuration list for PBXProject "GVFS.CommandHook.Mac" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -111,19 +141,23 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2673FD9120EBDAA900B64B7F /* GVFS.ReadObjectHook */,
+				26C269AF22E92689000308F8 /* GVFS.CommandHook */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		2673FD8E20EBDAA900B64B7F /* Sources */ = {
+		26C269AC22E92689000308F8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				26E839D820FD387D004E53CE /* common.posix.cpp in Sources */,
-				2673FD9620EBDAA900B64B7F /* main.cpp in Sources */,
-				2673FD9C20EBDEA500B64B7F /* packet.cpp in Sources */,
+				26C269BE22E928B0000308F8 /* upgrader.windows.cpp in Sources */,
+				26C269B722E92773000308F8 /* main.cpp in Sources */,
+				26C269B822E92779000308F8 /* common.posix.cpp in Sources */,
+				26C269C822E928C4000308F8 /* Console.cpp in Sources */,
+				26C269CA22E928C4000308F8 /* KnownGitCommands.cpp in Sources */,
+				26C269C922E928C4000308F8 /* Messages.cpp in Sources */,
+				26C269CB22E928C4000308F8 /* GVFSLock.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,7 +176,7 @@
 			};
 			name = Release;
 		};
-		2673FD9820EBDAA900B64B7F /* Debug */ = {
+		26C269B422E92689000308F8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -189,7 +223,6 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -204,7 +237,7 @@
 			};
 			name = Debug;
 		};
-		2673FD9920EBDAA900B64B7F /* Release */ = {
+		26C269B522E92689000308F8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -245,7 +278,6 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -262,7 +294,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2673FD8320EBD81D00B64B7F /* Build configuration list for PBXProject "GVFS.ReadObjectHook.Mac" */ = {
+		2673FD8320EBD81D00B64B7F /* Build configuration list for PBXProject "GVFS.CommandHook.Mac" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2673FD8420EBD81D00B64B7F /* Debug */,
@@ -271,11 +303,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2673FD9720EBDAA900B64B7F /* Build configuration list for PBXNativeTarget "GVFS.ReadObjectHook" */ = {
+		26C269B622E92689000308F8 /* Build configuration list for PBXNativeTarget "GVFS.CommandHook" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2673FD9820EBDAA900B64B7F /* Debug */,
-				2673FD9920EBDAA900B64B7F /* Release */,
+				26C269B422E92689000308F8 /* Debug */,
+				26C269B522E92689000308F8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
