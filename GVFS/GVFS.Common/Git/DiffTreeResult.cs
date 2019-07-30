@@ -173,6 +173,88 @@ namespace GVFS.Common.Git
             }
         }
 
+        public static DiffTreeResult ParseTreeOrBlobShaFromLsTreeLine(string line)
+        {
+            if (string.IsNullOrEmpty(line))
+            {
+                throw new ArgumentException("Line to parse cannot be null or empty", nameof(line));
+            }
+
+            /*
+             * Example output lines from ls-tree
+             *
+             * 040000 tree 73b881d52b607b0f3e9e620d36f556d3d233a11d\tGVFS
+             * 100644 blob 44c5f5cba4b29d31c2ad06eed51ea02af76c27c0\tReadme.md
+             * 100755 blob 196142fbb753c0a3c7c6690323db7aa0a11f41ec\tScripts/BuildGVFSForMac.sh
+             * ^-mode ^-marker                                     ^-tab
+             *             ^-sha                                     ^-path
+             */
+
+            // Everything from ls-tree is an add.
+            if (IsLsTreeLineOfType(line, TreeMarker))
+            {
+                DiffTreeResult treeAdd = new DiffTreeResult();
+                treeAdd.TargetIsDirectory = true;
+                treeAdd.TargetSha = line.Substring(TypeMarkerStartIndex + BlobMarker.Length, GVFSConstants.ShaStringLength);
+                treeAdd.TargetPath = AppendPathSeparatorIfNeeded(ConvertPathToUtf8Path(line.Substring(line.LastIndexOf("\t") + 1)));
+                return treeAdd;
+            }
+            else
+            {
+                if (IsLsTreeLineOfType(line, BlobMarker))
+                {
+                    DiffTreeResult blobAdd = new DiffTreeResult();
+                    blobAdd.TargetSha = line.Substring(TypeMarkerStartIndex + BlobMarker.Length, GVFSConstants.ShaStringLength);
+                    return blobAdd;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        public static DiffTreeResult ParseShaIfBlobFromLsTreeLine(string line)
+        {
+            if (string.IsNullOrEmpty(line))
+            {
+                throw new ArgumentException("Line to parse cannot be null or empty", nameof(line));
+            }
+
+            /*
+             * Example output lines from ls-tree
+             *
+             * 040000 tree 73b881d52b607b0f3e9e620d36f556d3d233a11d\tGVFS
+             * 100644 blob 44c5f5cba4b29d31c2ad06eed51ea02af76c27c0\tReadme.md
+             * 100755 blob 196142fbb753c0a3c7c6690323db7aa0a11f41ec\tScripts/BuildGVFSForMac.sh
+             * ^-mode ^-marker                                     ^-tab
+             *             ^-sha                                     ^-path
+             */
+
+            // Everything from ls-tree is an add.
+            if (IsLsTreeLineOfType(line, TreeMarker))
+            {
+                DiffTreeResult treeAdd = new DiffTreeResult();
+                treeAdd.TargetIsDirectory = true;
+                treeAdd.TargetSha = line.Substring(TypeMarkerStartIndex + BlobMarker.Length, GVFSConstants.ShaStringLength);
+                treeAdd.TargetPath = AppendPathSeparatorIfNeeded(ConvertPathToUtf8Path(line.Substring(line.LastIndexOf("\t") + 1)));
+                return treeAdd;
+            }
+            else
+            {
+                if (IsLsTreeLineOfType(line, BlobMarker))
+                {
+                    DiffTreeResult blobAdd = new DiffTreeResult();
+                    blobAdd.TargetSha = line.Substring(TypeMarkerStartIndex + BlobMarker.Length, GVFSConstants.ShaStringLength);
+                    return blobAdd;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
         public static bool IsLsTreeLineOfType(string line, string typeMarker)
         {
             if (line.Length <= TypeMarkerStartIndex + typeMarker.Length)

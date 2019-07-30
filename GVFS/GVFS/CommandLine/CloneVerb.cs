@@ -5,7 +5,9 @@ using GVFS.Common.Git;
 using GVFS.Common.Http;
 using GVFS.Common.NamedPipes;
 using GVFS.Common.Tracing;
+using GVFS.Virtualization.BlobSize;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -221,6 +223,11 @@ namespace GVFS.CommandLine
                         {
                             this.Output.WriteLine("\r\nError during prefetch @ {0}", fullEnlistmentRootPathParameter);
                             exitCode = (int)result;
+                        }
+
+                        if (!this.TryBatchPopulateFileSizes(enlistment))
+                        {
+                            this.Output.WriteLine("\r\nFailed to prefetch sizes");
                         }
                     }
 
@@ -713,6 +720,89 @@ git %*
                 refs.ToPackedRefs());
 
             return new Result(true);
+        }
+
+        private bool TryBatchPopulateFileSizes(GVFSEnlistment enlistment)
+        {
+            List<string> blobShas = new List<string>(capacity: 10000);
+            List<string> treeShas = new List<string>(capacity: 50000);
+
+            // Capture all the trees and blobs in the root
+            GitProcess git = new GitProcess(enlistment);
+            GitProcess.Result result = git.LsTree(
+                GVFSConstants.DotGit.HeadName,
+                line =>
+                {
+                    DiffTreeResult diffTreeResult = DiffTreeResult.ParseTreeOrBlobShaFromLsTreeLine(line);
+                    if (diffTreeResult != null)
+                    {
+                        if (diffTreeResult.TargetIsDirectory)
+                        {
+                            treeShas.Add(diffTreeResult.TargetSha);
+                        }
+                        else
+                        {
+                            blobShas.Add(diffTreeResult.TargetSha);
+                        }
+                    }
+                },
+                recursive: false);
+
+            // Capture all of the blob shas one level down from the root
+            foreach (string treeSha in treeShas)
+            {
+                git = new GitProcess(enlistment);
+                result = git.LsTree(
+                    treeSha,
+                    line =>
+                    {
+                        DiffTreeResult diffTreeResult = DiffTreeResult.ParseShaIfBlobFromLsTreeLine(line);
+                        if (diffTreeResult != null)
+                        {
+                            blobShas.Add(diffTreeResult.TargetSha);
+                        }
+                    },
+                    recursive: false);
+            }
+
+            // TODO: Get blobSizesRoot from metadata
+
+            Dictionary<string, long> availableSizes = new Dictionary<string, long>();
+            int maxObjectsInHTTPRequest = 2000;
+            using (BlobSizes blobSizes = new BlobSizes(newBlobSizesRoot, fileSystem, tracer))
+            {
+                blobSizes.Initialize();
+
+                using (BlobSizes.BlobSizesConnection blobSizesConnection = blobSizes.CreateConnection())
+                {
+                    IEnumerable<string> nextBatch = new List<string>();
+
+                    if (blobSizesConnection.TryGetSize(new Sha1Id(projectedSha), out blobSize))
+                    {
+                        availableSizes[projectedSha] = blobSize;
+                        continue;
+                    }
+
+                    while (nextBatch.Any())
+                    {
+                        List<GitObjectsHttpRequestor.GitObjectSize> fileSizes = this.gitObjects.GetFileSizes(nextBatch, CancellationToken.None);
+
+                        foreach (GitObjectsHttpRequestor.GitObjectSize downloadedSize in fileSizes)
+                        {
+                            string downloadedSizeId = downloadedSize.Id.ToUpper();
+                            Sha1Id sha1Id = new Sha1Id(downloadedSizeId);
+                            blobSizesConnection.BlobSizesDatabase.AddSize(sha1Id, downloadedSize.Size);
+                            availableSizes[downloadedSizeId] = downloadedSize.Size;
+                        }
+                    }
+
+                }
+
+                blobSizes.Flush();
+                blobSizes.Shutdown();
+            }
+
+            return true;
         }
 
         private class Result
