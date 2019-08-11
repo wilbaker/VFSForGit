@@ -107,6 +107,37 @@ template <typename... args>
         KextLog_PrintfVnodePathAndProperties(KEXTLOG_ERROR, vnode, format " (vnode path: '%s', name: '%s', type: %d, recycling: %s, mount point mounted at path '%s')", ##__VA_ARGS__); \
     })
 
+#define KextLog_DirectoryVnodeActionFormat "%s%s%s%s%s%s%s%s%s%s%s%s%s"
+#define KextLog_FileVnodeActionFormat      "%s%s%s%s%s%s%s%s%s%s%s%s"
+
+#define KextLog_DirectoryVnodeActionArgs(action, itemPrefix) \
+    ((action) & KAUTH_VNODE_LIST_DIRECTORY)       ? itemPrefix "KAUTH_VNODE_LIST_DIRECTORY" : "", \
+    ((action) & KAUTH_VNODE_ADD_FILE)             ? itemPrefix "KAUTH_VNODE_ADD_FILE" : "", \
+    ((action) & KAUTH_VNODE_SEARCH)               ? itemPrefix "KAUTH_VNODE_SEARCH" : "", \
+    ((action) & KAUTH_VNODE_DELETE)               ? itemPrefix "KAUTH_VNODE_DELETE" : "", \
+    ((action) & KAUTH_VNODE_ADD_SUBDIRECTORY)     ? itemPrefix "KAUTH_VNODE_ADD_SUBDIRECTORY" : "", \
+    ((action) & KAUTH_VNODE_DELETE_CHILD)         ? itemPrefix "KAUTH_VNODE_DELETE_CHILD" : "", \
+    ((action) & KAUTH_VNODE_READ_ATTRIBUTES)      ? itemPrefix "KAUTH_VNODE_READ_ATTRIBUTES" : "", \
+    ((action) & KAUTH_VNODE_WRITE_ATTRIBUTES)     ? itemPrefix "KAUTH_VNODE_WRITE_ATTRIBUTES" : "", \
+    ((action) & KAUTH_VNODE_READ_EXTATTRIBUTES)   ? itemPrefix "KAUTH_VNODE_READ_EXTATTRIBUTES" : "", \
+    ((action) & KAUTH_VNODE_WRITE_EXTATTRIBUTES)  ? itemPrefix "KAUTH_VNODE_WRITE_EXTATTRIBUTES" : "", \
+    ((action) & KAUTH_VNODE_READ_SECURITY)        ? itemPrefix "KAUTH_VNODE_READ_SECURITY" : "", \
+    ((action) & KAUTH_VNODE_WRITE_SECURITY)       ? itemPrefix "KAUTH_VNODE_WRITE_SECURITY" : "", \
+    ((action) & KAUTH_VNODE_TAKE_OWNERSHIP)       ? itemPrefix "KAUTH_VNODE_TAKE_OWNERSHIP" : ""
+
+#define KextLog_FileVnodeActionArgs(action, itemPrefix) \
+    ((action) & KAUTH_VNODE_READ_DATA)            ? itemPrefix "KAUTH_VNODE_READ_DATA" : "", \
+    ((action) & KAUTH_VNODE_WRITE_DATA)           ? itemPrefix "KAUTH_VNODE_WRITE_DATA" : "", \
+    ((action) & KAUTH_VNODE_EXECUTE)              ? itemPrefix "KAUTH_VNODE_EXECUTE" : "", \
+    ((action) & KAUTH_VNODE_DELETE)               ? itemPrefix "KAUTH_VNODE_DELETE" : "", \
+    ((action) & KAUTH_VNODE_APPEND_DATA)          ? itemPrefix "KAUTH_VNODE_APPEND_DATA" : "", \
+    ((action) & KAUTH_VNODE_READ_ATTRIBUTES)      ? itemPrefix "KAUTH_VNODE_READ_ATTRIBUTES" : "", \
+    ((action) & KAUTH_VNODE_WRITE_ATTRIBUTES)     ? itemPrefix "KAUTH_VNODE_WRITE_ATTRIBUTES" : "", \
+    ((action) & KAUTH_VNODE_READ_EXTATTRIBUTES)   ? itemPrefix "KAUTH_VNODE_READ_EXTATTRIBUTES" : "", \
+    ((action) & KAUTH_VNODE_WRITE_EXTATTRIBUTES)  ? itemPrefix "KAUTH_VNODE_WRITE_EXTATTRIBUTES" : "", \
+    ((action) & KAUTH_VNODE_READ_SECURITY)        ? itemPrefix "KAUTH_VNODE_READ_SECURITY" : "", \
+    ((action) & KAUTH_VNODE_WRITE_SECURITY)       ? itemPrefix "KAUTH_VNODE_WRITE_SECURITY" : "", \
+    ((action) & KAUTH_VNODE_TAKE_OWNERSHIP)       ? itemPrefix "KAUTH_VNODE_TAKE_OWNERSHIP" : ""
 
 #define KextLog_VnodeOp(vnode, vnodeType, procname, action, message) \
     do { \
@@ -114,40 +145,17 @@ template <typename... args>
         { \
             KextLog_File( \
                 vnode, \
-                message ". Proc name: %s. Directory vnode action: %s%s%s%s%s%s%s%s%s%s%s%s%s \n    ", \
+                message ". Proc name: %s. Directory vnode action: " KextLog_DirectoryVnodeActionFormat " \n    ", \
                 procname, \
-                (action & KAUTH_VNODE_LIST_DIRECTORY)       ? " \n    KAUTH_VNODE_LIST_DIRECTORY" : "", \
-                (action & KAUTH_VNODE_ADD_FILE)             ? " \n    KAUTH_VNODE_ADD_FILE" : "", \
-                (action & KAUTH_VNODE_SEARCH)               ? " \n    KAUTH_VNODE_SEARCH" : "", \
-                (action & KAUTH_VNODE_DELETE)               ? " \n    KAUTH_VNODE_DELETE" : "", \
-                (action & KAUTH_VNODE_ADD_SUBDIRECTORY)     ? " \n    KAUTH_VNODE_ADD_SUBDIRECTORY" : "", \
-                (action & KAUTH_VNODE_DELETE_CHILD)         ? " \n    KAUTH_VNODE_DELETE_CHILD" : "", \
-                (action & KAUTH_VNODE_READ_ATTRIBUTES)      ? " \n    KAUTH_VNODE_READ_ATTRIBUTES" : "", \
-                (action & KAUTH_VNODE_WRITE_ATTRIBUTES)     ? " \n    KAUTH_VNODE_WRITE_ATTRIBUTES" : "", \
-                (action & KAUTH_VNODE_READ_EXTATTRIBUTES)   ? " \n    KAUTH_VNODE_READ_EXTATTRIBUTES" : "", \
-                (action & KAUTH_VNODE_WRITE_EXTATTRIBUTES)  ? " \n    KAUTH_VNODE_WRITE_EXTATTRIBUTES" : "", \
-                (action & KAUTH_VNODE_READ_SECURITY)        ? " \n    KAUTH_VNODE_READ_SECURITY" : "", \
-                (action & KAUTH_VNODE_WRITE_SECURITY)       ? " \n    KAUTH_VNODE_WRITE_SECURITY" : "", \
-                (action & KAUTH_VNODE_TAKE_OWNERSHIP)       ? " \n    KAUTH_VNODE_TAKE_OWNERSHIP" : ""); \
+                KextLog_DirectoryVnodeActionArgs(action, " \n    ")); \
         } \
         else \
         { \
             KextLog_File( \
                 vnode, \
-                message ". Proc name: %s. File vnode action: %s%s%s%s%s%s%s%s%s%s%s%s \n    ", \
+                message ". Proc name: %s. File vnode action: " KextLog_FileVnodeActionFormat " \n    ", \
                 procname, \
-                (action & KAUTH_VNODE_READ_DATA)            ? " \n    KAUTH_VNODE_READ_DATA" : "", \
-                (action & KAUTH_VNODE_WRITE_DATA)           ? " \n    KAUTH_VNODE_WRITE_DATA" : "", \
-                (action & KAUTH_VNODE_EXECUTE)              ? " \n    KAUTH_VNODE_EXECUTE" : "", \
-                (action & KAUTH_VNODE_DELETE)               ? " \n    KAUTH_VNODE_DELETE" : "", \
-                (action & KAUTH_VNODE_APPEND_DATA)          ? " \n    KAUTH_VNODE_APPEND_DATA" : "", \
-                (action & KAUTH_VNODE_READ_ATTRIBUTES)      ? " \n    KAUTH_VNODE_READ_ATTRIBUTES" : "", \
-                (action & KAUTH_VNODE_WRITE_ATTRIBUTES)     ? " \n    KAUTH_VNODE_WRITE_ATTRIBUTES" : "", \
-                (action & KAUTH_VNODE_READ_EXTATTRIBUTES)   ? " \n    KAUTH_VNODE_READ_EXTATTRIBUTES" : "", \
-                (action & KAUTH_VNODE_WRITE_EXTATTRIBUTES)  ? " \n    KAUTH_VNODE_WRITE_EXTATTRIBUTES" : "", \
-                (action & KAUTH_VNODE_READ_SECURITY)        ? " \n    KAUTH_VNODE_READ_SECURITY" : "", \
-                (action & KAUTH_VNODE_WRITE_SECURITY)       ? " \n    KAUTH_VNODE_WRITE_SECURITY" : "", \
-                (action & KAUTH_VNODE_TAKE_OWNERSHIP)       ? " \n    KAUTH_VNODE_TAKE_OWNERSHIP" : ""); \
+                KextLog_FileVnodeActionArgs(action, " \n    ")); \
         } \
     } while (0)
 

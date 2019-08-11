@@ -24,6 +24,7 @@
 			buildPhases = (
 			);
 			dependencies = (
+				4AF558452302DF510020A270 /* PBXTargetDependency */,
 				4A08257521E77BEB00E21AFD /* PBXTargetDependency */,
 				4391F90521E4362B0008103C /* PBXTargetDependency */,
 				4391F90721E4362B0008103C /* PBXTargetDependency */,
@@ -105,6 +106,9 @@
 		4A8C13A521F23F0200002878 /* KauthHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4391F89321E42AC40008103C /* KauthHandler.cpp */; };
 		4A8C13A621F2418400002878 /* libPrjFSKextTestable.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A8C13A021F23EE800002878 /* libPrjFSKextTestable.a */; };
 		4AAE3FCA22832340002673FA /* HandleFileOpOperationTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 4AAE3FC922832340002673FA /* HandleFileOpOperationTests.mm */; };
+		4AF5583D2301BE290020A270 /* prjfs-tracectl.m in Sources */ = {isa = PBXBuildFile; fileRef = 4AF5583C2301BE290020A270 /* prjfs-tracectl.m */; };
+		4AF558422302DEB30020A270 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4391F8DC21E430EB0008103C /* IOKit.framework */; };
+		4AF558432302DEBE0020A270 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4391F8DA21E430E20008103C /* CoreFoundation.framework */; };
 		D9C087F222384670009C1110 /* MemoryTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = D9C087F122384670009C1110 /* MemoryTests.mm */; };
 		F554202D224BB6E5008BAE95 /* ProviderMessagingMock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F554202C224BB6E5008BAE95 /* ProviderMessagingMock.cpp */; };
 		F5554F422239883B00B31D19 /* MockProc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5554F412239883B00B31D19 /* MockProc.cpp */; };
@@ -205,6 +209,13 @@
 			remoteGlobalIDString = 4A8C139F21F23EE800002878;
 			remoteInfo = PrjFSKextTestable;
 		};
+		4AF558442302DF510020A270 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4391F87621E4278C0008103C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4AF558392301BE280020A270;
+			remoteInfo = "prjfs-tracectl";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -226,6 +237,15 @@
 				4A08257921E77C7000E21AFD /* org.vfsforgit.prjfs.PrjFSKextLogDaemon.plist in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4AF558382301BE280020A270 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -311,6 +331,8 @@
 		4A8C13A021F23EE800002878 /* libPrjFSKextTestable.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPrjFSKextTestable.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		4A8C13AA21F268FE00002878 /* PrjFSKextTests.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = PrjFSKextTests.exp; sourceTree = "<group>"; };
 		4AAE3FC922832340002673FA /* HandleFileOpOperationTests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = HandleFileOpOperationTests.mm; sourceTree = "<group>"; };
+		4AF5583A2301BE280020A270 /* prjfs-tracectl */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "prjfs-tracectl"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4AF5583C2301BE290020A270 /* prjfs-tracectl.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "prjfs-tracectl.m"; sourceTree = "<group>"; };
 		D9C087F122384670009C1110 /* MemoryTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MemoryTests.mm; sourceTree = "<group>"; };
 		F5151F7F226F9083004B92C9 /* ProviderMessagingMock.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ProviderMessagingMock.hpp; sourceTree = "<group>"; };
 		F554202C224BB6E5008BAE95 /* ProviderMessagingMock.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ProviderMessagingMock.cpp; sourceTree = "<group>"; };
@@ -374,6 +396,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4AF558372301BE280020A270 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4AF558432302DEBE0020A270 /* CoreFoundation.framework in Frameworks */,
+				4AF558422302DEB30020A270 /* IOKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F5E39C7421F1118D006D65C2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -422,6 +453,7 @@
 				4A08256921E77B7F00E21AFD /* PrjFSKextLogDaemon */,
 				F5E39C7821F1118D006D65C2 /* PrjFSKextTests */,
 				264E723A22930E660059E150 /* PrjFSLibTests */,
+				4AF5583B2301BE290020A270 /* prjfs-tracectl */,
 				4391F88021E4278C0008103C /* Products */,
 				4391F8D921E430E10008103C /* Frameworks */,
 			);
@@ -440,6 +472,7 @@
 				F5E39C7721F1118D006D65C2 /* PrjFSKextTests.xctest */,
 				4A8C13A021F23EE800002878 /* libPrjFSKextTestable.a */,
 				264E723922930E660059E150 /* PrjFSLibTests.xctest */,
+				4AF5583A2301BE280020A270 /* prjfs-tracectl */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -523,6 +556,14 @@
 				4A08257121E77BDD00E21AFD /* PrjFSKextLogDaemon.cpp */,
 			);
 			path = PrjFSKextLogDaemon;
+			sourceTree = "<group>";
+		};
+		4AF5583B2301BE290020A270 /* prjfs-tracectl */ = {
+			isa = PBXGroup;
+			children = (
+				4AF5583C2301BE290020A270 /* prjfs-tracectl.m */,
+			);
+			path = "prjfs-tracectl";
 			sourceTree = "<group>";
 		};
 		F5E39C7821F1118D006D65C2 /* PrjFSKextTests */ = {
@@ -715,6 +756,23 @@
 			productReference = 4A8C13A021F23EE800002878 /* libPrjFSKextTestable.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		4AF558392301BE280020A270 /* prjfs-tracectl */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4AF558412301BE290020A270 /* Build configuration list for PBXNativeTarget "prjfs-tracectl" */;
+			buildPhases = (
+				4AF558362301BE280020A270 /* Sources */,
+				4AF558372301BE280020A270 /* Frameworks */,
+				4AF558382301BE280020A270 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "prjfs-tracectl";
+			productName = "prjfs-tracectl";
+			productReference = 4AF5583A2301BE280020A270 /* prjfs-tracectl */;
+			productType = "com.apple.product-type.tool";
+		};
 		F5E39C7621F1118D006D65C2 /* PrjFSKextTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F5E39C7F21F1118D006D65C2 /* Build configuration list for PBXNativeTarget "PrjFSKextTests" */;
@@ -767,6 +825,9 @@
 					4A8C139F21F23EE800002878 = {
 						CreatedOnToolsVersion = 10.1;
 					};
+					4AF558392301BE280020A270 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
 					F5E39C7621F1118D006D65C2 = {
 						CreatedOnToolsVersion = 10.1;
 					};
@@ -793,6 +854,7 @@
 				4A8C139F21F23EE800002878 /* PrjFSKextTestable */,
 				264E723822930E660059E150 /* PrjFSLibTests */,
 				26A7DE91229363EA004F6252 /* GeneratePrjFSVersionFiles */,
+				4AF558392301BE280020A270 /* prjfs-tracectl */,
 			);
 		};
 /* End PBXProject section */
@@ -928,6 +990,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4AF558362301BE280020A270 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4AF5583D2301BE290020A270 /* prjfs-tracectl.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F5E39C7321F1118D006D65C2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1019,6 +1089,11 @@
 			isa = PBXTargetDependency;
 			target = 4A8C139F21F23EE800002878 /* PrjFSKextTestable */;
 			targetProxy = 4A8C13A721F241ED00002878 /* PBXContainerItemProxy */;
+		};
+		4AF558452302DF510020A270 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4AF558392301BE280020A270 /* prjfs-tracectl */;
+			targetProxy = 4AF558442302DF510020A270 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1580,6 +1655,40 @@
 			};
 			name = "Profiling(Release)";
 		};
+		4AF5583E2301BE290020A270 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = PLT8TQHCAJ;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		4AF5583F2301BE290020A270 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = PLT8TQHCAJ;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		4AF558402301BE290020A270 /* Profiling(Release) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = PLT8TQHCAJ;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Profiling(Release)";
+		};
 		F5E39C7C21F1118D006D65C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1741,6 +1850,16 @@
 				4A8C13A121F23EE800002878 /* Debug */,
 				4A8C13A221F23EE800002878 /* Release */,
 				4A8C13A321F23EE800002878 /* Profiling(Release) */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4AF558412301BE290020A270 /* Build configuration list for PBXNativeTarget "prjfs-tracectl" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4AF5583E2301BE290020A270 /* Debug */,
+				4AF5583F2301BE290020A270 /* Release */,
+				4AF558402301BE290020A270 /* Profiling(Release) */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

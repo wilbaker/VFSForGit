@@ -15,4 +15,7 @@ public:
     virtual IOReturn newUserClient(
         task_t owningTask, void* securityID, UInt32 type,
         OSDictionary* properties, IOUserClient** handler ) override;
+    
+    // IORegistryEntry overrides:
+    virtual IOReturn setProperties(OSObject* properties) override;
 };

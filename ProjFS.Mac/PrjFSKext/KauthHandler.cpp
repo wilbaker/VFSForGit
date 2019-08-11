@@ -3,6 +3,7 @@
 #include <sys/proc.h>
 #include <kern/assert.h>
 #include <libkern/version.h>
+#include <libkern/libkern.h>
 #include <kern/thread.h>
 
 #include "KauthHandlerPrivate.hpp"
@@ -46,6 +47,359 @@ struct PendingRenameOperation
     vnode_t vnode;
     thread_t thread;
 };
+
+class NullTracer
+{
+    NullTracer() = delete;
+    NullTracer(const NullTracer&) = delete;
+    NullTracer& operator=(const NullTracer&) = delete;
+public:
+    explicit NullTracer(kauth_action_t vnodeAction, vnode_t vnode)
+    {}
+    explicit NullTracer(kauth_action_t fileopAction, uintptr_t arg0, uintptr_t arg1, uintptr_t arg2)
+    {}
+    
+    void Flush()
+    {
+    }
+    void Printf(const char* format, ...) __attribute__ ((format (printf, 2, 3)))
+    {
+    }
+    void SendProviderMessage(MessageType providerMessage)
+    {}
+    void SendProviderMessageResult(bool success)
+    {}
+    
+    void SetDeniedForCrawler()
+    {}
+
+    void SetVnodeOpResult(int result)
+    {
+    }
+};
+
+static const char* MessageTypeString(MessageType messageType)
+{
+    switch(messageType)
+    {
+    case MessageType_KtoU_EnumerateDirectory:            return "EnumerateDirectory";
+    case MessageType_KtoU_RecursivelyEnumerateDirectory: return "RecursivelyEnumerateDirectory";
+    case MessageType_KtoU_HydrateFile:                   return "HydrateFile";
+    case MessageType_KtoU_NotifyFileModified:            return "NotifyFileModified";
+    case MessageType_KtoU_NotifyFilePreDelete:           return "NotifyFilePreDelete";
+    case MessageType_KtoU_NotifyFilePreDeleteFromRename: return "NotifyFilePreDeleteFromRename";
+    case MessageType_KtoU_NotifyDirectoryPreDelete:      return "NotifyDirectoryPreDelete";
+    case MessageType_KtoU_NotifyFileCreated:             return "NotifyFileCreated";
+    case MessageType_KtoU_NotifyFileRenamed:             return "NotifyFileRenamed";
+    case MessageType_KtoU_NotifyDirectoryRenamed:        return "NotifyDirectoryRenamed";
+    case MessageType_KtoU_NotifyFileHardLinkCreated:     return "NotifyFileHardLinkCreated";
+    case MessageType_KtoU_NotifyFilePreConvertToFull:    return "NotifyFilePreConvertToFull";
+    default:                                             return "Unknown";
+    };
+}
+
+class KextLogTracer
+{
+    bool discarded;
+    bool willEmitTrace;
+    bool hasTraceIndex;
+    char embeddedTraceBuffer[512];
+    char* dynamicTraceBuffer;
+    uint32_t dynamicTraceBufferSize;
+    uint32_t traceBufferPosition;
+    uint64_t traceIndex;
+
+public:
+    static RWLock traceFilterLock;
+    static _Atomic(char*) pathPrefixFilter;
+    static _Atomic(kauth_action_t) traceVnodeActionFilterMask;
+    static _Atomic(bool) traceDeniedVnodeEvents;
+    static _Atomic(bool) traceProviderMessagingEvents;
+    static _Atomic(bool) traceAllFileOpEvents;
+    static _Atomic(bool) traceAllVnodeEvents;
+    static _Atomic(uint64_t) nextTraceIndex;
+private:
+
+    KextLogTracer() = delete;
+    KextLogTracer(const NullTracer&) = delete;
+    KextLogTracer& operator=(const NullTracer&) = delete;
+
+    struct TraceBuffer
+    {
+        char* buffer;
+        uint32_t size, position;
+    };
+    
+    static bool ShouldTraceEventsForVnode(vnode_t vnode, char (&pathBuffer)[PATH_MAX])
+    {
+        bool shouldTrace = true;
+        if (KextLogTracer::pathPrefixFilter != nullptr)
+        {
+            int pathLen = sizeof(pathBuffer);
+            errno_t error = vn_getpath(vnode, pathBuffer, &pathLen);
+            if (error == 0)
+            {
+                RWLock_AcquireShared(KextLogTracer::traceFilterLock);
+                {
+                    if (KextLogTracer::pathPrefixFilter != nullptr)
+                    {
+                        shouldTrace = strprefix(pathBuffer, KextLogTracer::pathPrefixFilter);
+                    }
+                }
+                RWLock_ReleaseShared(KextLogTracer::traceFilterLock);
+            }
+            else
+            {
+                snprintf(pathBuffer, sizeof(pathBuffer), "[vn_getpath() failed: %d]", error);
+            }
+        }
+        
+        return shouldTrace;
+    }
+    
+    uint64_t GetTraceIndex()
+    {
+        if (!this->hasTraceIndex)
+        {
+            this->traceIndex = atomic_fetch_add(&KextLogTracer::nextTraceIndex, 1llu);
+            this->hasTraceIndex = true;
+        }
+        return this->traceIndex;
+    }
+    
+    TraceBuffer GetBuffer()
+    {
+        if (this->dynamicTraceBuffer != nullptr)
+        {
+            return TraceBuffer { this->dynamicTraceBuffer, this->dynamicTraceBufferSize, this->traceBufferPosition };
+        }
+        else
+        {
+            return TraceBuffer { this->embeddedTraceBuffer, sizeof(this->embeddedTraceBuffer), this->traceBufferPosition };
+        }
+    }
+    
+    bool GrowBuffer(uint32_t minimumSize)
+    {
+        TraceBuffer currentBuffer = this->GetBuffer();
+        if (minimumSize <= currentBuffer.size)
+        {
+            return true;
+        }
+        
+        uint32_t newSize = MAX(minimumSize, currentBuffer.size * 2u);
+        char* newBuffer = static_cast<char*>(Memory_Alloc(newSize));
+        if (newBuffer == nullptr)
+        {
+            return false;
+        }
+        
+        memcpy(newBuffer, currentBuffer.buffer, currentBuffer.position);
+        newBuffer[currentBuffer.position] = '\0';
+        
+        if (this->dynamicTraceBuffer != nullptr)
+        {
+            Memory_Free(this->dynamicTraceBuffer, this->dynamicTraceBufferSize);
+        }
+        this->dynamicTraceBuffer = newBuffer;
+        this->dynamicTraceBufferSize = newSize;
+        
+        return true;
+    }
+
+    void Emit()
+    {
+        if (!this->discarded)
+        {
+            this->willEmitTrace = true;
+
+            TraceBuffer currentBuffer = this->GetBuffer();
+            uint64_t index = this->GetTraceIndex();
+            KextLog("Event trace %9llu: %.*s", index, currentBuffer.position, currentBuffer.buffer);
+        }
+    }
+
+    void Flush()
+    {
+        if (!this->discarded)
+        {
+            this->Emit();
+            TraceBuffer currentBuffer = this->GetBuffer();
+            currentBuffer.buffer[0] = '\0';
+            this->traceBufferPosition = 0;
+        }
+    };
+public:
+    KextLogTracer(kauth_action_t vnodeAction, vnode_t vnode) :
+        traceBufferPosition(0),
+        dynamicTraceBuffer(nullptr),
+        dynamicTraceBufferSize(0),
+        discarded(false),
+        willEmitTrace(false)
+    {
+        this->embeddedTraceBuffer[0] = '\0';
+        
+        kauth_action_t mask = atomic_load(&KextLogTracer::traceVnodeActionFilterMask);
+        if (0 == (mask & vnodeAction))
+        {
+            this->discarded = true;
+        }
+        else
+        {
+            char vnodePath[PATH_MAX] = "";
+            if (!ShouldTraceEventsForVnode(vnode, vnodePath))
+            {
+                this->discarded = true;
+            }
+            else
+            {
+                pid_t pid = proc_selfpid();
+                char processName[MAXCOMLEN + 1] = "";
+                proc_selfname(processName, sizeof(processName));
+                
+                if (vnode_isdir(vnode))
+                {
+                    this->Printf(
+                        "Directory vnode '%s' event by process '%s' (PID = %d) action" KextLog_DirectoryVnodeActionFormat,
+                        vnodePath,
+                        processName,
+                        pid,
+                        KextLog_DirectoryVnodeActionArgs(vnodeAction, " "));
+                }
+                else
+                {
+                    this->Printf(
+                        "File vnode '%s' event by process '%s' (PID = %d) action" KextLog_FileVnodeActionFormat,
+                        vnodePath,
+                        processName,
+                        pid,
+                        KextLog_FileVnodeActionArgs(vnodeAction, " "));
+                }
+
+                if (this->traceAllVnodeEvents)
+                {
+                    this->willEmitTrace = true;
+                }
+            }
+        }
+    }
+    
+    void SendProviderMessage(MessageType providerMessage)
+    {
+        if (!this->discarded)
+        {
+            if (!this->willEmitTrace && atomic_load(&KextLogTracer::traceProviderMessagingEvents))
+            {
+                this->willEmitTrace = true;
+            }
+            this->Printf("\nMessage to provider: %u (%s)", providerMessage, MessageTypeString(providerMessage));
+            
+            if (this->willEmitTrace)
+            {
+                this->Emit();
+            }
+        }
+    }
+
+    void SendProviderMessageResult(bool success)
+    {
+        if (!this->discarded)
+        {
+            this->Printf(" -> result: %s", success ? "success" : "failed");
+        }
+    }
+
+    void SetDeniedForCrawler()
+    {
+        if (!this->willEmitTrace && !this->discarded)
+        {
+            if (!atomic_load(&KextLogTracer::traceAllVnodeEvents) && atomic_load(&KextLogTracer::traceDeniedVnodeEvents))
+            {
+                // When tracing only denied events, throw out any denied crawlers as they tend to spam the trace
+                this->discarded = true;
+            }
+        }
+    }
+
+    void SetVnodeOpResult(int result)
+    {
+        if (this->discarded)
+        {
+            return;
+        }
+        
+        if (!this->willEmitTrace && atomic_load(&KextLogTracer::traceDeniedVnodeEvents))
+        {
+            if (result == KAUTH_RESULT_DENY)
+            {
+                this->willEmitTrace = true;
+            }
+            else
+            {
+                this->discarded = true;
+                return;
+            }
+        }
+        
+        this->Printf("\n-> %s",
+            result == KAUTH_RESULT_DENY ? "KAUTH_RESULT_DENY" :
+            result == KAUTH_RESULT_ALLOW ? "KAUTH_RESULT_ALLOW" :
+            result == KAUTH_RESULT_DEFER ? "KAUTH_RESULT_DEFER" :
+            "UNKNOWN");
+    }
+
+    ~KextLogTracer()
+    {
+        this->Flush();
+        
+        if (this->dynamicTraceBuffer != nullptr)
+        {
+            Memory_Free(this->dynamicTraceBuffer, this->dynamicTraceBufferSize);
+            this->dynamicTraceBuffer = nullptr;
+        }
+    }
+    
+    template <typename... ARGS>
+        void Printf(const char* format, ARGS... args)
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-security"
+        if (this->discarded)
+        {
+            return;
+        }
+        
+        TraceBuffer currentBuffer = this->GetBuffer();
+        uint32_t bufferSpace = currentBuffer.size - currentBuffer.position;
+        int sizeRequired = snprintf(currentBuffer.buffer + currentBuffer.position, bufferSpace, format, args...);
+        if (sizeRequired >= bufferSpace)
+        {
+            if (!this->GrowBuffer(sizeRequired))
+            {
+                this->traceBufferPosition = currentBuffer.size - 1;
+                return;
+            }
+            
+            currentBuffer = this->GetBuffer();
+            bufferSpace = currentBuffer.size - currentBuffer.position;
+            sizeRequired = snprintf(currentBuffer.buffer + currentBuffer.position, bufferSpace, format, args...);
+            assert(sizeRequired < bufferSpace);
+        }
+        
+        this->traceBufferPosition += sizeRequired;
+#pragma clang diagnostic pop
+    }
+};
+
+RWLock KextLogTracer::traceFilterLock;
+_Atomic(char*) KextLogTracer::pathPrefixFilter;
+_Atomic(kauth_action_t) KextLogTracer::traceVnodeActionFilterMask;
+_Atomic(bool) KextLogTracer::traceDeniedVnodeEvents;
+_Atomic(bool) KextLogTracer::traceProviderMessagingEvents;
+_Atomic(bool) KextLogTracer::traceAllFileOpEvents;
+_Atomic(bool) KextLogTracer::traceAllVnodeEvents;
+_Atomic(uint64_t) KextLogTracer::nextTraceIndex;
+
 
 // Function prototypes
 KEXT_STATIC int HandleVnodeOperation(
@@ -124,6 +478,16 @@ KEXT_STATIC bool InitPendingRenames();
 KEXT_STATIC void CleanupPendingRenames();
 KEXT_STATIC void ResizePendingRenames(uint32_t newMaxPendingRenames);
 
+template <typename EventTracer>
+int HandleVnodeOperationImpl(
+    kauth_cred_t    credential,
+    void*           idata,
+    kauth_action_t  action,
+    uintptr_t       arg0,
+    uintptr_t       arg1,
+    uintptr_t       arg2,
+    uintptr_t       arg3);
+
 // State
 static kauth_listener_t s_vnodeListener = nullptr;
 static kauth_listener_t s_fileopListener = nullptr;
@@ -163,7 +527,9 @@ kern_return_t KauthHandler_Init()
         goto CleanupAndFail;
     }
 
-    s_vnodeListener = kauth_listen_scope(KAUTH_SCOPE_VNODE, HandleVnodeOperation, nullptr);
+    KextLogTracer::traceFilterLock = RWLock_Alloc();
+
+    s_vnodeListener = kauth_listen_scope(KAUTH_SCOPE_VNODE, HandleVnodeOperationImpl<NullTracer>, nullptr);
     if (nullptr == s_vnodeListener)
     {
         goto CleanupAndFail;
@@ -210,6 +576,8 @@ kern_return_t KauthHandler_Cleanup()
     ProviderMessaging_AbortAllOutstandingEvents();
     
     WaitForListenerCompletion();
+
+    RWLock_FreeMemory(&KextLogTracer::traceFilterLock);
 
     CleanupPendingRenames();
     
@@ -409,8 +777,29 @@ KEXT_STATIC bool DeleteOpIsForRename(vnode_t vnode)
     return isRename;
 }
 
+template <typename EventTracer>
+    bool TraceAndTrySendRequestAndWaitForResponse(
+        EventTracer& eventTracer,
+        VirtualizationRootHandle root,
+        MessageType messageType,
+        const vnode_t vnode,
+        const FsidInode& vnodeFsidInode,
+        const char* vnodePath,
+        const char* fromPath,
+        int pid,
+        const char* procname,
+        int* kauthResult,
+        int* kauthError)
+{
+    eventTracer.SendProviderMessage(MessageType_KtoU_RecursivelyEnumerateDirectory);
+    bool messageSuccess = ProviderMessaging_TrySendRequestAndWaitForResponse(root, messageType, vnode, vnodeFsidInode, vnodePath, fromPath, pid, procname, kauthResult, kauthError);
+    eventTracer.SendProviderMessageResult(messageSuccess);
+    return messageSuccess;
+}
+
 // Private functions
-KEXT_STATIC int HandleVnodeOperation(
+template <typename EventTracer>
+int HandleVnodeOperationImpl(
     kauth_cred_t    credential,
     void*           idata,
     kauth_action_t  action,
@@ -431,6 +820,8 @@ KEXT_STATIC int HandleVnodeOperation(
     int kauthResult = KAUTH_RESULT_DEFER;
     bool putVnodeWhenDone = false;
 
+    EventTracer eventTracer(action, currentVnode);
+
     UseMainForkIfNamedStream(currentVnode, putVnodeWhenDone);
 
     VirtualizationRootHandle root = RootHandle_None;
@@ -441,7 +832,7 @@ KEXT_STATIC int HandleVnodeOperation(
     bool isDeleteAction = false;
     bool isDirectory = false;
     bool isRename = false;
-
+    
     {
         PerfSample considerVnodeSample(&perfTracer, PrjFSPerfCounter_VnodeOp_BasicVnodeChecks);
         if (!VnodeIsEligibleForEventHandling(currentVnode))
@@ -470,6 +861,10 @@ KEXT_STATIC int HandleVnodeOperation(
             &kauthResult,
             kauthError))
     {
+        if (kauthResult == KAUTH_RESULT_DENY && *kauthError != EBADF)
+        {
+            eventTracer.SetDeniedForCrawler();
+        }
         goto CleanupAndReturn;
     }
     
@@ -510,7 +905,8 @@ KEXT_STATIC int HandleVnodeOperation(
 
                 PerfSample recursivelyEnumerateSample(&perfTracer, PrjFSPerfCounter_VnodeOp_RecursivelyEnumerateDirectory);
         
-                if (!ProviderMessaging_TrySendRequestAndWaitForResponse(
+                if (!TraceAndTrySendRequestAndWaitForResponse(
+                        eventTracer,
                         root,
                         MessageType_KtoU_RecursivelyEnumerateDirectory,
                         currentVnode,
@@ -545,7 +941,8 @@ KEXT_STATIC int HandleVnodeOperation(
 
                 PerfSample enumerateDirectorySample(&perfTracer, PrjFSPerfCounter_VnodeOp_EnumerateDirectory);
         
-                if (!ProviderMessaging_TrySendRequestAndWaitForResponse(
+                if (!TraceAndTrySendRequestAndWaitForResponse(
+                        eventTracer,
                         root,
                         MessageType_KtoU_EnumerateDirectory,
                         currentVnode,
@@ -629,7 +1026,8 @@ KEXT_STATIC int HandleVnodeOperation(
 
                 PerfSample enumerateDirectorySample(&perfTracer, PrjFSPerfCounter_VnodeOp_HydrateFile);
 
-                if (!ProviderMessaging_TrySendRequestAndWaitForResponse(
+                if (!TraceAndTrySendRequestAndWaitForResponse(
+                        eventTracer,
                         root,
                         MessageType_KtoU_HydrateFile,
                         currentVnode,
@@ -711,7 +1109,8 @@ KEXT_STATIC int HandleVnodeOperation(
 
                 PerfSample preConvertToFullSample(&perfTracer, PrjFSPerfCounter_VnodeOp_PreConvertToFull);
                 
-                if (!ProviderMessaging_TrySendRequestAndWaitForResponse(
+                if (!TraceAndTrySendRequestAndWaitForResponse(
+                        eventTracer,
                         root,
                         MessageType_KtoU_NotifyFilePreConvertToFull,
                         currentVnode,
@@ -752,7 +1151,8 @@ KEXT_STATIC int HandleVnodeOperation(
         PerfSample preDeleteSample(&perfTracer, PrjFSPerfCounter_VnodeOp_PreDelete);
         
         // Predeletes must be sent after hydration since they may convert the file to full
-        if (!ProviderMessaging_TrySendRequestAndWaitForResponse(
+        if (!TraceAndTrySendRequestAndWaitForResponse(
+                eventTracer,
                 root,
                 isDirectory ?
                 MessageType_KtoU_NotifyDirectoryPreDelete :
@@ -772,6 +1172,8 @@ KEXT_STATIC int HandleVnodeOperation(
 
     
 CleanupAndReturn:
+    eventTracer.SetVnodeOpResult(kauthResult);
+
     if (putVnodeWhenDone)
     {
         vnode_put(currentVnode);
@@ -780,6 +1182,20 @@ CleanupAndReturn:
     atomic_fetch_sub(&s_numActiveKauthEvents, 1);
     return kauthResult;
 }
+
+#ifdef KEXT_UNIT_TESTING
+KEXT_STATIC int HandleVnodeOperation(
+    kauth_cred_t    credential,
+    void*           idata,
+    kauth_action_t  action,
+    uintptr_t       arg0,
+    uintptr_t       arg1,
+    uintptr_t       arg2,
+    uintptr_t       arg3)
+{
+    return HandleVnodeOperationImpl<NullTracer>(credential, idata, action, arg0, arg1, arg2, arg3);
+}
+#endif
 
 // Note: a fileop listener MUST NOT return an error, or it will result in a kernel panic.
 // Fileop events are informational only.
@@ -1618,4 +2034,50 @@ KEXT_STATIC bool ShouldIgnoreVnodeType(vtype vnodeType, vnode_t vnode)
     }
     
     return false;
+}
+
+bool KauthHandler_EnableTraceListeners(bool tracingEnabled, const KauthHandlerEventTracingSettings& settings)
+{
+    if (tracingEnabled)
+    {
+        RWLock_AcquireExclusive(KextLogTracer::traceFilterLock);
+        {
+            char* newPrefixFilter = nullptr;
+            if (settings.pathPrefixFilter != nullptr)
+            {
+                size_t filterLength = strlen(settings.pathPrefixFilter);
+                if (filterLength + 1 <= UINT32_MAX)
+                {
+                    newPrefixFilter = static_cast<char*>(Memory_Alloc(static_cast<uint32_t>(filterLength + 1)));
+                    memcpy(newPrefixFilter, settings.pathPrefixFilter, filterLength + 1);
+                }
+            }
+            
+            char* oldPrefixFilter = atomic_exchange(&KextLogTracer::pathPrefixFilter, newPrefixFilter);
+            
+            if (oldPrefixFilter != nullptr)
+            {
+                Memory_Free(oldPrefixFilter, static_cast<uint32_t>(strlen(oldPrefixFilter) + 1));
+            }
+            atomic_store(&KextLogTracer::traceVnodeActionFilterMask, settings.vnodeActionFilterMask);
+            atomic_store(&KextLogTracer::traceDeniedVnodeEvents, settings.traceDeniedVnodeEvents);
+            atomic_store(&KextLogTracer::traceProviderMessagingEvents, settings.traceProviderMessagingVnodeEvents);
+            atomic_store(&KextLogTracer::traceAllVnodeEvents, settings.traceAllVnodeEvents);
+        }
+        RWLock_ReleaseExclusive(KextLogTracer::traceFilterLock);
+    }
+    
+    kauth_scope_callback_t vnodeListener = tracingEnabled ? HandleVnodeOperationImpl<KextLogTracer> : HandleVnodeOperationImpl<NullTracer>;
+    kauth_listener_t newListenerHandle = kauth_listen_scope(KAUTH_SCOPE_VNODE, vnodeListener, nullptr);
+    if (newListenerHandle == nullptr)
+    {
+        return false;
+    }
+    
+    kauth_unlisten_scope(s_vnodeListener);
+    s_vnodeListener = newListenerHandle;
+    
+    KextLog_Info("KauthHandler_EnableTraceListeners: Now running with tracing %s", tracingEnabled ? "ENABLED" : "DISABLED");
+    
+    return true;
 }
