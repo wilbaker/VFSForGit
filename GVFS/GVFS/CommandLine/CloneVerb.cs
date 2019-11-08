@@ -125,6 +125,10 @@ namespace GVFS.CommandLine
                     cloneResult = this.TryCreateEnlistment(fullEnlistmentRootPathParameter, normalizedEnlistmentRootPath, out enlistment);
                     if (cloneResult.Success)
                     {
+                        // Create the enlistment root explicitly with CreateDirectoryAccessibleByAuthUsers before calling
+                        // AddLogFileEventListener to ensure that elevated and non-elevated users have access to the root.
+                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.EnlistmentRoot);
+
                         tracer.AddLogFileEventListener(
                             GVFSEnlistment.GetNewGVFSLogFileName(enlistment.GVFSLogsRoot, GVFSConstants.LogFileTypes.Clone),
                             EventLevel.Informational,

@@ -217,7 +217,6 @@ namespace GVFS.Common
         {
             try
             {
-                GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(this.EnlistmentRoot);
                 Directory.CreateDirectory(this.WorkingDirectoryRoot);
                 this.CreateHiddenDirectory(this.DotGVFSRoot);
             }
