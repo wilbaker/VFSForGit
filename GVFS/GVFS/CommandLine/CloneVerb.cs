@@ -386,18 +386,24 @@ namespace GVFS.CommandLine
                     }
 
                     string localCacheError;
+                    if (!this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, resolvedLocalCacheRoot, out localCacheError))
+                    {
+                        string error = $"Error creating/configuring directory: {localCacheError}";
+                        tracer.RelatedError(error);
+                        return new Result(error);
+                    }
+
                     if (!this.TryDetermineLocalCacheAndInitializePaths(tracer, enlistment, serverGVFSConfig, cacheServer, resolvedLocalCacheRoot, out localCacheError))
                     {
                         tracer.RelatedError(localCacheError);
                         return new Result(localCacheError);
                     }
 
-                    string folderError;
-                    if (!this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.GitObjectsRoot, out folderError) ||
-                        !this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.GitPackRoot, out folderError) ||
-                        !this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.BlobSizesRoot, out folderError))
+                    if (!this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.GitObjectsRoot, out localCacheError) ||
+                        !this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.GitPackRoot, out localCacheError) ||
+                        !this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.BlobSizesRoot, out localCacheError))
                     {
-                        string error = $"Error creating/configuring directory: {folderError}";
+                        string error = $"Error creating/configuring directory: {localCacheError}";
                         tracer.RelatedError(error);
                         return new Result(error);
                     }
