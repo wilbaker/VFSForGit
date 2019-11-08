@@ -603,7 +603,7 @@ namespace GVFS.Common.Git
             string firstTwoDigits = sha.Substring(0, 2);
             string remainingDigits = sha.Substring(2);
             string twoLetterFolderName = Path.Combine(this.Enlistment.GitObjectsRoot, firstTwoDigits);
-            this.fileSystem.CreateDirectory(twoLetterFolderName);
+            GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(twoLetterFolderName);
 
             return new LooseObjectToWrite(
                 tempFile: Path.Combine(twoLetterFolderName, Path.GetRandomFileName()),
@@ -630,7 +630,7 @@ namespace GVFS.Common.Git
                 PrefetchPacksDeserializer deserializer = new PrefetchPacksDeserializer(response.Stream);
 
                 string tempPackFolderPath = Path.Combine(this.Enlistment.GitPackRoot, TempPackFolder);
-                this.fileSystem.CreateDirectory(tempPackFolderPath);
+                GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(tempPackFolderPath);
 
                 List<TempPrefetchPackAndIdx> tempPacks = new List<TempPrefetchPackAndIdx>();
                 foreach (PrefetchPacksDeserializer.PackAndIndex pack in deserializer.EnumeratePacks())
@@ -934,7 +934,7 @@ namespace GVFS.Common.Git
         {
             GitProcess.Result result;
 
-            this.fileSystem.CreateDirectory(this.Enlistment.GitPackRoot);
+            GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(this.Enlistment.GitPackRoot);
 
             if (unpackObjects)
             {

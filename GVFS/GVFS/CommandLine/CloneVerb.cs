@@ -386,27 +386,15 @@ namespace GVFS.CommandLine
                     }
 
                     string localCacheError;
-                    if (!this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, resolvedLocalCacheRoot, out localCacheError))
-                    {
-                        string error = $"Error creating/configuring directory: {localCacheError}";
-                        tracer.RelatedError(error);
-                        return new Result(error);
-                    }
-
                     if (!this.TryDetermineLocalCacheAndInitializePaths(tracer, enlistment, serverGVFSConfig, cacheServer, resolvedLocalCacheRoot, out localCacheError))
                     {
                         tracer.RelatedError(localCacheError);
                         return new Result(localCacheError);
                     }
 
-                    if (!this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.GitObjectsRoot, out localCacheError) ||
-                        !this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.GitPackRoot, out localCacheError) ||
-                        !this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.BlobSizesRoot, out localCacheError))
-                    {
-                        string error = $"Error creating/configuring directory: {localCacheError}";
-                        tracer.RelatedError(error);
-                        return new Result(error);
-                    }
+                    GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.GitObjectsRoot);
+                    GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.GitPackRoot);
+                    GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.BlobSizesRoot);
 
                     return this.CreateClone(tracer, enlistment, objectRequestor, refs, this.Branch);
                 }

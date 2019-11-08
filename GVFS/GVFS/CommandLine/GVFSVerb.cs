@@ -638,34 +638,6 @@ You can specify a URL, a name of a configured cache server, or the special names
             }
         }
 
-        protected void CreateEnlistmentDirectoryAndAdjustACLs(string path)
-        {
-            Directory.CreateDirectory(path);
-            GVFSPlatform.Instance.InitializeEnlistmentACLs(path);
-        }
-
-        protected bool TryCreateEnlistmentDirectoryAndAdjustACLs(ITracer tracer, string path, out string error)
-        {
-            try
-            {
-                this.CreateEnlistmentDirectoryAndAdjustACLs(path);
-
-                error = null;
-                return true;
-            }
-            catch (Exception e)
-            {
-                error = e.Message;
-
-                EventMetadata metadata = new EventMetadata();
-                metadata.Add("Exception", e.ToString());
-                metadata.Add(nameof(path), path);
-                tracer.RelatedWarning(metadata, $"{nameof(this.TryCreateEnlistmentDirectoryAndAdjustACLs)}: caught exception");
-            }
-
-            return false;
-        }
-
         private static string CreateMountId()
         {
             return Guid.NewGuid().ToString("N");
@@ -1021,7 +993,7 @@ You can specify a URL, a name of a configured cache server, or the special names
                     try
                     {
                         tracer.RelatedInfo($"{nameof(this.EnsureLocalCacheIsHealthy)}: Local cache root: {enlistment.LocalCacheRoot} missing, recreating it");
-                        this.CreateEnlistmentDirectoryAndAdjustACLs(enlistment.LocalCacheRoot);
+                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.LocalCacheRoot);
                     }
                     catch (Exception e)
                     {
@@ -1137,8 +1109,8 @@ You can specify a URL, a name of a configured cache server, or the special names
                     tracer.RelatedInfo($"{nameof(this.EnsureLocalCacheIsHealthy)}: Creating GitObjectsRoot ({enlistment.GitObjectsRoot}), GitPackRoot ({enlistment.GitPackRoot}), and BlobSizesRoot ({enlistment.BlobSizesRoot})");
                     try
                     {
-                        this.CreateEnlistmentDirectoryAndAdjustACLs(enlistment.GitObjectsRoot);
-                        this.CreateEnlistmentDirectoryAndAdjustACLs(enlistment.GitPackRoot);
+                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.GitObjectsRoot);
+                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.GitPackRoot);
                     }
                     catch (Exception e)
                     {
@@ -1174,7 +1146,7 @@ You can specify a URL, a name of a configured cache server, or the special names
                     tracer.RelatedInfo($"{nameof(this.EnsureLocalCacheIsHealthy)}: BlobSizesRoot ({enlistment.BlobSizesRoot}) not found, re-creating");
                     try
                     {
-                        this.CreateEnlistmentDirectoryAndAdjustACLs(enlistment.BlobSizesRoot);
+                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.BlobSizesRoot);
                     }
                     catch (Exception e)
                     {

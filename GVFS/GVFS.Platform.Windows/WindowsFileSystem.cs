@@ -117,6 +117,41 @@ namespace GVFS.Platform.Windows
             return false;
         }
 
+        public void CreateDirectoryAccessibleByAuthUsers(string directoryPath)
+        {
+            // The following permissions are typically present on deskop and missing on Server
+            //
+            //   ACCESS_ALLOWED_ACE_TYPE: NT AUTHORITY\Authenticated Users
+            //          [OBJECT_INHERIT_ACE]
+            //          [CONTAINER_INHERIT_ACE]
+            //          [INHERIT_ONLY_ACE]
+            //        DELETE
+            //        GENERIC_EXECUTE
+            //        GENERIC_WRITE
+            //        GENERIC_READ
+            DirectorySecurity directorySecurity = new DirectorySecurity();
+            directorySecurity.SetAccessRuleProtection(isProtected: false, preserveInheritance: true);
+
+            FileSystemRights rights = unchecked((FileSystemRights)(int)(
+                NativeMethods.FileAccess.DELETE |
+                NativeMethods.FileAccess.GENERIC_EXECUTE |
+                NativeMethods.FileAccess.GENERIC_WRITE |
+                NativeMethods.FileAccess.GENERIC_READ));
+
+            // InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit -> ACE is inherited by child directories and files
+            // PropagationFlags.None -> Standard propagation rules, settings are applied to the directory and its children
+            // AccessControlType.Allow -> Rule is used to allow access to an object
+            directorySecurity.AddAccessRule(
+                new FileSystemAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null),
+                    rights,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    PropagationFlags.None,
+                    AccessControlType.Allow));
+
+            Directory.CreateDirectory(directoryPath, directorySecurity);
+        }
+
         public bool TryCreateDirectoryWithAdminAndUserModifyPermissions(string directoryPath, out string error)
         {
             try

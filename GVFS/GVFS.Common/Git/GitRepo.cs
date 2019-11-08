@@ -214,7 +214,7 @@ namespace GVFS.Common.Git
 
                     try
                     {
-                        this.fileSystem.CreateDirectory(corruptBlobsFolderPath);
+                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(corruptBlobsFolderPath);
                         this.fileSystem.MoveFile(blobPath, corruptBlobPath);
                     }
                     catch (Exception e)
