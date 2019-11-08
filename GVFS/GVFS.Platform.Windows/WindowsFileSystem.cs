@@ -132,22 +132,19 @@ namespace GVFS.Platform.Windows
             DirectorySecurity directorySecurity = new DirectorySecurity();
             directorySecurity.SetAccessRuleProtection(isProtected: false, preserveInheritance: true);
 
-            FileSystemRights rights = unchecked((FileSystemRights)(int)(
-                NativeMethods.FileAccess.DELETE |
-                NativeMethods.FileAccess.GENERIC_EXECUTE |
-                NativeMethods.FileAccess.GENERIC_WRITE |
-                NativeMethods.FileAccess.GENERIC_READ));
+            // Use AccessRuleFactory rather than a FileSystemAccessRule because the NativeMethods.FileAccess flags we're specifying
+            // are not valid for the FileSystemRights parameter of the FileSystemAccessRule constructor
+            AccessRule authenticatedUsersAccessRule = directorySecurity.AccessRuleFactory(
+                new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null),
+                unchecked((int)(NativeMethods.FileAccess.DELETE | NativeMethods.FileAccess.GENERIC_EXECUTE | NativeMethods.FileAccess.GENERIC_WRITE | NativeMethods.FileAccess.GENERIC_READ)),
+                true,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                PropagationFlags.None,
+                AccessControlType.Allow);
 
-            // InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit -> ACE is inherited by child directories and files
-            // PropagationFlags.None -> Standard propagation rules, settings are applied to the directory and its children
-            // AccessControlType.Allow -> Rule is used to allow access to an object
-            directorySecurity.AddAccessRule(
-                new FileSystemAccessRule(
-                    new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null),
-                    rights,
-                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-                    PropagationFlags.None,
-                    AccessControlType.Allow));
+            // The return type of the AccessRuleFactory method is the base class, AccessRule, but the return value can be cast safely to the derived class.
+            // https://msdn.microsoft.com/en-us/library/system.security.accesscontrol.filesystemsecurity.accessrulefactory(v=vs.110).aspx
+            directorySecurity.AddAccessRule((FileSystemAccessRule)authenticatedUsersAccessRule);
 
             Directory.CreateDirectory(directoryPath, directorySecurity);
         }
