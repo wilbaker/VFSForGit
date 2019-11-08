@@ -213,7 +213,7 @@ namespace GVFS.Common
             this.BlobSizesRoot = blobSizesRoot;
         }
 
-        public bool TryCreateEnlistmentFolders()
+        public bool TryCreateEnlistmentSubFolders()
         {
             try
             {

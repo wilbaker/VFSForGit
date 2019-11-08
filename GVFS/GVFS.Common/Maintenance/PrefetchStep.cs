@@ -141,7 +141,7 @@ namespace GVFS.Common.Maintenance
 
         private bool TryGetMaxGoodPrefetchTimestamp(out long maxGoodTimestamp, out string error)
         {
-            GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(this.Context.Enlistment.GitPackRoot);
+            this.Context.FileSystem.CreateDirectory(this.Context.Enlistment.GitPackRoot);
 
             string[] packs = this.GitObjects.ReadPackFileNames(this.Context.Enlistment.GitPackRoot, GVFSConstants.PrefetchPackPrefix);
             List<PrefetchPackInfo> orderedPacks = packs

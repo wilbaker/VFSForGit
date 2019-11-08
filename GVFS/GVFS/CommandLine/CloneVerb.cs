@@ -377,7 +377,7 @@ namespace GVFS.CommandLine
                         }
                     }
 
-                    if (!enlistment.TryCreateEnlistmentFolders())
+                    if (!enlistment.TryCreateEnlistmentSubFolders())
                     {
                         string error = "Could not create enlistment directory";
                         tracer.RelatedError(error);
@@ -398,9 +398,11 @@ namespace GVFS.CommandLine
                         return new Result(localCacheError);
                     }
 
-                    GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.GitObjectsRoot);
-                    GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.GitPackRoot);
-                    GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.BlobSizesRoot);
+                    // There's no need to use CreateDirectoryAccessibleByAuthUsers as these directories will inherit
+                    // the ACLs used to create LocalCacheRoot
+                    Directory.CreateDirectory(enlistment.GitObjectsRoot);
+                    Directory.CreateDirectory(enlistment.GitPackRoot);
+                    Directory.CreateDirectory(enlistment.BlobSizesRoot);
 
                     return this.CreateClone(tracer, enlistment, objectRequestor, refs, this.Branch);
                 }

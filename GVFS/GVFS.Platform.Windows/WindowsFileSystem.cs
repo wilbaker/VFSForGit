@@ -124,25 +124,12 @@ namespace GVFS.Platform.Windows
                 return;
             }
 
-            // Find the closest ancestor that exists on disk.
-            string parentPath = directoryPath;
-            while (!string.IsNullOrWhiteSpace(parentPath) && !Directory.Exists(parentPath))
-            {
-                parentPath = Path.GetDirectoryName(parentPath);
-            }
+            // Create the ancestors of the specified path with the default ACLs
+            string parentPath = Path.GetDirectoryName(directoryPath);
+            Directory.CreateDirectory(parentPath);
 
-            if (string.IsNullOrWhiteSpace(parentPath))
-            {
-                throw new DirectoryNotFoundException($"Failed to find an ancestor of {directoryPath} on disk");
-            }
-
-            // Create a temporary directory and read its ACLs.  We do this for two reasons:
-            //
-            // 1) The call to Directory.CreateDirectory below must be made with both the
-            //    proper inherited ACLs, and the ACLs we want to add
-            //
-            // 2) Setting the ACLs *after* creating the directory is tricky because CreateDirectory
-            //    might need to create intermediate directories, and we needs those to have the correct ACLs as well
+            // Create a temporary directory and read its ACLs. this allows us to call
+            // Directory.CreateDirectorywith both the proper inherited ACLs, and the ACLs we want to add
             string tempDir = Path.Combine(parentPath, $"gvfs_{Path.GetRandomFileName()}");
             Directory.CreateDirectory(tempDir);
             DirectorySecurity directorySecurity;
@@ -179,7 +166,6 @@ namespace GVFS.Platform.Windows
             // The return type of the AccessRuleFactory method is the base class, AccessRule, but the return value can be cast safely to the derived class.
             // https://msdn.microsoft.com/en-us/library/system.security.accesscontrol.filesystemsecurity.accessrulefactory(v=vs.110).aspx
             directorySecurity.AddAccessRule((FileSystemAccessRule)authenticatedUsersAccessRule);
-
             Directory.CreateDirectory(directoryPath, directorySecurity);
         }
 

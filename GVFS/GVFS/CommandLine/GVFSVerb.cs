@@ -993,7 +993,7 @@ You can specify a URL, a name of a configured cache server, or the special names
                     try
                     {
                         tracer.RelatedInfo($"{nameof(this.EnsureLocalCacheIsHealthy)}: Local cache root: {enlistment.LocalCacheRoot} missing, recreating it");
-                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.LocalCacheRoot);
+                        Directory.CreateDirectory(enlistment.LocalCacheRoot);
                     }
                     catch (Exception e)
                     {
@@ -1109,8 +1109,8 @@ You can specify a URL, a name of a configured cache server, or the special names
                     tracer.RelatedInfo($"{nameof(this.EnsureLocalCacheIsHealthy)}: Creating GitObjectsRoot ({enlistment.GitObjectsRoot}), GitPackRoot ({enlistment.GitPackRoot}), and BlobSizesRoot ({enlistment.BlobSizesRoot})");
                     try
                     {
-                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.GitObjectsRoot);
-                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.GitPackRoot);
+                        Directory.CreateDirectory(enlistment.GitObjectsRoot);
+                        Directory.CreateDirectory(enlistment.GitPackRoot);
                     }
                     catch (Exception e)
                     {
@@ -1146,7 +1146,7 @@ You can specify a URL, a name of a configured cache server, or the special names
                     tracer.RelatedInfo($"{nameof(this.EnsureLocalCacheIsHealthy)}: BlobSizesRoot ({enlistment.BlobSizesRoot}) not found, re-creating");
                     try
                     {
-                        GVFSPlatform.Instance.FileSystem.CreateDirectoryAccessibleByAuthUsers(enlistment.BlobSizesRoot);
+                        Directory.CreateDirectory(enlistment.BlobSizesRoot);
                     }
                     catch (Exception e)
                     {
