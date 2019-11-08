@@ -119,6 +119,42 @@ namespace GVFS.Platform.Windows
 
         public void CreateDirectoryAccessibleByAuthUsers(string directoryPath)
         {
+            if (Directory.Exists(directoryPath))
+            {
+                return;
+            }
+
+            // Find the closest ancestor that exists on disk.
+            string parentPath = directoryPath;
+            while (!string.IsNullOrWhiteSpace(parentPath) && !Directory.Exists(parentPath))
+            {
+                parentPath = Path.GetDirectoryName(parentPath);
+            }
+
+            if (string.IsNullOrWhiteSpace(parentPath))
+            {
+                throw new DirectoryNotFoundException($"Failed to find an ancestor of {directoryPath} on disk");
+            }
+
+            // Create a temporary directory and read its ACLs.  We do this for two reasons:
+            //
+            // 1) The call to Directory.CreateDirectory below must be made with both the
+            //    proper inherited ACLs, and the ACLs we want to add
+            //
+            // 2) Setting the ACLs *after* creating the directory is tricky because CreateDirectory
+            //    might need to create intermediate directories, and we needs those to have the correct ACLs as well
+            string tempDir = Path.Combine(parentPath, $"gvfs_{Path.GetRandomFileName()}");
+            Directory.CreateDirectory(tempDir);
+            DirectorySecurity directorySecurity;
+            try
+            {
+                directorySecurity = Directory.GetAccessControl(tempDir);
+            }
+            finally
+            {
+                Directory.Delete(tempDir);
+            }
+
             // The following permissions are typically present on deskop and missing on Server
             //
             //   ACCESS_ALLOWED_ACE_TYPE: NT AUTHORITY\Authenticated Users
@@ -129,8 +165,6 @@ namespace GVFS.Platform.Windows
             //        GENERIC_EXECUTE
             //        GENERIC_WRITE
             //        GENERIC_READ
-            DirectorySecurity directorySecurity = new DirectorySecurity();
-            directorySecurity.SetAccessRuleProtection(isProtected: false, preserveInheritance: true);
 
             // Use AccessRuleFactory rather than a FileSystemAccessRule because the NativeMethods.FileAccess flags we're specifying
             // are not valid for the FileSystemRights parameter of the FileSystemAccessRule constructor
