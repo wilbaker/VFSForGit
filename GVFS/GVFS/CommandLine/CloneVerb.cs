@@ -392,9 +392,15 @@ namespace GVFS.CommandLine
                         return new Result(localCacheError);
                     }
 
-                    Directory.CreateDirectory(enlistment.GitObjectsRoot);
-                    Directory.CreateDirectory(enlistment.GitPackRoot);
-                    Directory.CreateDirectory(enlistment.BlobSizesRoot);
+                    string folderError;
+                    if (!this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.GitObjectsRoot, out folderError) ||
+                        !this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.GitPackRoot, out folderError) ||
+                        !this.TryCreateEnlistmentDirectoryAndAdjustACLs(tracer, enlistment.BlobSizesRoot, out folderError))
+                    {
+                        string error = $"Error creating/configuring directory: {folderError}";
+                        tracer.RelatedError(error);
+                        return new Result(error);
+                    }
 
                     return this.CreateClone(tracer, enlistment, objectRequestor, refs, this.Branch);
                 }
