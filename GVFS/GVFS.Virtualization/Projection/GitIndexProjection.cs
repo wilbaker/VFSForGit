@@ -1310,28 +1310,30 @@ namespace GVFS.Virtualization.Projection
                         {
                             this.ReExpandFolder(folderPlaceholder.Path, existingPlaceholders);
                         }
-
-                        // TODO: Update only the mtime of folder placeholders we're keeping that have had children added or removed
-                        DateTime updateTime = DateTime.Now;
-                        foreach (string folderPlaceholderPath in folderPlaceholdersToKeep)
-                        {
-                            string folderFullPath = Path.Combine(this.context.Enlistment.WorkingDirectoryBackingRoot, folderPlaceholderPath);
-                            try
-                            {
-                                this.context.FileSystem.SetDirectoryLastWriteTime(folderFullPath, updateTime);
-                            }
-                            catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException || e is UnauthorizedAccessException)
-                            {
-                                EventMetadata exceptionMetadata = CreateEventMetadata(e);
-                                exceptionMetadata.Add(nameof(folderFullPath), folderFullPath);
-                                exceptionMetadata.Add(TracingConstants.MessageKey.InfoMessage, $"{nameof(this.UpdatePlaceholders)}: Failed to update folder write time");
-                            }
-                        }
                     }
                     else
                     {
                         existingPlaceholders?.Remove(folderPlaceholder.Path);
                         this.placeholderDatabase.Remove(folderPlaceholder.Path);
+                    }
+                }
+
+                // TODO: Update only the mtime of folder placeholders we're keeping that have had children added or removed
+                DateTime updateTime = DateTime.Now;
+                foreach (string folderPlaceholderPath in folderPlaceholdersToKeep)
+                {
+                    string folderFullPath = Path.Combine(this.context.Enlistment.WorkingDirectoryBackingRoot, folderPlaceholderPath);
+                    try
+                    {
+                        this.context.FileSystem.SetDirectoryLastWriteTime(folderFullPath, updateTime);
+                        this.context.Tracer.RelatedInfo($"Updated last write time for {folderFullPath}");
+                    }
+                    catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is Win32Exception)
+                    {
+                        EventMetadata exceptionMetadata = CreateEventMetadata(e);
+                        exceptionMetadata.Add(nameof(folderFullPath), folderFullPath);
+                        exceptionMetadata.Add(TracingConstants.MessageKey.InfoMessage, $"{nameof(this.UpdatePlaceholders)}: Failed to update folder write time");
+                        this.context.Tracer.RelatedEvent(EventLevel.Informational, $"{nameof(this.UpdatePlaceholders)}_FailedWriteTimeUpdate", exceptionMetadata);
                     }
                 }
 
