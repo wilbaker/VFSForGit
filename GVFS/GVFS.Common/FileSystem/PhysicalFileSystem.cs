@@ -224,6 +224,11 @@ namespace GVFS.Common.FileSystem
             File.SetAttributes(path, fileAttributes);
         }
 
+        public virtual void SetDirectoryLastWriteTime(string path, DateTime lastWriteTime)
+        {
+            Directory.SetLastWriteTime(path, lastWriteTime);
+        }
+
         public virtual void MoveFile(string sourcePath, string targetPath)
         {
             File.Move(sourcePath, targetPath);

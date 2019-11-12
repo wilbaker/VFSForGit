@@ -1332,7 +1332,21 @@ namespace GVFS.Virtualization.Projection
                         }
 
                         // TODO: Update only the mtime of folder placeholders we're keeping that have had children added or removed
-
+                        DateTime updateTime = DateTime.Now;
+                        foreach (string folderPlaceholderPath in folderPlaceholdersToKeep)
+                        {
+                            string folderFullPath = Path.Combine(this.context.Enlistment.WorkingDirectoryBackingRoot, folderPlaceholderPath);
+                            try
+                            {
+                                this.context.FileSystem.SetDirectoryLastWriteTime(folderFullPath, updateTime);
+                            }
+                            catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException || e is UnauthorizedAccessException)
+                            {
+                                EventMetadata exceptionMetadata = CreateEventMetadata(e);
+                                exceptionMetadata.Add(nameof(folderFullPath), folderFullPath);
+                                exceptionMetadata.Add(TracingConstants.MessageKey.InfoMessage, $"{nameof(this.UpdatePlaceholders)}: Failed to update folder write time");
+                            }
+                        }
                     }
                     else
                     {
