@@ -58,9 +58,12 @@ namespace GVFS.Virtualization.Projection
 
         private BlobSizes blobSizes;
         private IPlaceholderCollection placeholderDatabase;
+
         private ISparseCollection sparseCollection;
         private SparseFolderData rootSparseFolder;
         private HashSet<string> sparsePaths;
+        private HashSet<string> sparseFoldersNeedingRefresh;
+
         private GVFSGitObjects gitObjects;
         private BackgroundFileSystemTaskRunner backgroundFileSystemTaskRunner;
         private ReaderWriterLockSlim projectionReadWriteLock;
@@ -790,28 +793,30 @@ namespace GVFS.Virtualization.Projection
         }
 
         // Returns the list of folders that had children added or removed from the sparse set
-        private HashSet<string> RefreshSparseFolders()
+        private void RefreshSparseFolders()
         {
-            HashSet<string> updatedFolders = null;
+            this.sparseFoldersNeedingRefresh = null;
             this.rootSparseFolder.Children.Clear();
             if (this.sparseCollection != null)
             {
+                this.sparseFoldersNeedingRefresh = new HashSet<string>(GVFSPlatform.Instance.Constants.PathComparer);
+
+                // Always refresh the root directory
+                this.sparseFoldersNeedingRefresh.Add(string.Empty);
+
                 Dictionary<string, SparseFolderData> parentFolder = this.rootSparseFolder.Children;
 
-                updatedFolders = new HashSet<string>(GVFSPlatform.Instance.Constants.PathComparer);
-                HashSet<string> oldSparsePaths = this.sparsePaths ?? new HashSet<string>(GVFSPlatform.Instance.Constants.PathComparer);
+                HashSet<string> oldSparsePaths = this.sparsePaths;
                 this.sparsePaths = this.sparseCollection.GetAll();
-
                 foreach (string directoryPath in this.sparsePaths)
                 {
                     string[] folders = directoryPath.Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
-
-                    if (!oldSparsePaths.Remove(directoryPath))
+                    if (oldSparsePaths != null && !oldSparsePaths.Remove(directoryPath))
                     {
                         // directoryPath is a new entry, add its parent to updatedFolders
                         if (folders.Length > 1)
                         {
-                            updatedFolders.Add(string.Join($"{Path.DirectorySeparatorChar}", folders, startIndex: 0, count: folders.Length - 1));
+                            this.sparseFoldersNeedingRefresh.Add(string.Join($"{Path.DirectorySeparatorChar}", folders, startIndex: 0, count: folders.Length - 1));
                         }
                     }
 
@@ -842,6 +847,17 @@ namespace GVFS.Virtualization.Projection
                 }
 
                 // Anything left in oldSparsePaths has been removed, and its parents need to be updated as well
+                if (oldSparsePaths != null)
+                {
+                    foreach (string path in oldSparsePaths)
+                    {
+                        int lastSeparatorIndex = path.LastIndexOf(Path.DirectorySeparatorChar);
+                        if (lastSeparatorIndex > 0)
+                        {
+                            this.sparseFoldersNeedingRefresh.Add(path.Substring(0, lastSeparatorIndex));
+                        }
+                    }
+                }
             }
         }
 
@@ -1338,22 +1354,24 @@ namespace GVFS.Virtualization.Projection
                     }
                 }
 
-                // TODO: Update only the mtime of folder placeholders we're keeping that have had children added or removed
                 DateTime updateTime = DateTime.Now;
                 foreach (string folderPlaceholderPath in folderPlaceholdersToKeep)
                 {
-                    string folderFullPath = Path.Combine(this.context.Enlistment.WorkingDirectoryBackingRoot, folderPlaceholderPath);
-                    try
+                    if (this.sparseFoldersNeedingRefresh.Contains(folderPlaceholderPath))
                     {
-                        this.context.FileSystem.SetDirectoryLastWriteTime(folderFullPath, updateTime);
-                        this.context.Tracer.RelatedInfo($"Updated last write time for {folderFullPath}");
-                    }
-                    catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is Win32Exception)
-                    {
-                        EventMetadata exceptionMetadata = CreateEventMetadata(e);
-                        exceptionMetadata.Add(nameof(folderFullPath), folderFullPath);
-                        exceptionMetadata.Add(TracingConstants.MessageKey.InfoMessage, $"{nameof(this.UpdatePlaceholders)}: Failed to update folder write time");
-                        this.context.Tracer.RelatedEvent(EventLevel.Informational, $"{nameof(this.UpdatePlaceholders)}_FailedWriteTimeUpdate", exceptionMetadata);
+                        string folderFullPath = Path.Combine(this.context.Enlistment.WorkingDirectoryBackingRoot, folderPlaceholderPath);
+                        try
+                        {
+                            this.context.FileSystem.SetDirectoryLastWriteTime(folderFullPath, updateTime);
+                            this.context.Tracer.RelatedInfo($"Updated last write time for {folderFullPath}");
+                        }
+                        catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is Win32Exception)
+                        {
+                            EventMetadata exceptionMetadata = CreateEventMetadata(e);
+                            exceptionMetadata.Add(nameof(folderFullPath), folderFullPath);
+                            exceptionMetadata.Add(TracingConstants.MessageKey.InfoMessage, $"{nameof(this.UpdatePlaceholders)}: Failed to update folder write time");
+                            this.context.Tracer.RelatedEvent(EventLevel.Informational, $"{nameof(this.UpdatePlaceholders)}_FailedWriteTimeUpdate", exceptionMetadata);
+                        }
                     }
                 }
 
