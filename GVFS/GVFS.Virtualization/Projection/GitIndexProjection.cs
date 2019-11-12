@@ -60,7 +60,6 @@ namespace GVFS.Virtualization.Projection
         private IPlaceholderCollection placeholderDatabase;
         private ISparseCollection sparseCollection;
         private SparseFolderData rootSparseFolder;
-        private HashSet<string> sparsePaths;
         private GVFSGitObjects gitObjects;
         private BackgroundFileSystemTaskRunner backgroundFileSystemTaskRunner;
         private ReaderWriterLockSlim projectionReadWriteLock;
@@ -789,32 +788,15 @@ namespace GVFS.Virtualization.Projection
             this.rootFolderData.ResetData(new LazyUTF8String("<root>"), isIncluded: true);
         }
 
-        // Returns the list of folders that had children added or removed from the sparse set
-        private HashSet<string> RefreshSparseFolders()
+        private void RefreshSparseFolders()
         {
-            HashSet<string> updatedFolders = null;
             this.rootSparseFolder.Children.Clear();
             if (this.sparseCollection != null)
             {
                 Dictionary<string, SparseFolderData> parentFolder = this.rootSparseFolder.Children;
-
-                updatedFolders = new HashSet<string>(GVFSPlatform.Instance.Constants.PathComparer);
-                HashSet<string> oldSparsePaths = this.sparsePaths ?? new HashSet<string>(GVFSPlatform.Instance.Constants.PathComparer);
-                this.sparsePaths = this.sparseCollection.GetAll();
-
-                foreach (string directoryPath in this.sparsePaths)
+                foreach (string directoryPath in this.sparseCollection.GetAll())
                 {
                     string[] folders = directoryPath.Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
-
-                    if (!oldSparsePaths.Remove(directoryPath))
-                    {
-                        // directoryPath is a new entry, add its parent to updatedFolders
-                        if (folders.Length > 1)
-                        {
-                            updatedFolders.Add(string.Join($"{Path.DirectorySeparatorChar}", folders, startIndex: 0, count: folders.Length - 1));
-                        }
-                    }
-
                     for (int i = 0; i < folders.Length; i++)
                     {
                         SparseFolderData folderData;
@@ -840,8 +822,6 @@ namespace GVFS.Virtualization.Projection
 
                     parentFolder = this.rootSparseFolder.Children;
                 }
-
-                // Anything left in oldSparsePaths has been removed, and its parents need to be updated as well
             }
         }
 
